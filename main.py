@@ -1,16 +1,19 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select
 
-from db.database import engine
+from db.database import engine, SessionLocal
 from db.base import Base
 from models.athlete import Athlete
 
 app = FastAPI(title="World Strongman Platform API", version="1.0.0")
 
+
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,17 +27,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def root():
     return {"status": "ok"}
+
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
+
 @app.get("/__build")
 def __build():
     return {"service": "wsm-platform-backend", "build": "RANKING_V1"}
+
 
 @app.get("/ranking")
 def get_ranking(
@@ -50,12 +57,10 @@ def get_ranking(
         "offset": offset,
         "items": [],
     }
- from db.database import SessionLocal
- from sqlalchemy import select
 
- @app.get("/athletes")
- async def get_athletes():
+
+@app.get("/athletes")
+async def get_athletes():
     async with SessionLocal() as session:
         result = await session.execute(select(Athlete))
-        athletes = result.scalars().all()
-        return athletes 
+        return result.scalars().all()
