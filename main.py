@@ -1,15 +1,13 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+from datetime import date
+from uuid import UUID
 
 from db.database import engine, SessionLocal
 from db.base import Base
 from models.athlete import Athlete
-from pydantic import BaseModel
-from datetime import date
-from uuid import UUID
-from pydantic import BaseModel, Field
-from sqlalchemy import select
 from models.competition import Competition
 from models.result import Result
 
@@ -117,13 +115,7 @@ async def get_athletes():
         return result.scalars().all()
 
 
-class AthleteCreate(BaseModel):
-    first_name: str
-    last_name: str
-    country: str
-
-
-@app.post("/athletes")
+@app.post("/athletes", response_model=AthleteOut)
 async def create_athlete(payload: AthleteCreate):
     async with SessionLocal() as session:
         athlete = Athlete(**payload.model_dump())
