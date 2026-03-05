@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
+from pydantic import BaseModel
 
 from db.database import engine, SessionLocal
 from db.base import Base
@@ -64,3 +65,18 @@ async def get_athletes():
     async with SessionLocal() as session:
         result = await session.execute(select(Athlete))
         return result.scalars().all()
+        
+class AthleteCreate(BaseModel):
+    first_name: str
+    last_name: str
+    country: str
+
+
+@app.post("/athletes")
+async def create_athlete(payload: AthleteCreate):
+    async with SessionLocal() as session:
+        athlete = Athlete(**payload.model_dump())
+        session.add(athlete)
+        await session.commit()
+        await session.refresh(athlete)
+        return athlete
