@@ -44,6 +44,60 @@ class CompetitionOut(CompetitionCreate):
     class Config:
         from_attributes = True
 
+from typing import Literal
+
+DivisionKey = Literal["MEN", "WOMEN", "PARA"]
+CompetitionFormat = Literal["CLASSIC", "PARA", "RELAY", "TEAM_BATTLE"]
+LifecycleStatus = Literal["DRAFT", "SUBMITTED", "APPROVED", "LIVE", "RESULTS_VALIDATED", "LOCKED"]
+
+DisciplineMode = Literal[
+    "TIME_WITH_DISTANCE_FALLBACK",
+    "AMRAP_REPS",
+    "AMRAP_DISTANCE",
+    "MAX_WEIGHT_WITHIN_CAP",
+    "RELAY_DUAL_METRIC",
+]
+
+class DivisionCreate(BaseModel):
+    division_key: DivisionKey
+    format: CompetitionFormat
+    status: LifecycleStatus = "DRAFT"
+
+class DivisionOut(DivisionCreate):
+    id: UUID
+    competition_id: UUID
+
+    class Config:
+        from_attributes = True
+
+
+class DisciplineCreate(BaseModel):
+    order_no: int = Field(..., ge=1, le=50)
+    discipline_name: str
+    discipline_mode: DisciplineMode
+    time_cap_seconds: int | None = Field(None, ge=1, le=3600)
+    lanes_per_heat: int | None = Field(None, ge=1, le=4)
+    track_length_meters: int | None = Field(None, ge=1, le=10000)
+
+class DisciplineOut(DisciplineCreate):
+    id: UUID
+    competition_division_id: UUID
+
+    class Config:
+        from_attributes = True
+
+
+class ParticipantCreate(BaseModel):
+    athlete_id: UUID
+    bib_no: int | None = Field(None, ge=1, le=9999)
+    bodyweight_kg: float | None = Field(None, ge=0.0, le=400.0)
+
+class ParticipantOut(ParticipantCreate):
+    id: UUID
+    competition_division_id: UUID
+
+    class Config:
+        from_attributes = True
 
 class ResultCreate(BaseModel):
     competition_id: UUID
@@ -57,6 +111,8 @@ class ResultOut(ResultCreate):
 
     class Config:
         from_attributes = True
+
+
 
 app = FastAPI(title="World Strongman Platform API", version="1.0.0")
 
@@ -142,6 +198,80 @@ async def list_competitions():
     async with SessionLocal() as session:
         res = await session.execute(
             select(Competition).order_by(Competition.date_start.desc())
+        )
+        return list(res.scalars().all())
+
+@app.post("/competitions/{competition_id}/divisions", response_model=DivisionOut)
+async def create_division(competition_id: UUID, payload: DivisionCreate):
+    async with SessionLocal() as session:
+        d = CompetitionDivision(
+            competition_id=competition_id,
+            division_key=payload.division_key,
+            format=payload.format,
+            status=payload.status,
+        )
+        session.add(d)
+        await session.commit()
+        await session.refresh(d)
+        return d
+
+
+@app.get("/competitions/{competition_id}/divisions", response_model=list[DivisionOut])
+async def list_divisions(competition_id: UUID):
+    async with SessionLocal() as session:
+        res = await session.execute(
+            select(CompetitionDivision).where(CompetitionDivision.competition_id == competition_id)
+        )
+        return list(res.scalars().all())
+
+@app.post("/divisions/{division_id}/disciplines", response_model=DisciplineOut)
+async def create_discipline(division_id: UUID, payload: DisciplineCreate):
+    async with SessionLocal() as session:
+        disc = CompetitionDiscipline(
+            competition_division_id=division_id,
+            order_no=payload.order_no,
+            discipline_name=payload.discipline_name,
+            discipline_mode=payload.discipline_mode,
+            time_cap_seconds=payload.time_cap_seconds,
+            lanes_per_heat=payload.lanes_per_heat,
+            track_length_meters=payload.track_length_meters,
+        )
+        session.add(disc)
+        await session.commit()
+        await session.refresh(disc)
+        return disc
+
+
+@app.get("/divisions/{division_id}/disciplines", response_model=list[DisciplineOut])
+async def list_disciplines(division_id: UUID):
+    async with SessionLocal() as session:
+        res = await session.execute(
+            select(CompetitionDiscipline)
+            .where(CompetitionDiscipline.competition_division_id == division_id)
+            .order_by(CompetitionDiscipline.order_no.asc())
+        )
+        return list(res.scalars().all())
+
+@app.post("/divisions/{division_id}/participants", response_model=ParticipantOut)
+async def create_participant(division_id: UUID, payload: ParticipantCreate):
+    async with SessionLocal() as session:
+        p = Participant(
+            competition_division_id=division_id,
+            athlete_id=payload.athlete_id,
+            bib_no=payload.bib_no,
+            bodyweight_kg=payload.bodyweight_kg,
+        )
+        session.add(p)
+        await session.commit()
+        await session.refresh(p)
+        return p
+
+
+@app.get("/divisions/{division_id}/participants", response_model=list[ParticipantOut])
+async def list_participants(division_id: UUID):
+    async with SessionLocal() as session:
+        res = await session.execute(
+            select(Participant).where(Participant.competition_division_id == division_id)
         )
         return list(res.scalars().all())
 
