@@ -398,15 +398,29 @@ async def upsert_discipline_result(
         if not participant:
             raise HTTPException(status_code=404, detail="Participant not found")
 
-        obj = DisciplineResult(
-            competition_discipline_id=competition_discipline_id,
-            participant_id=participant.id,
-            primary_value=payload.primary_value,
-            secondary_value=payload.secondary_value,
-            status_flag=payload.status_flag,
+                existing_res = await session.execute(
+            select(DisciplineResult).where(
+                DisciplineResult.competition_discipline_id == competition_discipline_id,
+                DisciplineResult.participant_id == participant.id,
+            )
         )
+        existing = existing_res.scalar_one_or_none()
 
-        session.add(obj)
+        if existing:
+            existing.primary_value = payload.primary_value
+            existing.secondary_value = payload.secondary_value
+            existing.status_flag = payload.status_flag
+            obj = existing
+        else:
+            obj = DisciplineResult(
+                competition_discipline_id=competition_discipline_id,
+                participant_id=participant.id,
+                primary_value=payload.primary_value,
+                secondary_value=payload.secondary_value,
+                status_flag=payload.status_flag,
+            )
+            session.add(obj)
+
         await session.commit()
         await session.refresh(obj)
 
