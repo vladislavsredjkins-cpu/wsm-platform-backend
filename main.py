@@ -1,5 +1,16 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from db.database import engine
+from db.base import Base
+from models import athlete
+
+app = FastAPI(title="World Strongman Platform API", version="1.0.0")
+
+@app.on_event("startup")
+async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 app.add_middleware(
     CORSMiddleware,
@@ -7,20 +18,6 @@ app.add_middleware(
         "https://vladislavredjkins-cpu.github.io",
         "http://localhost:3000",
         "http://localhost:5173"
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-app = FastAPI(title="World Strongman Platform API", version="1.0.0")
-
-# CORS — чтобы Swagger UI на GitHub Pages мог вызывать Render
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://vladislavsvredjkins-cpu.github.io",
-        "http://localhost:3000",
-        "http://localhost:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
