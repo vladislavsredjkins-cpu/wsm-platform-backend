@@ -50,3 +50,13 @@ def get_ranking(
         "offset": offset,
         "items": [],
     }
+    from db.database import SessionLocal
+from models.athlete import Athlete
+from sqlalchemy import select
+
+@app.get("/athletes")
+async def get_athletes():
+    async with SessionLocal() as session:
+        result = await session.execute(select(Athlete))
+        athletes = result.scalars().all()
+        return athletes
