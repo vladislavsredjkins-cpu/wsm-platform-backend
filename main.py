@@ -130,6 +130,19 @@ class DisciplineResultOut(DisciplineResultCreate):
     class Config:
         from_attributes = True
 
+class DisciplineLeaderboardRow(BaseModel):
+    participant_id: UUID
+    athlete_id: UUID
+    bib_no: int | None = None
+    place: int
+    primary_value: float | None = None
+    secondary_value: float | None = None
+    status_flag: StatusFlag
+
+class DisciplineLeaderboardOut(BaseModel):
+    competition_discipline_id: UUID
+    discipline_mode: DisciplineMode
+    items: list[DisciplineLeaderboardRow]
 
 class ResultCreate(BaseModel):
     competition_id: UUID
@@ -388,6 +401,112 @@ async def upsert_discipline_result(
 
         return obj
 
+@app.get(
+    "/disciplines/{competition_discipline_id}/leaderboard",
+    response_model=DisciplineLeaderboardOut,
+)
+async def discipline_leaderboard(competition_discipline_id: UUID):
+    async with SessionLocal() as session:
+        disc_res = await session.execute(
+            select(CompetitionDiscipline).where(CompetitionDiscipline.id == competition_discipline_id)
+        )
+        discipline = disc_res.scalar_one_or_none()
+        if not discipline:
+            raise HTTPException(status_code=404, detail="Discipline not found")
+
+        # load results
+        res = await session.execute(
+            select(DisciplineResult).where(DisciplineResult.competition_discipline_id == competition_discipline_id)
+        )
+        results = list(res.scalars().all())
+
+        # build rows with athlete_id + bib
+        rows = []
+        for r in results:
+            p = await session.get(Participant, r.participant_id)
+            rows.append(
+                {
+                    "participant_id": r.participant_id,
+                    "athlete_id": p.athlete_id,
+                    "bib_no": p.bib_no,
+                    "primary_value": float(r.primary_value) if r.primary_value is not None else None,
+                    "secondary_value": float(r.secondary_value) if r.secondary_value is not None else None,
+                    "status_flag": r.status_flag,
+                }
+            )
+
+        mode = discipline.discipline_mode
+
+        def sort_key(item: dict):
+            # statuses: OK first, then DNS/DNF/DQ at the end
+            status = item["status_flag"]
+            status_rank = 0 if status == "OK" else 1
+
+            pv = item["primary_value"]
+            sv = item["secondary_value"]
+
+            # default missing values go last
+            pv_missing = pv is None
+            sv_missing = sv is None
+
+            if mode == "TIME_WITH_DISTANCE_FALLBACK":
+                # smaller time is better; if time missing, use distance (bigger better)
+                # sort by: status, has_time, time asc, has_distance, distance desc
+                return (
+                    status_rank,
+                    0 if not pv_missing else 1,
+                    pv if pv is not None else 10**12,
+                    0 if not sv_missing else 1,
+                    -(sv if sv is not None else -1),
+                )
+
+            if mode in ("AMRAP_REPS", "AMRAP_DISTANCE", "MAX_WEIGHT_WITHIN_CAP"):
+                # bigger primary is better
+                return (
+                    status_rank,
+                    0 if not pv_missing else 1,
+                    -(pv if pv is not None else -1),
+                )
+
+            if mode == "RELAY_DUAL_METRIC":
+                # dual metric: bigger primary better; then smaller secondary better
+                return (
+                    status_rank,
+                    0 if not pv_missing else 1,
+                    -(pv if pv is not None else -1),
+                    0 if not sv_missing else 1,
+                    sv if sv is not None else 10**12,
+                )
+
+            # fallback: status then primary desc
+            return (
+                status_rank,
+                0 if not pv_missing else 1,
+                -(pv if pv is not None else -1),
+            )
+
+        rows_sorted = sorted(rows, key=sort_key)
+
+        # assign places (simple 1..N, no ties handling yet)
+        items_out: list[DisciplineLeaderboardRow] = []
+        for idx, row in enumerate(rows_sorted, start=1):
+            items_out.append(
+                DisciplineLeaderboardRow(
+                    participant_id=row["participant_id"],
+                    athlete_id=row["athlete_id"],
+                    bib_no=row["bib_no"],
+                    place=idx,
+                    primary_value=row["primary_value"],
+                    secondary_value=row["secondary_value"],
+                    status_flag=row["status_flag"],
+                )
+            )
+
+        return DisciplineLeaderboardOut(
+            competition_discipline_id=competition_discipline_id,
+            discipline_mode=mode,
+            items=items_out,
+        )
 
 # =========================
 # Legacy results
