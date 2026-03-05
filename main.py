@@ -6,6 +6,23 @@ from pydantic import BaseModel
 from db.database import engine, SessionLocal
 from db.base import Base
 from models.athlete import Athlete
+from pydantic import BaseModel
+from uuid import UUID
+
+class AthleteCreate(BaseModel):
+    first_name: str
+    last_name: str
+    country: str
+
+
+class AthleteOut(BaseModel):
+    id: UUID
+    first_name: str
+    last_name: str
+    country: str
+
+    class Config:
+        from_attributes = True
 
 
 app = FastAPI(title="World Strongman Platform API", version="1.0.0")
