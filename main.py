@@ -7,6 +7,7 @@ from db.database import engine, SessionLocal
 from db.base import Base
 from models.athlete import Athlete
 
+
 app = FastAPI(title="World Strongman Platform API", version="1.0.0")
 
 
@@ -65,7 +66,8 @@ async def get_athletes():
     async with SessionLocal() as session:
         result = await session.execute(select(Athlete))
         return result.scalars().all()
-        
+
+
 class AthleteCreate(BaseModel):
     first_name: str
     last_name: str
