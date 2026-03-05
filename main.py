@@ -42,7 +42,7 @@ def health():
 
 @app.get("/__build")
 def __build():
-    return {"service": "wsm-platform-backend", "build": "RANKING_V1"}
+    return {"service": "wsm-platform-backend", "build": "RANKING_V1_ATHLETES_01"}
 
 
 @app.get("/ranking")
