@@ -1,31 +1,9 @@
 import uuid
-from sqlalchemy import Column, String, ForeignKey, Enum
+from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
 from db.base import Base
-import enum
-
-
-class DivisionKey(str, enum.Enum):
-    MEN = "MEN"
-    WOMEN = "WOMEN"
-    PARA = "PARA"
-
-
-class CompetitionFormat(str, enum.Enum):
-    CLASSIC = "CLASSIC"
-    PARA = "PARA"
-    RELAY = "RELAY"
-    TEAM_BATTLE = "TEAM_BATTLE"
-
-
-class DivisionStatus(str, enum.Enum):
-    DRAFT = "DRAFT"
-    SUBMITTED = "SUBMITTED"
-    APPROVED = "APPROVED"
-    LIVE = "LIVE"
-    RESULTS_VALIDATED = "RESULTS_VALIDATED"
-    LOCKED = "LOCKED"
 
 
 class CompetitionDivision(Base):
@@ -35,18 +13,27 @@ class CompetitionDivision(Base):
 
     competition_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("competitions.id"),
-        nullable=False
+        ForeignKey("competitions.id", ondelete="CASCADE"),
+        nullable=False,
     )
 
-    division_key = Column(Enum(DivisionKey), nullable=False)
-
-    format = Column(Enum(CompetitionFormat), nullable=False)
-
-    status = Column(
-        Enum(DivisionStatus),
-        default=DivisionStatus.DRAFT,
-        nullable=False
-    )
+    # fixed values by platform terminology (store as String, validate in API later)
+    division_key = Column(String, nullable=False)  # MEN | WOMEN | PARA
+    format = Column(String, nullable=False)        # CLASSIC | PARA | RELAY | TEAM_BATTLE
+    status = Column(String, nullable=False, default="DRAFT")  # lifecycle statuses
 
     competition = relationship("Competition", back_populates="divisions")
+
+    disciplines = relationship(
+        "CompetitionDiscipline",
+        back_populates="division",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    participants = relationship(
+        "Participant",
+        back_populates="division",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
