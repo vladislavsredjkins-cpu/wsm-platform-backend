@@ -144,6 +144,17 @@ class DisciplineLeaderboardOut(BaseModel):
     discipline_mode: DisciplineMode
     items: list[DisciplineLeaderboardRow]
 
+class DivisionOverallRow(BaseModel):
+    participant_id: UUID
+    athlete_id: UUID
+    bib_no: int | None = None
+    total_points: float
+    place: int
+
+class DivisionOverallOut(BaseModel):
+    division_id: UUID
+    items: list[DivisionOverallRow]
+
 class ResultCreate(BaseModel):
     competition_id: UUID
     athlete_id: UUID
@@ -507,6 +518,147 @@ async def discipline_leaderboard(competition_discipline_id: UUID):
             discipline_mode=mode,
             items=items_out,
         )
+
+@app.get("/divisions/{division_id}/leaderboard", response_model=DivisionOverallOut)
+async def division_leaderboard(division_id: UUID):
+    async with SessionLocal() as session:
+        # 1) division exists
+        div_res = await session.execute(
+            select(CompetitionDivision).where(CompetitionDivision.id == division_id)
+        )
+        division = div_res.scalar_one_or_none()
+        if not division:
+            raise HTTPException(status_code=404, detail="Division not found")
+
+        # 2) participants in division
+        p_res = await session.execute(
+            select(Participant).where(Participant.competition_division_id == division_id)
+        )
+        participants = list(p_res.scalars().all())
+        participant_ids = [p.id for p in participants]
+
+        # nothing to compute
+        if not participant_ids:
+            return DivisionOverallOut(division_id=division_id, items=[])
+
+        # map participant -> athlete/bib
+        p_map = {p.id: p for p in participants}
+
+        # 3) disciplines in division
+        d_res = await session.execute(
+            select(CompetitionDiscipline)
+            .where(CompetitionDiscipline.competition_division_id == division_id)
+            .order_by(CompetitionDiscipline.order_no.asc())
+        )
+        disciplines = list(d_res.scalars().all())
+
+        # points accumulator (higher is better)
+        points: dict[UUID, float] = {pid: 0.0 for pid in participant_ids}
+
+        # helper: compute discipline order (place) from discipline_results
+        def sort_key_for_mode(mode: str, item: dict):
+            status = item["status_flag"]
+            status_rank = 0 if status == "OK" else 1
+
+            pv = item["primary_value"]
+            sv = item["secondary_value"]
+
+            pv_missing = pv is None
+            sv_missing = sv is None
+
+            if mode == "TIME_WITH_DISTANCE_FALLBACK":
+                return (
+                    status_rank,
+                    0 if not pv_missing else 1,
+                    pv if pv is not None else 10**12,
+                    0 if not sv_missing else 1,
+                    -(sv if sv is not None else -1),
+                )
+
+            if mode in ("AMRAP_REPS", "AMRAP_DISTANCE", "MAX_WEIGHT_WITHIN_CAP"):
+                return (
+                    status_rank,
+                    0 if not pv_missing else 1,
+                    -(pv if pv is not None else -1),
+                )
+
+            if mode == "RELAY_DUAL_METRIC":
+                return (
+                    status_rank,
+                    0 if not pv_missing else 1,
+                    -(pv if pv is not None else -1),
+                    0 if not sv_missing else 1,
+                    sv if sv is not None else 10**12,
+                )
+
+            return (
+                status_rank,
+                0 if not pv_missing else 1,
+                -(pv if pv is not None else -1),
+            )
+
+        # 4) for each discipline compute places and assign points
+        for disc in disciplines:
+            r_res = await session.execute(
+                select(DisciplineResult).where(
+                    DisciplineResult.competition_discipline_id == disc.id,
+                    DisciplineResult.participant_id.in_(participant_ids),
+                )
+            )
+            results = list(r_res.scalars().all())
+
+            # build rows per participant (include missing as DNS-like -> goes last)
+            rows = []
+            results_by_pid = {r.participant_id: r for r in results}
+
+            for pid in participant_ids:
+                r = results_by_pid.get(pid)
+                if r:
+                    rows.append(
+                        {
+                            "participant_id": pid,
+                            "status_flag": r.status_flag,
+                            "primary_value": float(r.primary_value) if r.primary_value is not None else None,
+                            "secondary_value": float(r.secondary_value) if r.secondary_value is not None else None,
+                        }
+                    )
+                else:
+                    # no result submitted -> treat as DNS for sorting/points
+                    rows.append(
+                        {
+                            "participant_id": pid,
+                            "status_flag": "DNS",
+                            "primary_value": None,
+                            "secondary_value": None,
+                        }
+                    )
+
+            rows_sorted = sorted(rows, key=lambda x: sort_key_for_mode(disc.discipline_mode, x))
+
+            # points scheme (LIVE): N participants -> first gets N, last gets 1
+            n = len(rows_sorted)
+            for idx, row in enumerate(rows_sorted, start=1):
+                pid = row["participant_id"]
+                pts = float(n - idx + 1)
+                points[pid] += pts
+
+        # 5) overall sort (higher total points better)
+        overall = sorted(points.items(), key=lambda kv: (-kv[1], str(kv[0])))
+
+        items: list[DivisionOverallRow] = []
+        for place_no, (pid, total) in enumerate(overall, start=1):
+            p = p_map[pid]
+            items.append(
+                DivisionOverallRow(
+                    participant_id=pid,
+                    athlete_id=p.athlete_id,
+                    bib_no=p.bib_no,
+                    total_points=total,
+                    place=place_no,
+                )
+            )
+
+        return DivisionOverallOut(division_id=division_id, items=items)
 
 # =========================
 # Legacy results
