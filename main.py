@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db.database import engine
 from db.base import Base
-from models import athlete
+from models.athlete import Athlete
 
 app = FastAPI(title="World Strongman Platform API", version="1.0.0")
 
