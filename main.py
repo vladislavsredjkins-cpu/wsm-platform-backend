@@ -1,6 +1,17 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://vladislavredjkins-cpu.github.io",
+        "http://localhost:3000",
+        "http://localhost:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app = FastAPI(title="World Strongman Platform API", version="1.0.0")
 
 # CORS — чтобы Swagger UI на GitHub Pages мог вызывать Render
