@@ -100,6 +100,117 @@ class ParticipantOut(ParticipantCreate):
     class Config:
         from_attributes = True
 
+StatusFlag = Literal["OK", "DNF", "DQ", "DNS"]
+
+class DisciplineResultCreate(BaseModel):
+    competition_discipline_id: UUID
+    athlete_id: UUID
+    primary_value: float | None = None
+    secondary_value: float | None = None
+    status_flag: StatusFlag = "OK"
+
+class DisciplineResultOut(DisciplineResultCreate):
+    id: UUID
+    participant_id: UUID
+
+    class Config:
+        from_attributes = True
+
+from fastapi import HTTPException
+from sqlalchemy import select
+
+@app.post("/disciplines/{competition_discipline_id}/results", response_model=DisciplineResultOut)
+async def upsert_discipline_result(competition_discipline_id: UUID, payload: DisciplineResultCreate):
+    async with SessionLocal() as session:
+        # 1) находим discipline
+        disc_res = await session.execute(
+            select(CompetitionDiscipline).where(CompetitionDiscipline.id == competition_discipline_id)
+        )
+        discipline = disc_res.scalar_one_or_none()
+        if not discipline:
+            raise HTTPException(status_code=404, detail="Discipline not found")
+
+        # 2) participant = (division_id from discipline) + athlete_id
+        part_res = await session.execute(
+            select(Participant).where(
+                Participant.competition_division_id == discipline.competition_division_id,
+                Participant.athlete_id == payload.athlete_id,
+            )
+        )
+        participant = part_res.scalar_one_or_none()
+        if not participant:
+            raise HTTPException(status_code=404, detail="Participant not found in this division")
+
+        # 3) upsert по (discipline_id + participant_id)
+        existing_res = await session.execute(
+            select(DisciplineResult).where(
+                DisciplineResult.competition_discipline_id == competition_discipline_id,
+                DisciplineResult.participant_id == participant.id,
+            )
+        )
+        existing = existing_res.scalar_one_or_none()
+
+        if existing:
+            existing.primary_value = payload.primary_value
+            existing.secondary_value = payload.secondary_value
+            existing.status_flag = payload.status_flag
+            obj = existing
+        else:
+            obj = DisciplineResult(
+                competition_discipline_id=competition_discipline_id,
+                participant_id=participant.id,
+                primary_value=payload.primary_value,
+                secondary_value=payload.secondary_value,
+                status_flag=payload.status_flag,
+            )
+            session.add(obj)
+
+        await session.commit()
+        await session.refresh(obj)
+
+        return DisciplineResultOut(
+            id=obj.id,
+            competition_discipline_id=obj.competition_discipline_id,
+            athlete_id=payload.athlete_id,
+            participant_id=obj.participant_id,
+            primary_value=float(obj.primary_value) if obj.primary_value is not None else None,
+            secondary_value=float(obj.secondary_value) if obj.secondary_value is not None else None,
+            status_flag=obj.status_flag,
+        )
+
+@app.get("/disciplines/{competition_discipline_id}/results", response_model=list[DisciplineResultOut])
+async def list_discipline_results(competition_discipline_id: UUID):
+    async with SessionLocal() as session:
+        # discipline обязателен
+        disc_res = await session.execute(
+            select(CompetitionDiscipline).where(CompetitionDiscipline.id == competition_discipline_id)
+        )
+        discipline = disc_res.scalar_one_or_none()
+        if not discipline:
+            raise HTTPException(status_code=404, detail="Discipline not found")
+
+        res = await session.execute(
+            select(DisciplineResult).where(DisciplineResult.competition_discipline_id == competition_discipline_id)
+        )
+        items = res.scalars().all()
+
+        out: list[DisciplineResultOut] = []
+        for it in items:
+            # вытаскиваем athlete_id через participant
+            part = await session.get(Participant, it.participant_id)
+            out.append(
+                DisciplineResultOut(
+                    id=it.id,
+                    competition_discipline_id=it.competition_discipline_id,
+                    athlete_id=part.athlete_id,
+                    participant_id=it.participant_id,
+                    primary_value=float(it.primary_value) if it.primary_value is not None else None,
+                    secondary_value=float(it.secondary_value) if it.secondary_value is not None else None,
+                    status_flag=it.status_flag,
+                )
+            )
+        return out
+
 class ResultCreate(BaseModel):
     competition_id: UUID
     athlete_id: UUID
