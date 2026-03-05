@@ -383,7 +383,6 @@ async def upsert_discipline_result(
             )
         )
         discipline = disc_res.scalar_one_or_none()
-
         if not discipline:
             raise HTTPException(status_code=404, detail="Discipline not found")
 
@@ -394,11 +393,10 @@ async def upsert_discipline_result(
             )
         )
         participant = part_res.scalar_one_or_none()
-
         if not participant:
             raise HTTPException(status_code=404, detail="Participant not found")
 
-                existing_res = await session.execute(
+        existing_res = await session.execute(
             select(DisciplineResult).where(
                 DisciplineResult.competition_discipline_id == competition_discipline_id,
                 DisciplineResult.participant_id == participant.id,
@@ -423,8 +421,8 @@ async def upsert_discipline_result(
 
         await session.commit()
         await session.refresh(obj)
-
         return obj
+
 
 @app.get(
     "/disciplines/{competition_discipline_id}/leaderboard",
