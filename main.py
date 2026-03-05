@@ -78,7 +78,7 @@ def get_ranking(
     }
 
 
-@app.get("/athletes")
+@app.get("/athletes", response_model=list[AthleteOut])
 async def get_athletes():
     async with SessionLocal() as session:
         result = await session.execute(select(Athlete))
