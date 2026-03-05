@@ -10,6 +10,9 @@ from db.base import Base
 from models.athlete import Athlete
 from models.competition import Competition
 from models.result import Result
+from models.competition_division import CompetitionDivision
+from models.competition_discipline import CompetitionDiscipline
+from models.participant import Participant
 
 class AthleteCreate(BaseModel):
     first_name: str
