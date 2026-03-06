@@ -340,16 +340,29 @@ async def list_competitions():
 @app.post("/competitions/{competition_id}/divisions", response_model=DivisionOut)
 async def create_division(competition_id: UUID, payload: DivisionCreate):
     async with SessionLocal() as session:
-        d = CompetitionDivision(
-            competition_id=competition_id,
-            division_key=payload.division_key,
-            format=payload.format,
-            status=payload.status,
-        )
-        session.add(d)
-        await session.commit()
-        await session.refresh(d)
-        return d
+
+        # check competition exists
+        comp = await session.get(Competition, competition_id)
+        if not comp:
+            raise HTTPException(status_code=404, detail="Competition not found")
+
+        try:
+            d = CompetitionDivision(
+                competition_id=competition_id,
+                division_key=payload.division_key,
+                format=payload.format,
+                status=payload.status,
+            )
+
+            session.add(d)
+            await session.commit()
+            await session.refresh(d)
+
+            return d
+
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/competitions/{competition_id}/divisions", response_model=list[DivisionOut])
