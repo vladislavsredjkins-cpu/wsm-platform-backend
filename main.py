@@ -20,6 +20,9 @@ from models.ranking_point import RankingPoint
 from models.discipline_standing import DisciplineStanding
 from models.overall_standing import OverallStanding
 from models.ranking_snapshot import RankingSnapshot
+from models.season import Season
+from models.competition_class import CompetitionClass
+from models.protest import Protest
 
 
 # =========================
