@@ -383,19 +383,28 @@ async def list_divisions(competition_id: UUID):
 @app.post("/divisions/{division_id}/disciplines", response_model=DisciplineOut)
 async def create_discipline(division_id: UUID, payload: DisciplineCreate):
     async with SessionLocal() as session:
-        disc = CompetitionDiscipline(
-            competition_division_id=division_id,
-            order_no=payload.order_no,
-            discipline_name=payload.discipline_name,
-            discipline_mode=payload.discipline_mode,
-            time_cap_seconds=payload.time_cap_seconds,
-            lanes_per_heat=payload.lanes_per_heat,
-            track_length_meters=payload.track_length_meters,
-        )
-        session.add(disc)
-        await session.commit()
-        await session.refresh(disc)
-        return disc
+        div = await session.get(CompetitionDivision, division_id)
+        if not div:
+            raise HTTPException(status_code=404, detail="Division not found")
+
+        try:
+            disc = CompetitionDiscipline(
+                competition_division_id=division_id,
+                order_no=payload.order_no,
+                discipline_name=payload.discipline_name,
+                discipline_mode=payload.discipline_mode,
+                time_cap_seconds=payload.time_cap_seconds,
+                lanes_per_heat=payload.lanes_per_heat,
+                track_length_meters=payload.track_length_meters,
+            )
+            session.add(disc)
+            await session.commit()
+            await session.refresh(disc)
+            return disc
+
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/divisions/{division_id}/disciplines", response_model=list[DisciplineOut])
