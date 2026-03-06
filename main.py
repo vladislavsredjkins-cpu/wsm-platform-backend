@@ -227,6 +227,30 @@ class OverallStandingOut(BaseModel):
     division_id: UUID
     items: list[OverallStandingRow]
 
+ProtestStatus = Literal["SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED"]
+
+
+class ProtestCreate(BaseModel):
+    competition_id: UUID
+    athlete_id: UUID
+    reason: str = Field(..., min_length=3, max_length=2000)
+
+
+class ProtestReview(BaseModel):
+    status: ProtestStatus
+
+
+class ProtestOut(BaseModel):
+    id: UUID
+    competition_id: UUID
+    athlete_id: UUID
+    reason: str
+    status: ProtestStatus
+    created_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
 # =========================
 # App
 # =========================
@@ -605,7 +629,21 @@ async def create_ranking_snapshot(
 @app.post("/protests", response_model=ProtestOut)
 async def create_protest(payload: ProtestCreate):
     async with SessionLocal() as session:
-        protest = Protest(**payload.model_dump())
+        competition = await session.get(Competition, payload.competition_id)
+        if not competition:
+            raise HTTPException(status_code=404, detail="Competition not found")
+
+        athlete = await session.get(Athlete, payload.athlete_id)
+        if not athlete:
+            raise HTTPException(status_code=404, detail="Athlete not found")
+
+        protest = Protest(
+            competition_id=payload.competition_id,
+            athlete_id=payload.athlete_id,
+            reason=payload.reason,
+            status="SUBMITTED",
+        )
+
         session.add(protest)
         await session.commit()
         await session.refresh(protest)
@@ -616,6 +654,7 @@ async def create_protest(payload: ProtestCreate):
 async def list_protests(
     competition_id: UUID | None = None,
     athlete_id: UUID | None = None,
+    status: ProtestStatus | None = None,
 ):
     async with SessionLocal() as session:
         stmt = select(Protest)
@@ -625,6 +664,9 @@ async def list_protests(
 
         if athlete_id:
             stmt = stmt.where(Protest.athlete_id == athlete_id)
+
+        if status:
+            stmt = stmt.where(Protest.status == status)
 
         stmt = stmt.order_by(Protest.created_at.desc())
 
