@@ -6,8 +6,7 @@ from datetime import date
 from uuid import UUID
 from typing import Literal
 
-from db.database import engine, SessionLocal
-from db.base import Base
+from db.database import SessionLocal
 
 from models.athlete import Athlete
 from models.competition import Competition
@@ -195,12 +194,6 @@ class RankingOut(BaseModel):
 # =========================
 
 app = FastAPI(title="World Strongman Platform API", version="1.0.0")
-
-
-@app.on_event("startup")
-async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
 
 app.add_middleware(
