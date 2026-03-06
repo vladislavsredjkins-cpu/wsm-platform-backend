@@ -3,7 +3,7 @@ from datetime import date
 
 from sqlalchemy import Column, String, Date, Float
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship  # ✅ add
+from sqlalchemy.orm import relationship
 
 from db.base import Base
 
@@ -20,10 +20,8 @@ class Competition(Base):
     city = Column(String, nullable=True)
     country = Column(String, nullable=True)
 
-    # Tournament Coefficient Q
     coefficient_q = Column(Float, nullable=False, default=1.0)
 
-    # ✅ Stage 2 relation
     divisions = relationship(
         "CompetitionDivision",
         back_populates="competition",
