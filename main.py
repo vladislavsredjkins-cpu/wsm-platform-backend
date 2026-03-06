@@ -527,6 +527,29 @@ async def validate_division_results(division_id: UUID):
 
         return standings
 
+@app.post("/divisions/{division_id}/lock")
+async def lock_division(division_id: UUID):
+    async with SessionLocal() as session:
+
+        div = await session.get(CompetitionDivision, division_id)
+        if not div:
+            raise HTTPException(status_code=404, detail="Division not found")
+
+        if div.status != "RESULTS_VALIDATED":
+            raise HTTPException(
+                status_code=400,
+                detail="Division must be RESULTS_VALIDATED before lock",
+            )
+
+        div.status = "LOCKED"
+        div.locked_at = datetime.utcnow()
+
+        await session.commit()
+
+        return {
+            "division_id": division_id,
+            "status": "LOCKED",
+        }
 
 # =========================
 # Athletes
