@@ -319,6 +319,11 @@ async def calculate_standings(division_id: UUID):
         if not div:
             raise HTTPException(status_code=404, detail="Division not found")
 
+        if div.status in ("RESULTS_VALIDATED", "LOCKED"):
+            raise HTTPException(
+                status_code=400,
+                detail="Standings are already validated or locked",
+            )
         # 2) participants
         p_res = await session.execute(
             select(Participant).where(Participant.competition_division_id == division_id)
