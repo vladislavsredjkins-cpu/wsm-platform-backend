@@ -36,6 +36,7 @@ class CompetitionDiscipline(Base):
     )
 
     time_cap_seconds = Column(Integer, nullable=True)
+    lanes_per_heat = Column(Integer, nullable=True)
     track_length_meters = Column(Integer, nullable=True)
 
     division = relationship("CompetitionDivision", back_populates="disciplines")
