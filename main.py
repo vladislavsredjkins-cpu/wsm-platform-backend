@@ -16,6 +16,7 @@ from models.competition_division import CompetitionDivision
 from models.competition_discipline import CompetitionDiscipline
 from models.participant import Participant
 from models.discipline_result import DisciplineResult
+from models.ranking_point import RankingPoint
 
 
 # =========================
