@@ -551,6 +551,21 @@ async def lock_division(division_id: UUID):
             "status": "LOCKED",
         }
 
+@app.post("/divisions/{division_id}/lock")
+async def lock_division(division_id: UUID):
+    async with SessionLocal() as session:
+
+        div = await session.get(CompetitionDivision, division_id)
+        if not div:
+            raise HTTPException(status_code=404, detail="Division not found")
+
+        div.status = "LOCKED"
+        div.locked_at = datetime.utcnow()
+
+        await session.commit()
+
+        return {"division_id": division_id, "status": "LOCKED"}
+        
 # =========================
 # Athletes
 # =========================
