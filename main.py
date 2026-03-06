@@ -502,6 +502,27 @@ async def calculate_standings(division_id: UUID):
             items=items_out,
         )
 
+@app.post("/divisions/{division_id}/results/validate", response_model=OverallStandingOut)
+async def validate_division_results(division_id: UUID):
+    async with SessionLocal() as session:
+
+        # division
+        div = await session.get(CompetitionDivision, division_id)
+        if not div:
+            raise HTTPException(status_code=404, detail="Division not found")
+
+        # считаем standings
+        standings = await calculate_standings(division_id)
+
+        # переводим статус
+        div.status = "RESULTS_VALIDATED"
+        div.approved_at = datetime.utcnow()
+
+        await session.commit()
+
+        return standings
+
+
 # =========================
 # Athletes
 # =========================
