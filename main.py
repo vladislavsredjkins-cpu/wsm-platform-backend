@@ -597,6 +597,62 @@ async def create_ranking_snapshot(
         await session.commit()
 
         return {"snapshot_created": place - 1}
+
+# =========================
+# Protests
+# =========================
+
+@app.post("/protests", response_model=ProtestOut)
+async def create_protest(payload: ProtestCreate):
+    async with SessionLocal() as session:
+        protest = Protest(**payload.model_dump())
+        session.add(protest)
+        await session.commit()
+        await session.refresh(protest)
+        return protest
+
+
+@app.get("/protests", response_model=list[ProtestOut])
+async def list_protests(
+    competition_id: UUID | None = None,
+    athlete_id: UUID | None = None,
+):
+    async with SessionLocal() as session:
+        stmt = select(Protest)
+
+        if competition_id:
+            stmt = stmt.where(Protest.competition_id == competition_id)
+
+        if athlete_id:
+            stmt = stmt.where(Protest.athlete_id == athlete_id)
+
+        stmt = stmt.order_by(Protest.created_at.desc())
+
+        res = await session.execute(stmt)
+        return list(res.scalars().all())
+
+
+@app.get("/protests/{protest_id}", response_model=ProtestOut)
+async def get_protest(protest_id: UUID):
+    async with SessionLocal() as session:
+        protest = await session.get(Protest, protest_id)
+        if not protest:
+            raise HTTPException(status_code=404, detail="Protest not found")
+        return protest
+
+
+@app.patch("/protests/{protest_id}/review", response_model=ProtestOut)
+async def review_protest(protest_id: UUID, payload: ProtestReview):
+    async with SessionLocal() as session:
+        protest = await session.get(Protest, protest_id)
+        if not protest:
+            raise HTTPException(status_code=404, detail="Protest not found")
+
+        protest.status = payload.status
+
+        await session.commit()
+        await session.refresh(protest)
+        return protest
         
 # =========================
 # Athletes
