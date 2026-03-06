@@ -1,7 +1,7 @@
 import uuid
 import enum
 
-from sqlalchemy import Column, ForeignKey, Enum
+from sqlalchemy import Column, ForeignKey, Enum, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -43,7 +43,15 @@ class CompetitionDivision(Base):
 
     division_key = Column(Enum(DivisionKey, name="divisionkey"), nullable=False)
     format = Column(Enum(CompetitionFormat, name="competitionformat"), nullable=False)
-    status = Column(Enum(DivisionStatus, name="divisionstatus"), nullable=False, default=DivisionStatus.DRAFT)
+    status = Column(
+        Enum(DivisionStatus, name="divisionstatus"),
+        nullable=False,
+        default=DivisionStatus.DRAFT,
+    )
+
+    approved_at = Column(DateTime, nullable=True)
+    live_at = Column(DateTime, nullable=True)
+    locked_at = Column(DateTime, nullable=True)
 
     competition = relationship("Competition", back_populates="divisions")
 
