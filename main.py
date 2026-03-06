@@ -827,11 +827,18 @@ async def upsert_discipline_result(
 
         await session.commit()
         await session.refresh(obj)
-        return obj
 
+        return DisciplineResultOut(
+            id=obj.id,
+            competition_discipline_id=obj.competition_discipline_id,
+            participant_id=obj.participant_id,
+            athlete_id=participant.athlete_id,
+            primary_value=float(obj.primary_value) if obj.primary_value is not None else None,
+            secondary_value=float(obj.secondary_value) if obj.secondary_value is not None else None,
+            status_flag=obj.status_flag,
+        )
 
-@app.get(
-    "/disciplines/{competition_discipline_id}/leaderboard",
+@app.get("/disciplines/{competition_discipline_id}/leaderboard",
     response_model=DisciplineLeaderboardOut,
 )
 async def discipline_leaderboard(competition_discipline_id: UUID):
