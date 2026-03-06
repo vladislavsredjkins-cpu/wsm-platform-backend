@@ -463,7 +463,6 @@ async def calculate_standings(division_id: UUID):
         # 5) overall standings
         overall_rows = []
         for pid in participant_ids:
-            p = p_map[pid]
             tie_break_value = None
             overall_rows.append(
                 {
