@@ -256,7 +256,7 @@ def health():
 
 @app.get("/__build")
 def __build():
-    return {"service": "wsm-platform-backend", "build": "RANKING_V1_CORE_05_DISCIPLINE_FIX"}
+    return {"service": "wsm-platform-backend", "build": "RANKING_V1_CORE_06_FINALIZE_FIX"}
 
 
 @app.get("/ranking", response_model=RankingOut)
@@ -982,7 +982,9 @@ async def finalize_competition(
         q = float(comp.coefficient_q)
 
         div_res = await session.execute(
-            select(CompetitionDivision).where(CompetitionDivision.competition_id == competition_id)
+            select(CompetitionDivision).where(
+                CompetitionDivision.competition_id == competition_id
+            )
         )
         divisions = list(div_res.scalars().all())
 
@@ -991,108 +993,22 @@ async def finalize_competition(
         for division in divisions:
             division_id = division.id
 
-            p_res = await session.execute(
-                select(Participant).where(Participant.competition_division_id == division_id)
+            overall_res = await session.execute(
+                select(OverallStanding).where(
+                    OverallStanding.competition_division_id == division_id
+                )
             )
-            participants = list(p_res.scalars().all())
-            participant_ids = [p.id for p in participants]
-            if not participant_ids:
+            overall_rows = list(overall_res.scalars().all())
+
+            if not overall_rows:
                 continue
 
-            d_res = await session.execute(
-                select(CompetitionDiscipline)
-                .where(CompetitionDiscipline.competition_division_id == division_id)
-                .order_by(CompetitionDiscipline.order_no.asc())
-            )
-            disciplines = list(d_res.scalars().all())
-            if not disciplines:
-                continue
+            for row in overall_rows:
+                p = await session.get(Participant, row.participant_id)
+                if not p:
+                    continue
 
-            points_map: dict[UUID, float] = {pid: 0.0 for pid in participant_ids}
-
-            def sort_key_for_mode(mode: str, item: dict):
-                status = item["status_flag"]
-                status_rank = 0 if status == "OK" else 1
-
-                pv = item["primary_value"]
-                sv = item["secondary_value"]
-
-                pv_missing = pv is None
-                sv_missing = sv is None
-
-                if mode == "TIME_WITH_DISTANCE_FALLBACK":
-                    return (
-                        status_rank,
-                        0 if not pv_missing else 1,
-                        pv if pv is not None else 10**12,
-                        0 if not sv_missing else 1,
-                        -(sv if sv is not None else -1),
-                    )
-
-                if mode in ("AMRAP_REPS", "AMRAP_DISTANCE", "MAX_WEIGHT_WITHIN_CAP"):
-                    return (
-                        status_rank,
-                        0 if not pv_missing else 1,
-                        -(pv if pv is not None else -1),
-                    )
-
-                if mode == "RELAY_DUAL_METRIC":
-                    return (
-                        status_rank,
-                        0 if not pv_missing else 1,
-                        -(pv if pv is not None else -1),
-                        0 if not sv_missing else 1,
-                        sv if sv is not None else 10**12,
-                    )
-
-                return (
-                    status_rank,
-                    0 if not pv_missing else 1,
-                    -(pv if pv is not None else -1),
-                )
-
-            for disc in disciplines:
-                r_res = await session.execute(
-                    select(DisciplineResult).where(
-                        DisciplineResult.competition_discipline_id == disc.id,
-                        DisciplineResult.participant_id.in_(participant_ids),
-                    )
-                )
-                results = list(r_res.scalars().all())
-                results_by_pid = {r.participant_id: r for r in results}
-
-                rows = []
-                for pid in participant_ids:
-                    r = results_by_pid.get(pid)
-                    if r:
-                        rows.append(
-                            {
-                                "participant_id": pid,
-                                "status_flag": r.status_flag,
-                                "primary_value": float(r.primary_value) if r.primary_value is not None else None,
-                                "secondary_value": float(r.secondary_value) if r.secondary_value is not None else None,
-                            }
-                        )
-                    else:
-                        rows.append(
-                            {
-                                "participant_id": pid,
-                                "status_flag": "DNS",
-                                "primary_value": None,
-                                "secondary_value": None,
-                            }
-                        )
-
-                rows_sorted = sorted(rows, key=lambda x: sort_key_for_mode(disc.discipline_mode, x))
-
-                n = len(rows_sorted)
-                for idx, row in enumerate(rows_sorted, start=1):
-                    pid = row["participant_id"]
-                    pts = float(n - idx + 1)
-                    points_map[pid] += pts
-
-            for p in participants:
-                raw_points = float(points_map[p.id])
+                raw_points = float(row.total_points)
                 final_points = raw_points * q
 
                 existing_res = await session.execute(
@@ -1121,6 +1037,7 @@ async def finalize_competition(
                             points=final_points,
                         )
                     )
+
                 rows_written += 1
 
         await session.commit()
