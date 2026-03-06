@@ -19,6 +19,7 @@ from models.discipline_result import DisciplineResult
 from models.ranking_point import RankingPoint
 from models.discipline_standing import DisciplineStanding
 from models.overall_standing import OverallStanding
+from models.ranking_snapshot import RankingSnapshot
 
 
 # =========================
@@ -565,6 +566,50 @@ async def lock_division(division_id: UUID):
         await session.commit()
 
         return {"division_id": division_id, "status": "LOCKED"}
+
+@app.post("/ranking/snapshot")
+async def create_ranking_snapshot(
+    season_year: int,
+    division: DivisionKey,
+    format: CompetitionFormat,
+):
+    async with SessionLocal() as session:
+
+        stmt = (
+            select(
+                RankingPoint.athlete_id,
+                func.sum(RankingPoint.points).label("points"),
+            )
+            .where(
+                RankingPoint.season_year == season_year,
+                RankingPoint.division_key == division,
+                RankingPoint.format == format,
+            )
+            .group_by(RankingPoint.athlete_id)
+            .order_by(func.sum(RankingPoint.points).desc())
+        )
+
+        res = await session.execute(stmt)
+        rows = res.all()
+
+        place = 1
+
+        for r in rows:
+            session.add(
+                RankingSnapshot(
+                    season_year=season_year,
+                    division_key=division,
+                    format=format,
+                    athlete_id=r.athlete_id,
+                    points=float(r.points),
+                    place=place,
+                )
+            )
+            place += 1
+
+        await session.commit()
+
+        return {"snapshot_created": place - 1}
         
 # =========================
 # Athletes
