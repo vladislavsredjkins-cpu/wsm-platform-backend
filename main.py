@@ -393,7 +393,6 @@ async def create_discipline(division_id: UUID, payload: DisciplineCreate):
                 discipline_name=payload.discipline_name,
                 discipline_mode=payload.discipline_mode,
                 time_cap_seconds=payload.time_cap_seconds,
-                lanes_per_heat=payload.lanes_per_heat,
                 track_length_meters=payload.track_length_meters,
             )
             session.add(disc)
