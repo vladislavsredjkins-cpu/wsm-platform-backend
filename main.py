@@ -169,6 +169,27 @@ class ResultOut(ResultCreate):
     class Config:
         from_attributes = True
 
+class FinalizeOut(BaseModel):
+    competition_id: UUID
+    season_year: int
+    rows_written: int
+
+
+class RankingItem(BaseModel):
+    athlete_id: UUID
+    first_name: str
+    last_name: str
+    country: str
+    points: float
+
+
+class RankingOut(BaseModel):
+    division: DivisionKey
+    format: CompetitionFormat
+    season_year: int
+    limit: int
+    offset: int
+    items: list[RankingItem]
 
 # =========================
 # App
@@ -212,23 +233,60 @@ def health():
 
 @app.get("/__build")
 def __build():
-    return {"service": "wsm-platform-backend", "build": "RANKING_V1_CORE_03_LEADERBOARD"}
+    return {"service": "wsm-platform-backend", "build": "RANKING_V1_CORE_04_RANKING"}
 
 
-@app.get("/ranking")
-def get_ranking(
-    division: str = Query("MEN"),
-    format: str = Query("CLASSIC"),
+@app.get("/ranking", response_model=RankingOut)
+async def get_ranking(
+    division: DivisionKey = Query("MEN"),
+    format: CompetitionFormat = Query("CLASSIC"),
+    season_year: int = Query(..., ge=2000, le=2100),
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    return {
-        "division": division,
-        "format": format,
-        "limit": limit,
-        "offset": offset,
-        "items": [],
-    }
+    async with SessionLocal() as session:
+        stmt = (
+            select(
+                Athlete.id.label("athlete_id"),
+                Athlete.first_name,
+                Athlete.last_name,
+                Athlete.country,
+                func.sum(RankingPoint.points).label("points"),
+            )
+            .join(RankingPoint, RankingPoint.athlete_id == Athlete.id)
+            .where(
+                RankingPoint.season_year == season_year,
+                RankingPoint.division_key == division,
+                RankingPoint.format == format,
+            )
+            .group_by(Athlete.id, Athlete.first_name, Athlete.last_name, Athlete.country)
+            .order_by(func.sum(RankingPoint.points).desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        res = await session.execute(stmt)
+        rows = res.all()
+
+        items = [
+            RankingItem(
+                athlete_id=r.athlete_id,
+                first_name=r.first_name,
+                last_name=r.last_name,
+                country=r.country,
+                points=float(r.points) if r.points is not None else 0.0,
+            )
+            for r in rows
+        ]
+
+        return RankingOut(
+            division=division,
+            format=format,
+            season_year=season_year,
+            limit=limit,
+            offset=offset,
+            items=items,
+        )
 
 
 # =========================
@@ -673,6 +731,170 @@ async def division_leaderboard(division_id: UUID):
 
         return DivisionOverallOut(division_id=division_id, items=items)
 
+@app.post("/competitions/{competition_id}/finalize", response_model=FinalizeOut)
+async def finalize_competition(
+    competition_id: UUID,
+    season_year: int = Query(..., ge=2000, le=2100),
+):
+    async with SessionLocal() as session:
+        comp_res = await session.execute(
+            select(Competition).where(Competition.id == competition_id)
+        )
+        comp = comp_res.scalar_one_or_none()
+        if not comp:
+            raise HTTPException(status_code=404, detail="Competition not found")
+
+        q = float(comp.coefficient_q)
+
+        div_res = await session.execute(
+            select(CompetitionDivision).where(CompetitionDivision.competition_id == competition_id)
+        )
+        divisions = list(div_res.scalars().all())
+
+        rows_written = 0
+
+        for division in divisions:
+            division_id = division.id
+
+            p_res = await session.execute(
+                select(Participant).where(Participant.competition_division_id == division_id)
+            )
+            participants = list(p_res.scalars().all())
+            participant_ids = [p.id for p in participants]
+            if not participant_ids:
+                continue
+
+            d_res = await session.execute(
+                select(CompetitionDiscipline)
+                .where(CompetitionDiscipline.competition_division_id == division_id)
+                .order_by(CompetitionDiscipline.order_no.asc())
+            )
+            disciplines = list(d_res.scalars().all())
+            if not disciplines:
+                continue
+
+            points_map: dict[UUID, float] = {pid: 0.0 for pid in participant_ids}
+
+            def sort_key_for_mode(mode: str, item: dict):
+                status = item["status_flag"]
+                status_rank = 0 if status == "OK" else 1
+
+                pv = item["primary_value"]
+                sv = item["secondary_value"]
+
+                pv_missing = pv is None
+                sv_missing = sv is None
+
+                if mode == "TIME_WITH_DISTANCE_FALLBACK":
+                    return (
+                        status_rank,
+                        0 if not pv_missing else 1,
+                        pv if pv is not None else 10**12,
+                        0 if not sv_missing else 1,
+                        -(sv if sv is not None else -1),
+                    )
+
+                if mode in ("AMRAP_REPS", "AMRAP_DISTANCE", "MAX_WEIGHT_WITHIN_CAP"):
+                    return (
+                        status_rank,
+                        0 if not pv_missing else 1,
+                        -(pv if pv is not None else -1),
+                    )
+
+                if mode == "RELAY_DUAL_METRIC":
+                    return (
+                        status_rank,
+                        0 if not pv_missing else 1,
+                        -(pv if pv is not None else -1),
+                        0 if not sv_missing else 1,
+                        sv if sv is not None else 10**12,
+                    )
+
+                return (
+                    status_rank,
+                    0 if not pv_missing else 1,
+                    -(pv if pv is not None else -1),
+                )
+
+            for disc in disciplines:
+                r_res = await session.execute(
+                    select(DisciplineResult).where(
+                        DisciplineResult.competition_discipline_id == disc.id,
+                        DisciplineResult.participant_id.in_(participant_ids),
+                    )
+                )
+                results = list(r_res.scalars().all())
+                results_by_pid = {r.participant_id: r for r in results}
+
+                rows = []
+                for pid in participant_ids:
+                    r = results_by_pid.get(pid)
+                    if r:
+                        rows.append(
+                            {
+                                "participant_id": pid,
+                                "status_flag": r.status_flag,
+                                "primary_value": float(r.primary_value) if r.primary_value is not None else None,
+                                "secondary_value": float(r.secondary_value) if r.secondary_value is not None else None,
+                            }
+                        )
+                    else:
+                        rows.append(
+                            {
+                                "participant_id": pid,
+                                "status_flag": "DNS",
+                                "primary_value": None,
+                                "secondary_value": None,
+                            }
+                        )
+
+                rows_sorted = sorted(rows, key=lambda x: sort_key_for_mode(disc.discipline_mode, x))
+
+                n = len(rows_sorted)
+                for idx, row in enumerate(rows_sorted, start=1):
+                    pid = row["participant_id"]
+                    pts = float(n - idx + 1)
+                    points_map[pid] += pts
+
+            for p in participants:
+                raw_points = float(points_map[p.id])
+                final_points = raw_points * q
+
+                existing_res = await session.execute(
+                    select(RankingPoint).where(
+                        RankingPoint.competition_id == competition_id,
+                        RankingPoint.division_id == division_id,
+                        RankingPoint.athlete_id == p.athlete_id,
+                    )
+                )
+                existing = existing_res.scalar_one_or_none()
+
+                if existing:
+                    existing.season_year = season_year
+                    existing.division_key = division.division_key
+                    existing.format = division.format
+                    existing.points = final_points
+                else:
+                    session.add(
+                        RankingPoint(
+                            season_year=season_year,
+                            competition_id=competition_id,
+                            division_id=division_id,
+                            athlete_id=p.athlete_id,
+                            division_key=division.division_key,
+                            format=division.format,
+                            points=final_points,
+                        )
+                    )
+                rows_written += 1
+
+        await session.commit()
+
+        return FinalizeOut(
+            competition_id=competition_id,
+            season_year=season_year,
+            rows_written=rows_written,
+        )
 # =========================
 # Legacy results
 # =========================
