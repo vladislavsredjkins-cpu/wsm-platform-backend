@@ -87,7 +87,6 @@ class DisciplineCreate(BaseModel):
     discipline_name: str
     discipline_mode: DisciplineMode
     time_cap_seconds: int | None = Field(None, ge=1, le=3600)
-    lanes_per_heat: int | None = Field(None, ge=1, le=4)
     track_length_meters: int | None = Field(None, ge=1, le=10000)
 
 
