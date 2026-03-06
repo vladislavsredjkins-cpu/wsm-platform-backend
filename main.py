@@ -200,6 +200,9 @@ class RankingOut(BaseModel):
     offset: int
     items: list[RankingItem]
 
+class RankingSnapshotOut(BaseModel):
+    snapshot_created: int
+
 class DisciplineStandingRow(BaseModel):
     participant_id: UUID
     athlete_id: UUID
@@ -556,7 +559,7 @@ async def lock_division(division_id: UUID):
         }
 
 
-@app.post("/ranking/snapshot")
+@app.post("/ranking/snapshot", response_model=RankingSnapshotOut)
 async def create_ranking_snapshot(
     season_year: int,
     division: DivisionKey,
@@ -1097,6 +1100,12 @@ async def finalize_competition(
 
         for division in divisions:
             division_id = division.id
+
+            if division.status != "LOCKED":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Division must be LOCKED before finalize",
+                )
 
             overall_res = await session.execute(
                 select(OverallStanding).where(
