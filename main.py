@@ -232,7 +232,7 @@ def health():
 
 @app.get("/__build")
 def __build():
-    return {"service": "wsm-platform-backend", "build": "RANKING_V1_CORE_04_RANKING"}
+    return {"service": "wsm-platform-backend", "build": "RANKING_V1_CORE_05_DISCIPLINE_FIX"}
 
 
 @app.get("/ranking", response_model=RankingOut)
