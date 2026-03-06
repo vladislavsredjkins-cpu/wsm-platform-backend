@@ -9,7 +9,11 @@ from db.base import Base
 class Participant(Base):
     __tablename__ = "participants"
     __table_args__ = (
-        UniqueConstraint("competition_division_id", "athlete_id", name="uq_participant_division_athlete"),
+        UniqueConstraint(
+            "competition_division_id",
+            "athlete_id",
+            name="uq_participants_division_athlete",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
