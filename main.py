@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import select, func
 import sqlalchemy as sa
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 from typing import Literal
 
@@ -79,6 +79,9 @@ class DivisionCreate(BaseModel):
 class DivisionOut(DivisionCreate):
     id: UUID
     competition_id: UUID
+    approved_at: datetime | None = None
+    live_at: datetime | None = None
+    locked_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -89,6 +92,7 @@ class DisciplineCreate(BaseModel):
     discipline_name: str
     discipline_mode: DisciplineMode
     time_cap_seconds: int | None = Field(None, ge=1, le=3600)
+    lanes_per_heat: int | None = Field(None, ge=1, le=20)
     track_length_meters: int | None = Field(None, ge=1, le=10000)
 
 
@@ -448,7 +452,7 @@ async def calculate_standings(division_id: UUID):
         overall_rows = []
         for pid in participant_ids:
             p = p_map[pid]
-            tie_break_value = float(p.bodyweight_kg) if p.bodyweight_kg is not None else None
+            tie_break_value = None
             overall_rows.append(
                 {
                     "participant_id": pid,
@@ -462,11 +466,9 @@ async def calculate_standings(division_id: UUID):
             overall_rows,
             key=lambda x: (
                 -x["total_points"],
-                x["tie_break_value"] if x["tie_break_value"] is not None else 10**12,
                 str(x["participant_id"]),
             ),
         )
-
         items_out = []
         for place_no, row in enumerate(overall_rows_sorted, start=1):
             pid = row["participant_id"]
@@ -605,6 +607,7 @@ async def create_discipline(division_id: UUID, payload: DisciplineCreate):
                 discipline_name=payload.discipline_name,
                 discipline_mode=payload.discipline_mode,
                 time_cap_seconds=payload.time_cap_seconds,
+                lanes_per_heat=payload.lanes_per_heat,
                 track_length_meters=payload.track_length_meters,
             )
             session.add(disc)
