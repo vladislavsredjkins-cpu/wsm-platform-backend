@@ -13,6 +13,7 @@ from services.discipline_engine import DisciplineEngine
 class CompetitionEngine:
     def __init__(self, session: AsyncSession):
         self.session = session
+        self.discipline_engine = DisciplineEngine()
 
     def _sort_key_for_mode(self, mode: str, item: dict):
         status = item["status_flag"]
