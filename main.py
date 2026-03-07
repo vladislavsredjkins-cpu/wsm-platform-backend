@@ -1285,8 +1285,3 @@ async def list_results(competition_id: UUID | None = None):
 
         return list(res.scalars().all())
 
-@app.get("/db-test")
-async def db_test():
-    async with SessionLocal() as session:
-        result = await session.execute(sa.text("SELECT 1"))
-        return {"database": "connected", "result": result.scalar()}
