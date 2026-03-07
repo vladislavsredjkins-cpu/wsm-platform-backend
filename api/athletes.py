@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
+
+from fastapi import APIRouter
+from pydantic import BaseModel
 from sqlalchemy import select
 
 from db.database import SessionLocal
@@ -9,22 +11,34 @@ from models.athlete import Athlete
 router = APIRouter(prefix="/athletes", tags=["athletes"])
 
 
-async def get_db():
+class AthleteCreate(BaseModel):
+    first_name: str
+    last_name: str
+    country: str
+
+
+class AthleteOut(BaseModel):
+    id: UUID
+    first_name: str
+    last_name: str
+    country: str
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("", response_model=list[AthleteOut])
+async def get_athletes():
     async with SessionLocal() as session:
-        yield session
+        result = await session.execute(select(Athlete))
+        return result.scalars().all()
 
 
-@router.get("")
-async def list_athletes(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Athlete))
-    athletes = result.scalars().all()
-    return athletes
-
-
-@router.post("")
-async def create_athlete(athlete: dict, db: AsyncSession = Depends(get_db)):
-    new_athlete = Athlete(**athlete)
-    db.add(new_athlete)
-    await db.commit()
-    await db.refresh(new_athlete)
-    return new_athlete
+@router.post("", response_model=AthleteOut)
+async def create_athlete(payload: AthleteCreate):
+    async with SessionLocal() as session:
+        athlete = Athlete(**payload.model_dump())
+        session.add(athlete)
+        await session.commit()
+        await session.refresh(athlete)
+        return athlete
