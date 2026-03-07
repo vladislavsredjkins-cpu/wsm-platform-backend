@@ -31,8 +31,7 @@ db_url = os.getenv("DATABASE_URL")
 if not db_url:
     raise RuntimeError("DATABASE_URL is not set")
 
-# Alembic works better with sync URL
-sync_db_url = db_url.replace("+asyncpg", "")
+sync_db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
 config.set_main_option("sqlalchemy.url", sync_db_url)
 
 target_metadata = Base.metadata
