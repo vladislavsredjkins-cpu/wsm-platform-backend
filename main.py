@@ -274,6 +274,7 @@ app.add_middleware(
 )
 
 app.include_router(athletes_router)
+app.include_router(competitions_router)
 
 # =========================
 # Basic endpoints
@@ -705,28 +706,6 @@ async def review_protest(protest_id: UUID, payload: ProtestReview):
         await session.refresh(protest)
         return protest
         
-
-# =========================
-# Competitions
-# =========================
-
-@app.post("/competitions", response_model=CompetitionOut)
-async def create_competition(payload: CompetitionCreate):
-    async with SessionLocal() as session:
-        c = Competition(**payload.model_dump())
-        session.add(c)
-        await session.commit()
-        await session.refresh(c)
-        return c
-
-
-@app.get("/competitions", response_model=list[CompetitionOut])
-async def list_competitions():
-    async with SessionLocal() as session:
-        res = await session.execute(
-            select(Competition).order_by(Competition.date_start.desc())
-        )
-        return list(res.scalars().all())
 
 
 # =========================
