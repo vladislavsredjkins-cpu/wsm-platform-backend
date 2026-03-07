@@ -289,6 +289,11 @@ def health():
 def __build():
     return {"service": "wsm-platform-backend", "build": "RANKING_V1_CORE_06_FINALIZE_FIX"}
 
+@app.get("/db-test")
+async def db_test():
+    async with SessionLocal() as session:
+        result = await session.execute(sa.text("SELECT 1"))
+        return {"database": "connected", "result": result.scalar()}
 
 @app.get("/ranking", response_model=RankingOut)
 async def get_ranking(
