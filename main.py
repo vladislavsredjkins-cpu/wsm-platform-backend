@@ -29,6 +29,7 @@ from api.competitions import router as competitions_router
 from api.divisions import router as divisions_router
 from api.disciplines import router as disciplines_router
 from api.participants import router as participants_router
+from api.discipline_results import router as discipline_results_router
 
 
 # =========================
@@ -281,6 +282,7 @@ app.include_router(competitions_router)
 app.include_router(divisions_router)
 app.include_router(disciplines_router)
 app.include_router(participants_router)
+app.include_router(discipline_results_router)
 
 # =========================
 # Basic endpoints
@@ -714,71 +716,6 @@ async def review_protest(protest_id: UUID, payload: ProtestReview):
         
 
 
-
-# =========================
-# Discipline Results
-# =========================
-
-@app.post("/disciplines/{competition_discipline_id}/results", response_model=DisciplineResultOut)
-async def upsert_discipline_result(
-    competition_discipline_id: UUID, payload: DisciplineResultCreate
-):
-    async with SessionLocal() as session:
-
-        disc_res = await session.execute(
-            select(CompetitionDiscipline).where(
-                CompetitionDiscipline.id == competition_discipline_id
-            )
-        )
-        discipline = disc_res.scalar_one_or_none()
-        if not discipline:
-            raise HTTPException(status_code=404, detail="Discipline not found")
-
-        part_res = await session.execute(
-            select(Participant).where(
-                Participant.competition_division_id == discipline.competition_division_id,
-                Participant.athlete_id == payload.athlete_id,
-            )
-        )
-        participant = part_res.scalar_one_or_none()
-        if not participant:
-            raise HTTPException(status_code=404, detail="Participant not found")
-
-        existing_res = await session.execute(
-            select(DisciplineResult).where(
-                DisciplineResult.competition_discipline_id == competition_discipline_id,
-                DisciplineResult.participant_id == participant.id,
-            )
-        )
-        existing = existing_res.scalar_one_or_none()
-
-        if existing:
-            existing.primary_value = payload.primary_value
-            existing.secondary_value = payload.secondary_value
-            existing.status_flag = payload.status_flag
-            obj = existing
-        else:
-            obj = DisciplineResult(
-                competition_discipline_id=competition_discipline_id,
-                participant_id=participant.id,
-                primary_value=payload.primary_value,
-                secondary_value=payload.secondary_value,
-                status_flag=payload.status_flag,
-            )
-            session.add(obj)
-
-        await session.commit()
-        await session.refresh(obj)
-
-        return DisciplineResultOut(
-            id=obj.id,
-            competition_discipline_id=obj.competition_discipline_id,
-            participant_id=obj.participant_id,
-            athlete_id=participant.athlete_id,
-            primary_value=float(obj.primary_value) if obj.primary_value is not None else None,
-            secondary_value=float(obj.secondary_value) if obj.secondary_value is not None else None,
-            status_flag=obj.status_flag,
-        )
 
 @app.get("/disciplines/{competition_discipline_id}/leaderboard",
     response_model=DisciplineLeaderboardOut,
