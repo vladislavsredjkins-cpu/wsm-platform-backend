@@ -1,1 +1,2 @@
-
+class DisciplineEngine:
+    pass
