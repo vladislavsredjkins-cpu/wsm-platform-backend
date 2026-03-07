@@ -32,6 +32,7 @@ from api.participants import router as participants_router
 from api.discipline_results import router as discipline_results_router
 from api.standings import router as standings_router
 from api.ranking import router as ranking_router
+from api.protests import router as protests_router
 
 
 # =========================
@@ -287,6 +288,7 @@ app.include_router(participants_router)
 app.include_router(discipline_results_router)
 app.include_router(standings_router)
 app.include_router(ranking_router)
+app.include_router(protests_router)
 
 # =========================
 # Basic endpoints
@@ -547,83 +549,6 @@ async def lock_division(division_id: UUID):
             "division_id": division_id,
             "status": "LOCKED",
         }
-
-
-
-# =========================
-# Protests
-# =========================
-
-@app.post("/protests", response_model=ProtestOut)
-async def create_protest(payload: ProtestCreate):
-    async with SessionLocal() as session:
-        competition = await session.get(Competition, payload.competition_id)
-        if not competition:
-            raise HTTPException(status_code=404, detail="Competition not found")
-
-        athlete = await session.get(Athlete, payload.athlete_id)
-        if not athlete:
-            raise HTTPException(status_code=404, detail="Athlete not found")
-
-        protest = Protest(
-            competition_id=payload.competition_id,
-            athlete_id=payload.athlete_id,
-            reason=payload.reason,
-            status="SUBMITTED",
-        )
-
-        session.add(protest)
-        await session.commit()
-        await session.refresh(protest)
-        return protest
-
-
-@app.get("/protests", response_model=list[ProtestOut])
-async def list_protests(
-    competition_id: UUID | None = None,
-    athlete_id: UUID | None = None,
-    status: ProtestStatus | None = None,
-):
-    async with SessionLocal() as session:
-        stmt = select(Protest)
-
-        if competition_id:
-            stmt = stmt.where(Protest.competition_id == competition_id)
-
-        if athlete_id:
-            stmt = stmt.where(Protest.athlete_id == athlete_id)
-
-        if status:
-            stmt = stmt.where(Protest.status == status)
-
-        stmt = stmt.order_by(Protest.created_at.desc())
-
-        res = await session.execute(stmt)
-        return list(res.scalars().all())
-
-
-@app.get("/protests/{protest_id}", response_model=ProtestOut)
-async def get_protest(protest_id: UUID):
-    async with SessionLocal() as session:
-        protest = await session.get(Protest, protest_id)
-        if not protest:
-            raise HTTPException(status_code=404, detail="Protest not found")
-        return protest
-
-
-@app.patch("/protests/{protest_id}/review", response_model=ProtestOut)
-async def review_protest(protest_id: UUID, payload: ProtestReview):
-    async with SessionLocal() as session:
-        protest = await session.get(Protest, protest_id)
-        if not protest:
-            raise HTTPException(status_code=404, detail="Protest not found")
-
-        protest.status = payload.status
-
-        await session.commit()
-        await session.refresh(protest)
-        return protest
-        
 
 
 
