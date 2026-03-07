@@ -7,7 +7,6 @@ from sqlalchemy import select
 
 from db.database import SessionLocal
 from models.competition_discipline import CompetitionDiscipline
-from models.competition_division import CompetitionDivision
 from models.discipline_result import DisciplineResult
 from models.participant import Participant
 from services.competition_engine import CompetitionEngine
