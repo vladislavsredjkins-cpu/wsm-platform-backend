@@ -141,3 +141,60 @@ class CompetitionEngine:
             )
 
         return items
+
+    async def calculate_discipline_leaderboard(self, competition_discipline_id: UUID):
+        discipline_res = await self.session.execute(
+            select(CompetitionDiscipline).where(
+                CompetitionDiscipline.id == competition_discipline_id
+            )
+        )
+        discipline = discipline_res.scalar_one_or_none()
+        if not discipline:
+            raise ValueError("Discipline not found")
+
+        result_res = await self.session.execute(
+            select(DisciplineResult).where(
+                DisciplineResult.competition_discipline_id == competition_discipline_id
+            )
+        )
+        results = list(result_res.scalars().all())
+
+        rows = []
+        for result in results:
+            participant = await self.session.get(Participant, result.participant_id)
+            rows.append(
+                {
+                    "participant_id": result.participant_id,
+                    "athlete_id": participant.athlete_id,
+                    "bib_no": participant.bib_no,
+                    "primary_value": float(result.primary_value) if result.primary_value is not None else None,
+                    "secondary_value": float(result.secondary_value) if result.secondary_value is not None else None,
+                    "status_flag": result.status_flag,
+                }
+            )
+
+        mode = discipline.discipline_mode
+        rows_sorted = sorted(
+            rows,
+            key=lambda x: self._sort_key_for_mode(mode, x),
+        )
+
+        items = []
+        for idx, row in enumerate(rows_sorted, start=1):
+            items.append(
+                {
+                    "participant_id": row["participant_id"],
+                    "athlete_id": row["athlete_id"],
+                    "bib_no": row["bib_no"],
+                    "place": idx,
+                    "primary_value": row["primary_value"],
+                    "secondary_value": row["secondary_value"],
+                    "status_flag": row["status_flag"],
+                }
+            )
+
+        return {
+            "competition_discipline_id": competition_discipline_id,
+            "discipline_mode": mode,
+            "items": items,
+        }
