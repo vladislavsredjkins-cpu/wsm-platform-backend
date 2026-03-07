@@ -31,6 +31,7 @@ from api.disciplines import router as disciplines_router
 from api.participants import router as participants_router
 from api.discipline_results import router as discipline_results_router
 from api.standings import router as standings_router
+from api.ranking import router as ranking_router
 
 
 # =========================
@@ -285,6 +286,7 @@ app.include_router(disciplines_router)
 app.include_router(participants_router)
 app.include_router(discipline_results_router)
 app.include_router(standings_router)
+app.include_router(ranking_router)
 
 # =========================
 # Basic endpoints
@@ -310,57 +312,6 @@ async def db_test():
         result = await session.execute(sa.text("SELECT 1"))
         return {"database": "connected", "result": result.scalar()}
 
-@app.get("/ranking", response_model=RankingOut)
-async def get_ranking(
-    division: DivisionKey = Query("MEN"),
-    format: CompetitionFormat = Query("CLASSIC"),
-    season_year: int = Query(..., ge=2000, le=2100),
-    limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-):
-    async with SessionLocal() as session:
-        stmt = (
-            select(
-                Athlete.id.label("athlete_id"),
-                Athlete.first_name,
-                Athlete.last_name,
-                Athlete.country,
-                func.sum(RankingPoint.points).label("points"),
-            )
-            .join(RankingPoint, RankingPoint.athlete_id == Athlete.id)
-            .where(
-                RankingPoint.season_year == season_year,
-                RankingPoint.division_key == division,
-                RankingPoint.format == format,
-            )
-            .group_by(Athlete.id, Athlete.first_name, Athlete.last_name, Athlete.country)
-            .order_by(func.sum(RankingPoint.points).desc())
-            .limit(limit)
-            .offset(offset)
-        )
-
-        res = await session.execute(stmt)
-        rows = res.all()
-
-        items = [
-            RankingItem(
-                athlete_id=r.athlete_id,
-                first_name=r.first_name,
-                last_name=r.last_name,
-                country=r.country,
-                points=float(r.points) if r.points is not None else 0.0,
-            )
-            for r in rows
-        ]
-
-        return RankingOut(
-            division=division,
-            format=format,
-            season_year=season_year,
-            limit=limit,
-            offset=offset,
-            items=items,
-        )
 
 @app.post("/divisions/{division_id}/calculate-standings", response_model=OverallStandingOut)
 async def calculate_standings(division_id: UUID):
@@ -598,49 +549,6 @@ async def lock_division(division_id: UUID):
         }
 
 
-@app.post("/ranking/snapshot", response_model=RankingSnapshotOut)
-async def create_ranking_snapshot(
-    season_year: int,
-    division: DivisionKey,
-    format: CompetitionFormat,
-):
-    async with SessionLocal() as session:
-
-        stmt = (
-            select(
-                RankingPoint.athlete_id,
-                func.sum(RankingPoint.points).label("points"),
-            )
-            .where(
-                RankingPoint.season_year == season_year,
-                RankingPoint.division_key == division,
-                RankingPoint.format == format,
-            )
-            .group_by(RankingPoint.athlete_id)
-            .order_by(func.sum(RankingPoint.points).desc())
-        )
-
-        res = await session.execute(stmt)
-        rows = res.all()
-
-        place = 1
-
-        for r in rows:
-            session.add(
-                RankingSnapshot(
-                    season_year=season_year,
-                    division_key=division,
-                    format=format,
-                    athlete_id=r.athlete_id,
-                    points=float(r.points),
-                    place=place,
-                )
-            )
-            place += 1
-
-        await session.commit()
-
-        return {"snapshot_created": place - 1}
 
 # =========================
 # Protests
@@ -719,93 +627,6 @@ async def review_protest(protest_id: UUID, payload: ProtestReview):
 
 
 
-@app.post("/competitions/{competition_id}/finalize", response_model=FinalizeOut)
-async def finalize_competition(
-    competition_id: UUID,
-    season_year: int = Query(..., ge=2000, le=2100),
-):
-    async with SessionLocal() as session:
-        comp_res = await session.execute(
-            select(Competition).where(Competition.id == competition_id)
-        )
-        comp = comp_res.scalar_one_or_none()
-        if not comp:
-            raise HTTPException(status_code=404, detail="Competition not found")
-
-        q = float(comp.coefficient_q)
-
-        div_res = await session.execute(
-            select(CompetitionDivision).where(
-                CompetitionDivision.competition_id == competition_id
-            )
-        )
-        divisions = list(div_res.scalars().all())
-
-        rows_written = 0
-
-        for division in divisions:
-            division_id = division.id
-
-            if division.status != "LOCKED":
-                raise HTTPException(
-                    status_code=400,
-                    detail="Division must be LOCKED before finalize",
-                )
-
-            overall_res = await session.execute(
-                select(OverallStanding).where(
-                    OverallStanding.competition_division_id == division_id
-                )
-            )
-            overall_rows = list(overall_res.scalars().all())
-
-            if not overall_rows:
-                continue
-
-            for row in overall_rows:
-                p = await session.get(Participant, row.participant_id)
-                if not p:
-                    continue
-
-                raw_points = float(row.total_points)
-                final_points = raw_points * q
-
-                existing_res = await session.execute(
-                    select(RankingPoint).where(
-                        RankingPoint.competition_id == competition_id,
-                        RankingPoint.division_id == division_id,
-                        RankingPoint.athlete_id == p.athlete_id,
-                    )
-                )
-                existing = existing_res.scalar_one_or_none()
-
-                if existing:
-                    existing.season_year = season_year
-                    existing.division_key = division.division_key
-                    existing.format = division.format
-                    existing.points = final_points
-                else:
-                    session.add(
-                        RankingPoint(
-                            season_year=season_year,
-                            competition_id=competition_id,
-                            division_id=division_id,
-                            athlete_id=p.athlete_id,
-                            division_key=division.division_key,
-                            format=division.format,
-                            points=final_points,
-                        )
-                    )
-
-                rows_written += 1
-
-        await session.commit()
-
-        return FinalizeOut(
-            competition_id=competition_id,
-            season_year=season_year,
-            rows_written=rows_written,
-        )
 # =========================
 # Legacy results
 # =========================
