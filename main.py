@@ -28,6 +28,7 @@ from api.athletes import router as athletes_router
 from api.competitions import router as competitions_router
 from api.divisions import router as divisions_router
 from api.disciplines import router as disciplines_router
+from api.participants import router as participants_router
 
 
 # =========================
@@ -279,6 +280,7 @@ app.include_router(athletes_router)
 app.include_router(competitions_router)
 app.include_router(divisions_router)
 app.include_router(disciplines_router)
+app.include_router(participants_router)
 
 # =========================
 # Basic endpoints
@@ -711,35 +713,6 @@ async def review_protest(protest_id: UUID, payload: ProtestReview):
         return protest
         
 
-
-# =========================
-# Participants
-# =========================
-
-@app.post("/divisions/{division_id}/participants", response_model=ParticipantOut)
-async def create_participant(division_id: UUID, payload: ParticipantCreate):
-    async with SessionLocal() as session:
-        p = Participant(
-            competition_division_id=division_id,
-            athlete_id=payload.athlete_id,
-            bib_no=payload.bib_no,
-            bodyweight_kg=payload.bodyweight_kg,
-        )
-        session.add(p)
-        await session.commit()
-        await session.refresh(p)
-        return p
-
-
-@app.get("/divisions/{division_id}/participants", response_model=list[ParticipantOut])
-async def list_participants(division_id: UUID):
-    async with SessionLocal() as session:
-        res = await session.execute(
-            select(Participant).where(
-                Participant.competition_division_id == division_id
-            )
-        )
-        return list(res.scalars().all())
 
 
 # =========================
