@@ -31,7 +31,7 @@ db_url = os.getenv("DATABASE_URL")
 if not db_url:
     raise RuntimeError("DATABASE_URL is not set")
 
-sync_db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+sync_db_url = db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
 
 print("DB_URL =", db_url)
 print("SYNC_DB_URL =", sync_db_url)
