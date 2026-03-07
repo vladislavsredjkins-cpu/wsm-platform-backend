@@ -116,7 +116,7 @@ class CompetitionEngine:
 
             rows_sorted = sorted(
                 rows,
-                key=lambda x: self._sort_key_for_mode(discipline.discipline_mode, x),
+                key=lambda x: self.discipline_engine.sort_key_for_mode(discipline.discipline_mode, x),
             )
 
             n = len(rows_sorted)
@@ -178,7 +178,7 @@ class CompetitionEngine:
         mode = discipline.discipline_mode
         rows_sorted = sorted(
             rows,
-            key=lambda x: self._sort_key_for_mode(mode, x),
+            key=lambda x: self.discipline_engine.sort_key_for_mode(mode, x),
         )
 
         items = []
