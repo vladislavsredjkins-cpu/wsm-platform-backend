@@ -1,7 +1,7 @@
 from sqlalchemy import Boolean, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from db.database import Base
+from db.base import Base
 
 
 class TeamRule(Base):
