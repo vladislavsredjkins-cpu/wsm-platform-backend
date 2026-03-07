@@ -32,7 +32,11 @@ if not db_url:
     raise RuntimeError("DATABASE_URL is not set")
 
 sync_db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
-config.set_main_option("sqlalchemy.url", sync_db_url)
+
+print("DB_URL =", db_url)
+print("SYNC_DB_URL =", sync_db_url)
+
+config.set_main_option("sqlalchemy.url", sync_db_url))
 
 target_metadata = Base.metadata
 
