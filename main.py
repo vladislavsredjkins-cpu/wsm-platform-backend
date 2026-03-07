@@ -27,6 +27,7 @@ from models.protest import Protest
 from api.athletes import router as athletes_router
 from api.competitions import router as competitions_router
 from api.divisions import router as divisions_router
+from api.disciplines import router as disciplines_router
 
 
 # =========================
@@ -277,6 +278,7 @@ app.add_middleware(
 app.include_router(athletes_router)
 app.include_router(competitions_router)
 app.include_router(divisions_router)
+app.include_router(disciplines_router)
 
 # =========================
 # Basic endpoints
@@ -708,48 +710,6 @@ async def review_protest(protest_id: UUID, payload: ProtestReview):
         await session.refresh(protest)
         return protest
         
-
-
-# =========================
-# Disciplines
-# =========================
-
-@app.post("/divisions/{division_id}/disciplines", response_model=DisciplineOut)
-async def create_discipline(division_id: UUID, payload: DisciplineCreate):
-    async with SessionLocal() as session:
-        div = await session.get(CompetitionDivision, division_id)
-        if not div:
-            raise HTTPException(status_code=404, detail="Division not found")
-
-        try:
-            disc = CompetitionDiscipline(
-                competition_division_id=division_id,
-                order_no=payload.order_no,
-                discipline_name=payload.discipline_name,
-                discipline_mode=payload.discipline_mode,
-                time_cap_seconds=payload.time_cap_seconds,
-                lanes_per_heat=payload.lanes_per_heat,
-                track_length_meters=payload.track_length_meters,
-            )
-            session.add(disc)
-            await session.commit()
-            await session.refresh(disc)
-            return disc
-
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/divisions/{division_id}/disciplines", response_model=list[DisciplineOut])
-async def list_disciplines(division_id: UUID):
-    async with SessionLocal() as session:
-        res = await session.execute(
-            select(CompetitionDiscipline)
-            .where(CompetitionDiscipline.competition_division_id == division_id)
-            .order_by(CompetitionDiscipline.order_no.asc())
-        )
-        return list(res.scalars().all())
 
 
 # =========================
