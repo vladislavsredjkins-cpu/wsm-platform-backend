@@ -24,6 +24,8 @@ from models.season import Season
 from models.competition_class import CompetitionClass
 from models.protest import Protest
 
+from api.athletes import router as athletes_router
+
 
 # =========================
 # Pydantic Schemas
@@ -270,6 +272,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(athletes_router)
 
 # =========================
 # Basic endpoints
@@ -701,26 +704,6 @@ async def review_protest(protest_id: UUID, payload: ProtestReview):
         await session.refresh(protest)
         return protest
         
-# =========================
-# Athletes
-# =========================
-
-@app.get("/athletes", response_model=list[AthleteOut])
-async def get_athletes():
-    async with SessionLocal() as session:
-        result = await session.execute(select(Athlete))
-        return result.scalars().all()
-
-
-@app.post("/athletes", response_model=AthleteOut)
-async def create_athlete(payload: AthleteCreate):
-    async with SessionLocal() as session:
-        athlete = Athlete(**payload.model_dump())
-        session.add(athlete)
-        await session.commit()
-        await session.refresh(athlete)
-        return athlete
-
 
 # =========================
 # Competitions
