@@ -26,6 +26,7 @@ from models.protest import Protest
 
 from api.athletes import router as athletes_router
 from api.competitions import router as competitions_router
+from api.divisions import router as divisions_router
 
 
 # =========================
@@ -275,6 +276,7 @@ app.add_middleware(
 
 app.include_router(athletes_router)
 app.include_router(competitions_router)
+app.include_router(divisions_router)
 
 # =========================
 # Basic endpoints
@@ -706,49 +708,6 @@ async def review_protest(protest_id: UUID, payload: ProtestReview):
         await session.refresh(protest)
         return protest
         
-
-
-# =========================
-# Divisions
-# =========================
-
-@app.post("/competitions/{competition_id}/divisions", response_model=DivisionOut)
-async def create_division(competition_id: UUID, payload: DivisionCreate):
-    async with SessionLocal() as session:
-
-        # check competition exists
-        comp = await session.get(Competition, competition_id)
-        if not comp:
-            raise HTTPException(status_code=404, detail="Competition not found")
-
-        try:
-            d = CompetitionDivision(
-                competition_id=competition_id,
-                division_key=payload.division_key,
-                format=payload.format,
-                status=payload.status,
-            )
-
-            session.add(d)
-            await session.commit()
-            await session.refresh(d)
-
-            return d
-
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/competitions/{competition_id}/divisions", response_model=list[DivisionOut])
-async def list_divisions(competition_id: UUID):
-    async with SessionLocal() as session:
-        res = await session.execute(
-            select(CompetitionDivision).where(
-                CompetitionDivision.competition_id == competition_id
-            )
-        )
-        return list(res.scalars().all())
 
 
 # =========================
