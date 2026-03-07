@@ -25,6 +25,7 @@ from models.competition_class import CompetitionClass
 from models.protest import Protest
 
 from api.athletes import router as athletes_router
+from api.competitions import router as competitions_router
 
 
 # =========================
