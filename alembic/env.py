@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from alembic import context
 
+from core.settings import DATABASE_URL  # Извлекаем из настроек
+
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
