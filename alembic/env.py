@@ -4,7 +4,7 @@ import os
 from sqlalchemy import create_engine
 from alembic import context
 
-from db.model_registry import target_metadata TeamRule
+from db.model_registry import target_metadata
 
 config = context.config
 
@@ -17,8 +17,6 @@ if not db_url:
 
 sync_db_url = db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
 config.set_main_option("sqlalchemy.url", sync_db_url)
-
-target_metadata = Base.metadata
 
 
 def run_migrations_offline():
