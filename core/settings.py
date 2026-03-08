@@ -1,18 +1,14 @@
 # core/settings.py
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()  # Загрузка переменных из .env
+# Принудительно загружаем .env
+load_dotenv(Path(__file__).resolve().parent.parent / '.env')
 
-def get_database_url() -> str:
-    database_url = os.getenv("DATABASE_URL", "").strip()
+# Получаем DATABASE_URL
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-    if database_url.startswith("postgresql://"):
-        database_url = database_url.replace(
-            "postgresql://", "postgresql+asyncpg://", 1
-        )
-
-    if not database_url:
-        raise RuntimeError("DATABASE_URL is not set")
-
-    return database_url
+# Если база не настроена, выбрасываем ошибку
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set in .env")
