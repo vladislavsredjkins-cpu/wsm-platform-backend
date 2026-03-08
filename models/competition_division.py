@@ -1,11 +1,12 @@
 import uuid
 import enum
 
-from sqlalchemy import Column, ForeignKey, Enum, DateTime
+from sqlalchemy import Column, ForeignKey, Enum, DateTime, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from db.base import Base
+
 
 
 class DivisionKey(str, enum.Enum):
@@ -49,6 +50,8 @@ class CompetitionDivision(Base):
         default=DivisionStatus.DRAFT,
     )
 
+    q_effective = Column(Numeric, nullable=True)
+    
     approved_at = Column(DateTime, nullable=True)
     live_at = Column(DateTime, nullable=True)
     locked_at = Column(DateTime, nullable=True)
