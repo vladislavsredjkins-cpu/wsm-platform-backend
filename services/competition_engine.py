@@ -38,6 +38,9 @@ class CompetitionEngine:
         rows = []
         for result in results:
             participant = await self.session.get(Participant, result.participant_id)
+            if participant is None:
+                continue
+
             rows.append(
                 {
                     "participant_id": result.participant_id,
@@ -49,29 +52,52 @@ class CompetitionEngine:
                 }
             )
 
-        mode = discipline.discipline_mode
+        def same_sport_result(a: dict, b: dict) -> bool:
+            return self.discipline_engine.sort_key_for_mode(
+                discipline.discipline_mode, a
+            ) == self.discipline_engine.sort_key_for_mode(
+                discipline.discipline_mode, b
+            )
+
         rows_sorted = sorted(
             rows,
-            key=lambda x: self.discipline_engine.sort_key_for_mode(mode, x),
+            key=lambda x: self.discipline_engine.sort_key_for_mode(
+                discipline.discipline_mode, x
+            ),
         )
 
         items = []
-        for idx, row in enumerate(rows_sorted, start=1):
-            items.append(
-                {
-                    "participant_id": row["participant_id"],
-                    "athlete_id": row["athlete_id"],
-                    "bib_no": row["bib_no"],
-                    "place": idx,
-                    "primary_value": row["primary_value"],
-                    "secondary_value": row["secondary_value"],
-                    "status_flag": row["status_flag"],
-                }
-            )
+        idx = 0
+        n = len(rows_sorted)
+
+        while idx < n:
+            row = rows_sorted[idx]
+            group_end = idx + 1
+
+            while group_end < n and same_sport_result(row, rows_sorted[group_end]):
+                group_end += 1
+
+            tie_group = rows_sorted[idx:group_end]
+            place_no = idx + 1
+
+            for tied_row in tie_group:
+                items.append(
+                    {
+                        "participant_id": tied_row["participant_id"],
+                        "athlete_id": tied_row["athlete_id"],
+                        "bib_no": tied_row["bib_no"],
+                        "place": place_no,
+                        "primary_value": tied_row["primary_value"],
+                        "secondary_value": tied_row["secondary_value"],
+                        "status_flag": tied_row["status_flag"],
+                    }
+                )
+
+            idx = group_end
 
         return {
             "competition_discipline_id": competition_discipline_id,
-            "discipline_mode": mode,
+            "discipline_mode": discipline.discipline_mode,
             "items": items,
         }
 
@@ -88,7 +114,7 @@ class CompetitionEngine:
         )
         participants = list(participant_res.scalars().all())
         participant_ids = [participant.id for participant in participants]
-        p_map = {participant.id: participant for participant in participants}
+        participant_map = {participant.id: participant for participant in participants}
 
         if not participant_ids:
             return []
@@ -106,40 +132,44 @@ class CompetitionEngine:
         }
 
         def status_points_eligible(status_flag: str) -> bool:
-            return status_flag not in ("DNS", "DQ")
+            return status_flag not in ("DNS", "DQ", "DNF")
 
         def same_sport_result(a: dict, b: dict, mode: str) -> bool:
-            return self.discipline_engine.sort_key_for_mode(mode, a) == self.discipline_engine.sort_key_for_mode(mode, b)
+            return self.discipline_engine.sort_key_for_mode(
+                mode, a
+            ) == self.discipline_engine.sort_key_for_mode(
+                mode, b
+            )
 
         def place_points(place_no: int, total_n: int) -> float:
             return float(total_n - place_no + 1)
 
-        for disc in disciplines:
-            r_res = await self.session.execute(
+        for discipline in disciplines:
+            result_res = await self.session.execute(
                 select(DisciplineResult).where(
-                    DisciplineResult.competition_discipline_id == disc.id,
+                    DisciplineResult.competition_discipline_id == discipline.id,
                     DisciplineResult.participant_id.in_(participant_ids),
                 )
             )
-            results = list(r_res.scalars().all())
-            results_by_pid = {r.participant_id: r for r in results}
+            results = list(result_res.scalars().all())
+            results_by_pid = {result.participant_id: result for result in results}
 
             rows = []
-            for pid in participant_ids:
-                r = results_by_pid.get(pid)
-                if r:
+            for participant_id in participant_ids:
+                result = results_by_pid.get(participant_id)
+                if result:
                     rows.append(
                         {
-                            "participant_id": pid,
-                            "status_flag": r.status_flag,
-                            "primary_value": float(r.primary_value) if r.primary_value is not None else None,
-                            "secondary_value": float(r.secondary_value) if r.secondary_value is not None else None,
+                            "participant_id": participant_id,
+                            "status_flag": result.status_flag,
+                            "primary_value": float(result.primary_value) if result.primary_value is not None else None,
+                            "secondary_value": float(result.secondary_value) if result.secondary_value is not None else None,
                         }
                     )
                 else:
                     rows.append(
                         {
-                            "participant_id": pid,
+                            "participant_id": participant_id,
                             "status_flag": "DNS",
                             "primary_value": None,
                             "secondary_value": None,
@@ -149,18 +179,19 @@ class CompetitionEngine:
             rows_sorted = sorted(
                 rows,
                 key=lambda x: self.discipline_engine.sort_key_for_mode(
-                    disc.discipline_mode, x
+                    discipline.discipline_mode, x
                 ),
             )
 
-            n = len(rows_sorted)
+            total_n = len(rows_sorted)
             idx = 0
-            while idx < n:
+
+            while idx < total_n:
                 row = rows_sorted[idx]
                 group_end = idx + 1
 
-                while group_end < n and same_sport_result(
-                    row, rows_sorted[group_end], disc.discipline_mode
+                while group_end < total_n and same_sport_result(
+                    row, rows_sorted[group_end], discipline.discipline_mode
                 ):
                     group_end += 1
 
@@ -168,47 +199,58 @@ class CompetitionEngine:
                 tie_group = rows_sorted[idx:group_end]
 
                 eligible_rows = [
-                    r for r in tie_group if status_points_eligible(r["status_flag"])
+                    tie_row
+                    for tie_row in tie_group
+                    if status_points_eligible(tie_row["status_flag"])
                 ]
 
                 if eligible_rows:
-                    avg_points = sum(place_points(p, n) for p in occupied_places) / len(occupied_places)
+                    avg_points = sum(
+                        place_points(place_no, total_n) for place_no in occupied_places
+                    ) / len(occupied_places)
                 else:
                     avg_points = 0.0
 
-                for tied_row in tie_group:
-                    pid = tied_row["participant_id"]
+                for tie_row in tie_group:
+                    participant_id = tie_row["participant_id"]
                     place_no = idx + 1
 
-                    if status_points_eligible(tied_row["status_flag"]):
+                    if status_points_eligible(tie_row["status_flag"]):
                         pts = float(avg_points)
                     else:
                         pts = 0.0
 
-                    points_map[pid] += pts
-                    place_counts_map[pid][place_no] = place_counts_map[pid].get(place_no, 0) + 1
+                    points_map[participant_id] += pts
+                    place_counts_map[participant_id][place_no] = (
+                        place_counts_map[participant_id].get(place_no, 0) + 1
+                    )
 
                 idx = group_end
 
         max_place = len(participant_ids)
 
-        def tie_vector(pid: UUID) -> tuple[int, ...]:
-            counts = place_counts_map.get(pid, {})
-            return tuple(counts.get(place_no, 0) for place_no in range(1, max_place + 1))
+        def tie_vector(participant_id: UUID) -> tuple[int, ...]:
+            counts = place_counts_map.get(participant_id, {})
+            return tuple(
+                counts.get(place_no, 0) for place_no in range(1, max_place + 1)
+            )
 
-        def bodyweight_value(pid: UUID) -> float:
-            bw = p_map[pid].bodyweight_kg
+        def bodyweight_value(participant_id: UUID) -> float:
+            bw = participant_map[participant_id].bodyweight_kg
             return float(bw) if bw is not None else 10**12
 
         overall_rows = []
-        for pid in participant_ids:
+        for participant_id in participant_ids:
+            participant = participant_map[participant_id]
             overall_rows.append(
                 {
-                    "participant_id": pid,
-                    "total_points": float(points_map[pid]),
-                    "tie_vector": tie_vector(pid),
-                    "tie_break_value": float(p_map[pid].bodyweight_kg)
-                    if p_map[pid].bodyweight_kg is not None
+                    "participant_id": participant_id,
+                    "athlete_id": participant.athlete_id,
+                    "bib_no": participant.bib_no,
+                    "total_points": float(points_map[participant_id]),
+                    "tie_vector": tie_vector(participant_id),
+                    "tie_break_value": float(participant.bodyweight_kg)
+                    if participant.bodyweight_kg is not None
                     else None,
                 }
             )
@@ -244,14 +286,11 @@ class CompetitionEngine:
                     place_no = idx + 1
                     current_place = place_no
 
-            pid = row["participant_id"]
-            p = p_map[pid]
-
             items.append(
                 {
-                    "participant_id": pid,
-                    "athlete_id": p.athlete_id,
-                    "bib_no": p.bib_no,
+                    "participant_id": row["participant_id"],
+                    "athlete_id": row["athlete_id"],
+                    "bib_no": row["bib_no"],
                     "total_points": row["total_points"],
                     "place": place_no,
                     "tie_break_value": row["tie_break_value"],
@@ -272,8 +311,8 @@ class CompetitionEngine:
             select(Participant).where(Participant.competition_division_id == division_id)
         )
         participants = list(participant_res.scalars().all())
-        participant_ids = [p.id for p in participants]
-        p_map = {p.id: p for p in participants}
+        participant_ids = [participant.id for participant in participants]
+        participant_map = {participant.id: participant for participant in participants}
 
         if not participant_ids:
             return []
@@ -307,40 +346,44 @@ class CompetitionEngine:
         }
 
         def status_points_eligible(status_flag: str) -> bool:
-            return status_flag not in ("DNS", "DQ")
+            return status_flag not in ("DNS", "DQ", "DNF")
 
         def same_sport_result(a: dict, b: dict, mode: str) -> bool:
-            return self.discipline_engine.sort_key_for_mode(mode, a) == self.discipline_engine.sort_key_for_mode(mode, b)
+            return self.discipline_engine.sort_key_for_mode(
+                mode, a
+            ) == self.discipline_engine.sort_key_for_mode(
+                mode, b
+            )
 
         def place_points(place_no: int, total_n: int) -> float:
             return float(total_n - place_no + 1)
 
-        for disc in disciplines:
-            r_res = await self.session.execute(
+        for discipline in disciplines:
+            result_res = await self.session.execute(
                 select(DisciplineResult).where(
-                    DisciplineResult.competition_discipline_id == disc.id,
+                    DisciplineResult.competition_discipline_id == discipline.id,
                     DisciplineResult.participant_id.in_(participant_ids),
                 )
             )
-            results = list(r_res.scalars().all())
-            results_by_pid = {r.participant_id: r for r in results}
+            results = list(result_res.scalars().all())
+            results_by_pid = {result.participant_id: result for result in results}
 
             rows = []
-            for pid in participant_ids:
-                r = results_by_pid.get(pid)
-                if r:
+            for participant_id in participant_ids:
+                result = results_by_pid.get(participant_id)
+                if result:
                     rows.append(
                         {
-                            "participant_id": pid,
-                            "status_flag": r.status_flag,
-                            "primary_value": float(r.primary_value) if r.primary_value is not None else None,
-                            "secondary_value": float(r.secondary_value) if r.secondary_value is not None else None,
+                            "participant_id": participant_id,
+                            "status_flag": result.status_flag,
+                            "primary_value": float(result.primary_value) if result.primary_value is not None else None,
+                            "secondary_value": float(result.secondary_value) if result.secondary_value is not None else None,
                         }
                     )
                 else:
                     rows.append(
                         {
-                            "participant_id": pid,
+                            "participant_id": participant_id,
                             "status_flag": "DNS",
                             "primary_value": None,
                             "secondary_value": None,
@@ -350,18 +393,19 @@ class CompetitionEngine:
             rows_sorted = sorted(
                 rows,
                 key=lambda x: self.discipline_engine.sort_key_for_mode(
-                    disc.discipline_mode, x
+                    discipline.discipline_mode, x
                 ),
             )
 
-            n = len(rows_sorted)
+            total_n = len(rows_sorted)
             idx = 0
-            while idx < n:
+
+            while idx < total_n:
                 row = rows_sorted[idx]
                 group_end = idx + 1
 
-                while group_end < n and same_sport_result(
-                    row, rows_sorted[group_end], disc.discipline_mode
+                while group_end < total_n and same_sport_result(
+                    row, rows_sorted[group_end], discipline.discipline_mode
                 ):
                     group_end += 1
 
@@ -369,30 +413,36 @@ class CompetitionEngine:
                 tie_group = rows_sorted[idx:group_end]
 
                 eligible_rows = [
-                    r for r in tie_group if status_points_eligible(r["status_flag"])
+                    tie_row
+                    for tie_row in tie_group
+                    if status_points_eligible(tie_row["status_flag"])
                 ]
 
                 if eligible_rows:
-                    avg_points = sum(place_points(p, n) for p in occupied_places) / len(occupied_places)
+                    avg_points = sum(
+                        place_points(place_no, total_n) for place_no in occupied_places
+                    ) / len(occupied_places)
                 else:
                     avg_points = 0.0
 
-                for tied_row in tie_group:
-                    pid = tied_row["participant_id"]
+                for tie_row in tie_group:
+                    participant_id = tie_row["participant_id"]
                     place_no = idx + 1
 
-                    if status_points_eligible(tied_row["status_flag"]):
+                    if status_points_eligible(tie_row["status_flag"]):
                         pts = float(avg_points)
                     else:
                         pts = 0.0
 
-                    points_map[pid] += pts
-                    place_counts_map[pid][place_no] = place_counts_map[pid].get(place_no, 0) + 1
+                    points_map[participant_id] += pts
+                    place_counts_map[participant_id][place_no] = (
+                        place_counts_map[participant_id].get(place_no, 0) + 1
+                    )
 
                     self.session.add(
                         DisciplineStanding(
-                            competition_discipline_id=disc.id,
-                            participant_id=pid,
+                            competition_discipline_id=discipline.id,
+                            participant_id=participant_id,
                             place=place_no,
                             points_for_discipline=pts,
                         )
@@ -402,23 +452,28 @@ class CompetitionEngine:
 
         max_place = len(participant_ids)
 
-        def tie_vector(pid: UUID) -> tuple[int, ...]:
-            counts = place_counts_map.get(pid, {})
-            return tuple(counts.get(place_no, 0) for place_no in range(1, max_place + 1))
+        def tie_vector(participant_id: UUID) -> tuple[int, ...]:
+            counts = place_counts_map.get(participant_id, {})
+            return tuple(
+                counts.get(place_no, 0) for place_no in range(1, max_place + 1)
+            )
 
-        def bodyweight_value(pid: UUID) -> float:
-            bw = p_map[pid].bodyweight_kg
+        def bodyweight_value(participant_id: UUID) -> float:
+            bw = participant_map[participant_id].bodyweight_kg
             return float(bw) if bw is not None else 10**12
 
         overall_rows = []
-        for pid in participant_ids:
+        for participant_id in participant_ids:
+            participant = participant_map[participant_id]
             overall_rows.append(
                 {
-                    "participant_id": pid,
-                    "total_points": float(points_map[pid]),
-                    "tie_vector": tie_vector(pid),
-                    "tie_break_value": float(p_map[pid].bodyweight_kg)
-                    if p_map[pid].bodyweight_kg is not None
+                    "participant_id": participant_id,
+                    "athlete_id": participant.athlete_id,
+                    "bib_no": participant.bib_no,
+                    "total_points": float(points_map[participant_id]),
+                    "tie_vector": tie_vector(participant_id),
+                    "tie_break_value": float(participant.bodyweight_kg)
+                    if participant.bodyweight_kg is not None
                     else None,
                 }
             )
@@ -454,13 +509,10 @@ class CompetitionEngine:
                     place_no = idx + 1
                     current_place = place_no
 
-            pid = row["participant_id"]
-            p = p_map[pid]
-
             self.session.add(
                 OverallStanding(
                     competition_division_id=division_id,
-                    participant_id=pid,
+                    participant_id=row["participant_id"],
                     total_points=row["total_points"],
                     place=place_no,
                     tie_break_value=row["tie_break_value"],
@@ -469,9 +521,9 @@ class CompetitionEngine:
 
             items.append(
                 {
-                    "participant_id": pid,
-                    "athlete_id": p.athlete_id,
-                    "bib_no": p.bib_no,
+                    "participant_id": row["participant_id"],
+                    "athlete_id": row["athlete_id"],
+                    "bib_no": row["bib_no"],
                     "total_points": row["total_points"],
                     "place": place_no,
                     "tie_break_value": row["tie_break_value"],
