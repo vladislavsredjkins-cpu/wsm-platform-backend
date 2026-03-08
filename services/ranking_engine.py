@@ -6,7 +6,7 @@ from models.overall_standing import OverallStanding
 from models.competition_division import CompetitionDivision
 from models.ranking_award import RankingAward
 from models.ranking_entry import RankingEntry
-from models.ranking import Ranking
+from models.ranking_snapshot import RankingSnapshot
 
 
 class RankingEngine:
