@@ -164,6 +164,7 @@ class CompetitionEngine:
             "discipline_mode": mode,
             "items": items,
         }
+        
     async def calculate_and_store_division_standings(self, division_id: UUID):
         division_res = await self.session.execute(
             select(CompetitionDivision).where(CompetitionDivision.id == division_id)
