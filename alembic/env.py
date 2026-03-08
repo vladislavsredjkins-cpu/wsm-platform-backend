@@ -1,21 +1,14 @@
-import os
 import sys
 from pathlib import Path
 from logging.config import fileConfig
 
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
 from alembic import context
-
-from core.settings import DATABASE_URL  # Извлекаем из настроек
-
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+from sqlalchemy import create_engine
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
-load_dotenv(BASE_DIR / ".env")
-
+from core.settings import get_database_url
 from db.model_registry import target_metadata
 
 config = context.config
@@ -23,14 +16,23 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-db_url = os.getenv("DATABASE_URL", "").strip()
-if not db_url:
-    raise RuntimeError(
-        f"DATABASE_URL is not set. Expected .env at: {BASE_DIR / '.env'}"
+DATABASE_URL = get_database_url()
+
+SYNC_DATABASE_URL = DATABASE_URL
+if SYNC_DATABASE_URL.startswith("postgresql+asyncpg://"):
+    SYNC_DATABASE_URL = SYNC_DATABASE_URL.replace(
+        "postgresql+asyncpg://",
+        "postgresql+psycopg2://",
+        1,
+    )
+elif SYNC_DATABASE_URL.startswith("postgresql://"):
+    SYNC_DATABASE_URL = SYNC_DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+psycopg2://",
+        1,
     )
 
-sync_db_url = db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
-config.set_main_option("sqlalchemy.url", sync_db_url)
+config.set_main_option("sqlalchemy.url", SYNC_DATABASE_URL)
 
 
 def run_migrations_offline():
