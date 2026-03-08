@@ -4,9 +4,7 @@ import os
 from sqlalchemy import create_engine
 from alembic import context
 
-from db.base import Base
-from models.weight_category import WeightCategory
-from models.team_rule import TeamRule
+from db.model_registry import target_metadata TeamRule
 
 config = context.config
 
