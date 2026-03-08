@@ -1,5 +1,12 @@
 import os
 import sys
+
+from dotenv import load_dotenv
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(BASE_DIR / ".env")
+
 from pathlib import Path
 from logging.config import fileConfig
 
