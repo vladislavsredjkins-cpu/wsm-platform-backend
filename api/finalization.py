@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from db.database import SessionLocal
-from models.competition_division import CompetitionDivision
+from models.competition_division import CompetitionDivision, DivisionStatus
 from services.competition_engine import CompetitionEngine
 from services.ranking_engine import RankingEngine
 
@@ -34,7 +34,7 @@ async def calculate_standings(division_id: UUID):
         if not div:
             raise HTTPException(status_code=404, detail="Division not found")
 
-        if div.status in ("RESULTS_VALIDATED", "LOCKED"):
+        if div.status in (DivisionStatus.RESULTS_VALIDATED, DivisionStatus.LOCKED):
             raise HTTPException(
                 status_code=400,
                 detail="Standings are already validated or locked",
@@ -62,7 +62,7 @@ async def validate_division_results(division_id: UUID):
         if not div:
             raise HTTPException(status_code=404, detail="Division not found")
 
-        if div.status in ("RESULTS_VALIDATED", "LOCKED"):
+        if div.status in (DivisionStatus.RESULTS_VALIDATED, DivisionStatus.LOCKED):
             raise HTTPException(
                 status_code=400,
                 detail="Standings are already validated or locked",
@@ -75,7 +75,7 @@ async def validate_division_results(division_id: UUID):
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-        div.status = "RESULTS_VALIDATED"
+        div.status = DivisionStatus.RESULTS_VALIDATED
         await session.commit()
 
         items = [OverallStandingRow(**item) for item in items_data]
@@ -93,21 +93,33 @@ async def lock_division(division_id: UUID):
         if not div:
             raise HTTPException(status_code=404, detail="Division not found")
 
-        if div.status != "RESULTS_VALIDATED":
+        if div.status != DivisionStatus.RESULTS_VALIDATED:
             raise HTTPException(
                 status_code=400,
                 detail="Division must be RESULTS_VALIDATED before lock",
             )
 
-        div.status = "LOCKED"
+        if div.q_effective is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Division q_effective must be set before lock",
+            )
+
+        div.status = DivisionStatus.LOCKED
         div.locked_at = datetime.utcnow()
 
         await session.commit()
 
+    try:
         engine = RankingEngine()
         await engine.process_division(division_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Division locked, but ranking update failed: {str(exc)}",
+        ) from exc
 
-        return {
-            "division_id": division_id,
-            "status": "LOCKED",
-        }
+    return {
+        "division_id": division_id,
+        "status": DivisionStatus.LOCKED.value,
+    }
