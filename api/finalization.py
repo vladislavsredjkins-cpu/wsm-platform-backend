@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from db.database import SessionLocal
 from models.competition_division import CompetitionDivision
 from services.competition_engine import CompetitionEngine
+from services.ranking_engine import RankingEngine
 
 
 router = APIRouter(tags=["finalization"])
@@ -102,6 +103,9 @@ async def lock_division(division_id: UUID):
         div.locked_at = datetime.utcnow()
 
         await session.commit()
+
+        engine = RankingEngine()
+        await engine.process_division(division_id)
 
         return {
             "division_id": division_id,
