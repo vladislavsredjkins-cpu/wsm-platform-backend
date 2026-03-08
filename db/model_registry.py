@@ -1,3 +1,4 @@
+cat > db/model_registry.py <<'PY'
 from db.base import Base
 
 from models.athlete import Athlete
@@ -19,3 +20,4 @@ from models.weight_category import WeightCategory
 from models.team_rule import TeamRule
 
 target_metadata = Base.metadata
+PY
