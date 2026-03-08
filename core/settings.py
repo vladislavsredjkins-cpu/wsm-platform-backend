@@ -1,4 +1,3 @@
-# core/settings.py
 import os
 from dotenv import load_dotenv
 from pathlib import Path
