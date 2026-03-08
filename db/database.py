@@ -1,12 +1,34 @@
-# db/database.py
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from pathlib import Path
+import os
+
+from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from core.settings import DATABASE_URL  # Загружаем из настроек
+from db.base import Base
 
-# Подключение с asyncpg
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+if not DATABASE_URL:
+    raise RuntimeError(f"DATABASE_URL is not set. Expected .env at: {BASE_DIR / '.env'}")
+
+ASYNC_DATABASE_URL = DATABASE_URL
+if ASYNC_DATABASE_URL.startswith("postgresql://"):
+    ASYNC_DATABASE_URL = ASYNC_DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+asyncpg://",
+        1,
+    )
+
+if "ssl=" not in ASYNC_DATABASE_URL and "sslmode=" not in ASYNC_DATABASE_URL:
+    separator = "&" if "?" in ASYNC_DATABASE_URL else "?"
+    ASYNC_DATABASE_URL = f"{ASYNC_DATABASE_URL}{separator}ssl=require"
+
 engine = create_async_engine(
-    DATABASE_URL,
+    ASYNC_DATABASE_URL,
     echo=True,
 )
 
