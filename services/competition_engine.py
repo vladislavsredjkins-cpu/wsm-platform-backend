@@ -18,6 +18,19 @@ class CompetitionEngine:
         self.session = session
         self.discipline_engine = DisciplineEngine()
 
+    def _status_points_eligible(self, status_flag: str) -> bool:
+        return status_flag not in ("DNS", "DQ", "DNF")
+
+    def _same_sport_result(self, mode: str, a: dict, b: dict) -> bool:
+        return self.discipline_engine.sort_key_for_mode(
+            mode, a
+        ) == self.discipline_engine.sort_key_for_mode(
+            mode, b
+        )
+
+    def _place_points(self, place_no: int, total_n: int) -> float:
+        return float(total_n - place_no + 1)
+
     async def calculate_discipline_leaderboard(self, competition_discipline_id: UUID):
         discipline_res = await self.session.execute(
             select(CompetitionDiscipline).where(
@@ -28,36 +41,47 @@ class CompetitionEngine:
         if not discipline:
             raise ValueError("Discipline not found")
 
+        participant_res = await self.session.execute(
+            select(Participant).where(
+                Participant.competition_division_id == discipline.competition_division_id
+            )
+        )
+        participants = list(participant_res.scalars().all())
+
         result_res = await self.session.execute(
             select(DisciplineResult).where(
                 DisciplineResult.competition_discipline_id == competition_discipline_id
             )
         )
         results = list(result_res.scalars().all())
+        results_by_pid = {result.participant_id: result for result in results}
 
         rows = []
-        for result in results:
-            participant = await self.session.get(Participant, result.participant_id)
-            if participant is None:
-                continue
+        for participant in participants:
+            result = results_by_pid.get(participant.id)
 
-            rows.append(
-                {
-                    "participant_id": result.participant_id,
-                    "athlete_id": participant.athlete_id,
-                    "bib_no": participant.bib_no,
-                    "primary_value": float(result.primary_value) if result.primary_value is not None else None,
-                    "secondary_value": float(result.secondary_value) if result.secondary_value is not None else None,
-                    "status_flag": result.status_flag,
-                }
-            )
-
-        def same_sport_result(a: dict, b: dict) -> bool:
-            return self.discipline_engine.sort_key_for_mode(
-                discipline.discipline_mode, a
-            ) == self.discipline_engine.sort_key_for_mode(
-                discipline.discipline_mode, b
-            )
+            if result:
+                rows.append(
+                    {
+                        "participant_id": participant.id,
+                        "athlete_id": participant.athlete_id,
+                        "bib_no": participant.bib_no,
+                        "primary_value": float(result.primary_value) if result.primary_value is not None else None,
+                        "secondary_value": float(result.secondary_value) if result.secondary_value is not None else None,
+                        "status_flag": result.status_flag,
+                    }
+                )
+            else:
+                rows.append(
+                    {
+                        "participant_id": participant.id,
+                        "athlete_id": participant.athlete_id,
+                        "bib_no": participant.bib_no,
+                        "primary_value": None,
+                        "secondary_value": None,
+                        "status_flag": "DNS",
+                    }
+                )
 
         rows_sorted = sorted(
             rows,
@@ -68,13 +92,15 @@ class CompetitionEngine:
 
         items = []
         idx = 0
-        n = len(rows_sorted)
+        total_n = len(rows_sorted)
 
-        while idx < n:
+        while idx < total_n:
             row = rows_sorted[idx]
             group_end = idx + 1
 
-            while group_end < n and same_sport_result(row, rows_sorted[group_end]):
+            while group_end < total_n and self._same_sport_result(
+                discipline.discipline_mode, row, rows_sorted[group_end]
+            ):
                 group_end += 1
 
             tie_group = rows_sorted[idx:group_end]
@@ -131,19 +157,6 @@ class CompetitionEngine:
             pid: {} for pid in participant_ids
         }
 
-        def status_points_eligible(status_flag: str) -> bool:
-            return status_flag not in ("DNS", "DQ", "DNF")
-
-        def same_sport_result(a: dict, b: dict, mode: str) -> bool:
-            return self.discipline_engine.sort_key_for_mode(
-                mode, a
-            ) == self.discipline_engine.sort_key_for_mode(
-                mode, b
-            )
-
-        def place_points(place_no: int, total_n: int) -> float:
-            return float(total_n - place_no + 1)
-
         for discipline in disciplines:
             result_res = await self.session.execute(
                 select(DisciplineResult).where(
@@ -190,8 +203,8 @@ class CompetitionEngine:
                 row = rows_sorted[idx]
                 group_end = idx + 1
 
-                while group_end < total_n and same_sport_result(
-                    row, rows_sorted[group_end], discipline.discipline_mode
+                while group_end < total_n and self._same_sport_result(
+                    discipline.discipline_mode, row, rows_sorted[group_end]
                 ):
                     group_end += 1
 
@@ -201,12 +214,13 @@ class CompetitionEngine:
                 eligible_rows = [
                     tie_row
                     for tie_row in tie_group
-                    if status_points_eligible(tie_row["status_flag"])
+                    if self._status_points_eligible(tie_row["status_flag"])
                 ]
 
                 if eligible_rows:
                     avg_points = sum(
-                        place_points(place_no, total_n) for place_no in occupied_places
+                        self._place_points(place_no, total_n)
+                        for place_no in occupied_places
                     ) / len(occupied_places)
                 else:
                     avg_points = 0.0
@@ -215,10 +229,9 @@ class CompetitionEngine:
                     participant_id = tie_row["participant_id"]
                     place_no = idx + 1
 
-                    if status_points_eligible(tie_row["status_flag"]):
-                        pts = float(avg_points)
-                    else:
-                        pts = 0.0
+                    pts = float(avg_points) if self._status_points_eligible(
+                        tie_row["status_flag"]
+                    ) else 0.0
 
                     points_map[participant_id] += pts
                     place_counts_map[participant_id][place_no] = (
@@ -345,19 +358,6 @@ class CompetitionEngine:
             pid: {} for pid in participant_ids
         }
 
-        def status_points_eligible(status_flag: str) -> bool:
-            return status_flag not in ("DNS", "DQ", "DNF")
-
-        def same_sport_result(a: dict, b: dict, mode: str) -> bool:
-            return self.discipline_engine.sort_key_for_mode(
-                mode, a
-            ) == self.discipline_engine.sort_key_for_mode(
-                mode, b
-            )
-
-        def place_points(place_no: int, total_n: int) -> float:
-            return float(total_n - place_no + 1)
-
         for discipline in disciplines:
             result_res = await self.session.execute(
                 select(DisciplineResult).where(
@@ -404,8 +404,8 @@ class CompetitionEngine:
                 row = rows_sorted[idx]
                 group_end = idx + 1
 
-                while group_end < total_n and same_sport_result(
-                    row, rows_sorted[group_end], discipline.discipline_mode
+                while group_end < total_n and self._same_sport_result(
+                    discipline.discipline_mode, row, rows_sorted[group_end]
                 ):
                     group_end += 1
 
@@ -415,12 +415,13 @@ class CompetitionEngine:
                 eligible_rows = [
                     tie_row
                     for tie_row in tie_group
-                    if status_points_eligible(tie_row["status_flag"])
+                    if self._status_points_eligible(tie_row["status_flag"])
                 ]
 
                 if eligible_rows:
                     avg_points = sum(
-                        place_points(place_no, total_n) for place_no in occupied_places
+                        self._place_points(place_no, total_n)
+                        for place_no in occupied_places
                     ) / len(occupied_places)
                 else:
                     avg_points = 0.0
@@ -429,10 +430,9 @@ class CompetitionEngine:
                     participant_id = tie_row["participant_id"]
                     place_no = idx + 1
 
-                    if status_points_eligible(tie_row["status_flag"]):
-                        pts = float(avg_points)
-                    else:
-                        pts = 0.0
+                    pts = float(avg_points) if self._status_points_eligible(
+                        tie_row["status_flag"]
+                    ) else 0.0
 
                     points_map[participant_id] += pts
                     place_counts_map[participant_id][place_no] = (
