@@ -1,13 +1,18 @@
-import os
-from dotenv import load_dotenv
 from pathlib import Path
+import os
 
-# Принудительно загружаем .env
-load_dotenv(Path(__file__).resolve().parent.parent / '.env')
+from dotenv import load_dotenv
 
-# Получаем DATABASE_URL
-DATABASE_URL = os.getenv("DATABASE_URL")
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = BASE_DIR / ".env"
 
-# Если база не настроена, выбрасываем ошибку
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set in .env")
+load_dotenv(ENV_FILE)
+
+
+def get_database_url() -> str:
+    database_url = os.getenv("DATABASE_URL", "").strip()
+
+    if not database_url:
+        raise RuntimeError(f"DATABASE_URL is not set. Expected .env at: {ENV_FILE}")
+
+    return database_url
