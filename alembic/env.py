@@ -1,12 +1,5 @@
 import os
 import sys
-
-from dotenv import load_dotenv
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(BASE_DIR / ".env")
-
 from pathlib import Path
 from logging.config import fileConfig
 
@@ -28,7 +21,9 @@ if config.config_file_name is not None:
 
 db_url = os.getenv("DATABASE_URL", "").strip()
 if not db_url:
-    raise RuntimeError(f"DATABASE_URL is not set. Expected .env at: {BASE_DIR / '.env'}")
+    raise RuntimeError(
+        f"DATABASE_URL is not set. Expected .env at: {BASE_DIR / '.env'}"
+    )
 
 sync_db_url = db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
 config.set_main_option("sqlalchemy.url", sync_db_url)
