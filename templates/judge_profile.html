@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ judge.first_name }} {{ judge.last_name }} — World Strongman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; min-height: 100vh; }
+
+        .header {
+            background: #0a0a0a;
+            border-bottom: 2px solid #c9a84c;
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-logo { display: flex; align-items: center; gap: 12px; }
+        .header-logo img { height: 52px; width: 52px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+
+        .hero {
+            background: linear-gradient(180deg, #111 0%, #0a0a0a 100%);
+            border-bottom: 1px solid #1e1e1e;
+            padding: 60px 40px 40px;
+            display: flex;
+            gap: 50px;
+            align-items: flex-start;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .judge-photo-wrap { flex-shrink: 0; position: relative; }
+        .judge-photo {
+            width: 220px; height: 280px;
+            object-fit: cover;
+            border: 3px solid #c9a84c;
+            display: block;
+        }
+        .judge-photo-placeholder {
+            width: 220px; height: 280px;
+            background: #1a1a1a;
+            border: 3px solid #333;
+            display: flex; align-items: center; justify-content: center;
+            color: #444; font-size: 48px;
+        }
+        .country-badge {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(201,168,76,0.95);
+            color: #0a0a0a; text-align: center;
+            padding: 6px; font-weight: 700;
+            font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        .judge-info { flex: 1; padding-top: 8px; }
+        .judge-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 8px; }
+        .judge-name {
+            font-size: 52px; font-weight: 900;
+            line-height: 1; text-transform: uppercase;
+            letter-spacing: 2px; margin-bottom: 6px;
+        }
+        .judge-name span { color: #c9a84c; }
+
+        .level-badge {
+            display: inline-block;
+            border: 2px solid #c9a84c;
+            color: #c9a84c;
+            padding: 6px 16px;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+        .level-badge.national { border-color: #7a9a7a; color: #7a9a7a; }
+        .level-badge.international { border-color: #c9a84c; color: #c9a84c; }
+
+        .stats-row { display: flex; gap: 32px; margin-bottom: 30px; }
+        .stat-box {
+            text-align: center; border: 1px solid #2a2a2a;
+            padding: 16px 24px; min-width: 90px; background: #111;
+        }
+        .stat-value { font-size: 28px; font-weight: 900; color: #c9a84c; line-height: 1; }
+        .stat-label { font-size: 10px; color: #666; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+
+        .judge-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+        .meta-item { font-size: 13px; color: #aaa; }
+        .meta-item strong { color: #fff; }
+
+        .content {
+            max-width: 1200px; margin: 0 auto;
+            padding: 40px; display: grid;
+            grid-template-columns: 1fr 1fr; gap: 24px;
+        }
+        .section {
+            background: #111; border: 1px solid #1e1e1e;
+            border-top: 3px solid #c9a84c; padding: 28px;
+        }
+        .section-full { grid-column: 1 / -1; }
+        .section-title {
+            font-size: 11px; letter-spacing: 4px; color: #c9a84c;
+            text-transform: uppercase; margin-bottom: 20px;
+            padding-bottom: 10px; border-bottom: 1px solid #1e1e1e;
+        }
+
+        /* CERTIFICATES */
+        .cert-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 14px 0; border-bottom: 1px solid #1a1a1a;
+        }
+        .cert-item:last-child { border-bottom: none; }
+        .cert-icon {
+            width: 44px; height: 44px; background: #1a1a1a;
+            border: 1px solid #c9a84c; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 20px; flex-shrink: 0;
+        }
+        .cert-title { font-size: 14px; font-weight: 700; }
+        .cert-detail { font-size: 12px; color: #666; margin-top: 3px; }
+        .cert-expires { font-size: 11px; margin-top: 3px; }
+        .cert-expires.valid { color: #7a9a7a; }
+        .cert-expires.expired { color: #9a4a4a; }
+        .cert-link {
+            margin-left: auto; font-size: 11px; color: #c9a84c;
+            border: 1px solid #c9a84c; padding: 4px 10px;
+            text-decoration: none; letter-spacing: 1px;
+            text-transform: uppercase; flex-shrink: 0;
+        }
+        .cert-link:hover { background: #c9a84c; color: #0a0a0a; }
+
+        /* COMPETITIONS */
+        .comp-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 12px 0; border-bottom: 1px solid #1a1a1a;
+        }
+        .comp-item:last-child { border-bottom: none; }
+        .comp-role {
+            font-size: 11px; color: #c9a84c;
+            border: 1px solid #c9a84c; padding: 3px 8px;
+            letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0;
+        }
+        .comp-name { font-size: 14px; font-weight: 700; }
+
+        .no-data { color: #444; font-size: 13px; text-align: center; padding: 20px 0; letter-spacing: 1px; }
+
+        .footer {
+            border-top: 1px solid #1e1e1e; padding: 24px 40px;
+            text-align: center; color: #333;
+            font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: 20px;
+        }
+        .footer span { color: #c9a84c; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">International Union</div>
+        </div>
+    </div>
+    <div style="font-size:11px; color:#444; letter-spacing:2px; text-transform:uppercase;">Judge Profile</div>
+</div>
+
+<div class="hero">
+    <div class="judge-photo-wrap">
+        {% if judge.photo_url %}
+            <img src="{{ judge.photo_url }}" alt="{{ judge.first_name }}" class="judge-photo">
+        {% else %}
+            <div class="judge-photo-placeholder">⚖️</div>
+        {% endif %}
+        {% if judge.country %}
+            <div class="country-badge">{{ judge.country }}</div>
+        {% endif %}
+    </div>
+
+    <div class="judge-info">
+        <div class="judge-label">WSM Official Judge</div>
+        <div class="judge-name">
+            {{ judge.first_name }}<br><span>{{ judge.last_name }}</span>
+        </div>
+
+        {% if judge.level %}
+            <div class="level-badge {% if 'NATIONAL' in judge.level %}national{% else %}international{% endif %}">
+                {{ level_label }}
+            </div>
+        {% endif %}
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-value">{{ certificates|length }}</div>
+                <div class="stat-label">Certificates</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">{{ competitions|length }}</div>
+                <div class="stat-label">Events Judged</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">
+                    {% if 'INTERNATIONAL' in (judge.level or '') %}🌍{% else %}🏠{% endif %}
+                </div>
+                <div class="stat-label">
+                    {% if 'INTERNATIONAL' in (judge.level or '') %}International{% else %}National{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="judge-meta">
+            {% if judge.country %}
+                <div class="meta-item">Country <strong>{{ judge.country }}</strong></div>
+            {% endif %}
+            {% if judge.date_of_birth %}
+                <div class="meta-item">Born <strong>{{ judge.date_of_birth }}</strong></div>
+            {% endif %}
+            {% if judge.email %}
+                <div class="meta-item">Email <strong>{{ judge.email }}</strong></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="content">
+
+    <div class="section section-full">
+        <div class="section-title">📜 Certificates & Qualifications</div>
+        {% if certificates %}
+            {% for c in certificates %}
+            <div class="cert-item">
+                <div class="cert-icon">📋</div>
+                <div style="flex:1">
+                    <div class="cert-title">{{ c.title }}</div>
+                    {% if c.issued_by %}
+                        <div class="cert-detail">Issued by: {{ c.issued_by }}</div>
+                    {% endif %}
+                    {% if c.issued_date %}
+                        <div class="cert-detail">Date: {{ c.issued_date }}</div>
+                    {% endif %}
+                    {% if c.expires_date %}
+                        <div class="cert-expires">Expires: {{ c.expires_date }}</div>
+                    {% endif %}
+                </div>
+                {% if c.file_url %}
+                    <a href="{{ c.file_url }}" target="_blank" class="cert-link">View</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-data">No certificates recorded</div>
+        {% endif %}
+    </div>
+
+    <div class="section section-full">
+        <div class="section-title">🏆 Competitions Judged</div>
+        {% if competitions %}
+            {% for c in competitions %}
+            <div class="comp-item">
+                <div class="comp-role">{{ c.role or 'Judge' }}</div>
+                <div class="comp-name">{{ c.competition_name }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-data">No competitions recorded yet</div>
+        {% endif %}
+    </div>
+
+</div>
+
+<div class="footer">
+    © 2026 <span>World Strongman</span> International Union · All Rights Reserved
+</div>
+
+</body>
+</html>

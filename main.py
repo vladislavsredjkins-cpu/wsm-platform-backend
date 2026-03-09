@@ -5,7 +5,7 @@ from db.database import SessionLocal
 
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth
+from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth, judges
 
 app = FastAPI(title="World Strongman Platform API", version="2.0.0")
 
@@ -30,6 +30,7 @@ app.include_router(disciplines.router)
 app.include_router(participants.router)
 app.include_router(results.router)
 app.include_router(auth.router)
+app.include_router(judges.router)
 
 
 @app.get("/")
@@ -159,4 +160,40 @@ async def athletes_list(request: Request):
     return templates.TemplateResponse("athletes_list.html", {
         "request": request,
         "athletes": athletes,
+    })
+
+
+@app.get("/judges/{judge_id}/profile")
+async def judge_profile(judge_id: str, request: Request):
+    import uuid
+    from models.judge import Judge
+    from models.judge_certificate import JudgeCertificate
+    from models.judge_competition import JudgeCompetition
+    from models.judge_levels import JudgeLevel, JUDGE_LEVEL_LABELS
+    from models.competition import Competition
+    from sqlalchemy import select
+    async with SessionLocal() as db:
+        judge = await db.get(Judge, uuid.UUID(judge_id))
+        if not judge:
+            return {"error": "Judge not found"}
+        certs = await db.execute(
+            select(JudgeCertificate).where(JudgeCertificate.judge_id == uuid.UUID(judge_id))
+        )
+        certificates = certs.scalars().all()
+        comps_result = await db.execute(
+            select(JudgeCompetition).where(JudgeCompetition.judge_id == uuid.UUID(judge_id))
+        )
+        comp_assignments = comps_result.scalars().all()
+        competitions = []
+        for ca in comp_assignments:
+            comp = await db.get(Competition, ca.competition_id)
+            if comp:
+                competitions.append({"competition_name": comp.name, "role": ca.role})
+        level_label = JUDGE_LEVEL_LABELS.get(JudgeLevel(judge.level)) if judge.level else None
+    return templates.TemplateResponse("judge_profile.html", {
+        "request": request,
+        "judge": judge,
+        "certificates": certificates,
+        "competitions": competitions,
+        "level_label": level_label,
     })

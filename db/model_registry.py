@@ -18,6 +18,9 @@ from models.weight_category import WeightCategory
 from models.team_rule import TeamRule
 from models.country import Country
 from models.athlete_sponsor import AthleteSponsor
+from models.judge import Judge
+from models.judge_certificate import JudgeCertificate
+from models.judge_competition import JudgeCompetition
 from models.person import Person
 from models.user import User
 
