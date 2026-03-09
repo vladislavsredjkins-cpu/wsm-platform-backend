@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizers — World Strongman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; }
+        .header { background: #0a0a0a; border-bottom: 2px solid #c9a84c; padding: 16px 40px; display: flex; align-items: center; justify-content: space-between; }
+        .header-logo { display: flex; align-items: center; gap: 12px; }
+        .header-logo img { height: 52px; width: 52px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .hero { background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); border-bottom: 1px solid #1e1e1e; padding: 50px 40px 30px; text-align: center; }
+        .hero-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 10px; }
+        .hero-title { font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; }
+        .hero-title span { color: #c9a84c; }
+        .hero-count { font-size: 13px; color: #666; letter-spacing: 2px; margin-top: 8px; }
+        .filters { max-width: 1200px; margin: 30px auto 0; padding: 0 40px; display: flex; gap: 16px; flex-wrap: wrap; }
+        .filter-input { background: #111; border: 1px solid #2a2a2a; color: #fff; padding: 10px 16px; font-size: 13px; outline: none; min-width: 200px; }
+        .filter-input:focus { border-color: #c9a84c; }
+        .filter-input::placeholder { color: #444; }
+        .filter-select { background: #111; border: 1px solid #2a2a2a; color: #fff; padding: 10px 16px; font-size: 13px; outline: none; }
+        .filter-select:focus { border-color: #c9a84c; }
+        .grid { max-width: 1200px; margin: 30px auto; padding: 0 40px 60px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .org-card { background: #111; border: 1px solid #1e1e1e; border-top: 3px solid #c9a84c; text-decoration: none; color: #fff; display: block; transition: border-color 0.2s, transform 0.2s; }
+        .org-card:hover { transform: translateY(-3px); }
+        .org-card.federation { border-top-color: #c9a84c; }
+        .org-card.club { border-top-color: #7a9a9a; }
+        .org-card.person { border-top-color: #9a7a9a; }
+        .org-card-photo { width: 100%; height: 180px; object-fit: cover; display: block; }
+        .org-card-placeholder { width: 100%; height: 180px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; font-size: 48px; color: #333; }
+        .org-card-body { padding: 16px; }
+        .org-card-name { font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; margin-bottom: 8px; }
+        .org-card-type { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 8px; display: inline-block; border: 1px solid; margin-bottom: 8px; }
+        .org-card-type.federation { color: #c9a84c; border-color: #c9a84c; }
+        .org-card-type.club { color: #7a9a9a; border-color: #7a9a9a; }
+        .org-card-type.person { color: #9a7a9a; border-color: #9a7a9a; }
+        .org-card-meta { font-size: 12px; color: #666; }
+        .no-results { grid-column: 1 / -1; text-align: center; color: #444; font-size: 14px; letter-spacing: 2px; padding: 60px 0; }
+        .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .footer span { color: #c9a84c; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">International Union</div>
+        </div>
+    </div>
+    <div style="font-size:11px; color:#444; letter-spacing:2px; text-transform:uppercase;">Organizers Registry</div>
+</div>
+<div class="hero">
+    <div class="hero-label">WSM Certified Organizers</div>
+    <div class="hero-title">WORLD <span>ORGANIZERS</span></div>
+    <div class="hero-count">{{ organizers|length }} registered organizers</div>
+</div>
+<div class="filters">
+    <input class="filter-input" type="text" id="search" placeholder="Search by name..." oninput="filterOrgs()">
+    <input class="filter-input" type="text" id="country" placeholder="Filter by country..." oninput="filterOrgs()">
+    <select class="filter-select" id="type" onchange="filterOrgs()">
+        <option value="">All types</option>
+        <option value="federation">Federation</option>
+        <option value="club">Club</option>
+        <option value="person">Private</option>
+    </select>
+</div>
+<div class="grid" id="grid">
+    {% for o in organizers %}
+    <a class="org-card {{ o.type }}" href="/organizers/{{ o.id }}/profile"
+       data-name="{{ o.name }}"
+       data-country="{{ o.country or '' }}"
+       data-type="{{ o.type }}">
+        {% if o.photo_url %}
+            <img class="org-card-photo" src="{{ o.photo_url }}" alt="{{ o.name }}">
+        {% else %}
+            <div class="org-card-placeholder">
+                {% if o.type == 'federation' %}🏛️{% elif o.type == 'club' %}🏋️{% else %}👤{% endif %}
+            </div>
+        {% endif %}
+        <div class="org-card-body">
+            <div class="org-card-name">{{ o.name }}</div>
+            <div class="org-card-type {{ o.type }}">
+                {% if o.type == 'federation' %}Federation
+                {% elif o.type == 'club' %}Club
+                {% else %}Private{% endif %}
+            </div>
+            <div class="org-card-meta">
+                {% if o.country %}{{ o.country }}{% endif %}
+                {% if o.city %} · {{ o.city }}{% endif %}
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+    <div class="no-results" id="no-results" style="display:none;">No organizers found</div>
+</div>
+<div class="footer">© 2026 <span>World Strongman</span> International Union · All Rights Reserved</div>
+<script>
+function filterOrgs() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const country = document.getElementById('country').value.toLowerCase();
+    const type = document.getElementById('type').value;
+    const cards = document.querySelectorAll('.org-card');
+    let visible = 0;
+    cards.forEach(card => {
+        const name = card.dataset.name.toLowerCase();
+        const c = card.dataset.country.toLowerCase();
+        const t = card.dataset.type;
+        const show = name.includes(search) && c.includes(country) && (type === '' || t === type);
+        card.style.display = show ? 'block' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+}
+</script>
+</body>
+</html>

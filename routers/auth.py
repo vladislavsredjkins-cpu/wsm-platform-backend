@@ -63,6 +63,8 @@ async def me(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "role": current_user.role,
         "athlete_id": str(current_user.athlete_id) if current_user.athlete_id else None,
+        "judge_id": str(current_user.judge_id) if current_user.judge_id else None,
+        "organizer_id": str(current_user.organizer_id) if current_user.organizer_id else None,
         "is_active": current_user.is_active,
     }
 
@@ -78,3 +80,39 @@ async def link_athlete(
     current_user.athlete_id = data.athlete_id
     await db.commit()
     return {"status": "ok", "athlete_id": str(data.athlete_id)}
+
+
+class LinkJudgeRequest(BaseModel):
+    judge_id: uuid.UUID
+
+class LinkOrganizerRequest(BaseModel):
+    organizer_id: uuid.UUID
+
+@router.post("/link-judge")
+async def link_judge(
+    data: LinkJudgeRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    from models.judge import Judge
+    judge = await db.get(Judge, data.judge_id)
+    if not judge:
+        raise HTTPException(status_code=404, detail="Judge not found")
+    current_user.judge_id = data.judge_id
+    await db.commit()
+    return {"status": "ok", "judge_id": str(data.judge_id)}
+
+
+@router.post("/link-organizer")
+async def link_organizer(
+    data: LinkOrganizerRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    from models.organizer import Organizer
+    org = await db.get(Organizer, data.organizer_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organizer not found")
+    current_user.organizer_id = data.organizer_id
+    await db.commit()
+    return {"status": "ok", "organizer_id": str(data.organizer_id)}

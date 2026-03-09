@@ -185,7 +185,11 @@ async def judge_profile(judge_id: str, request: Request):
             select(JudgeCompetition).where(JudgeCompetition.judge_id == uuid.UUID(judge_id))
         )
         comp_assignments = comps_result.scalars().all()
-        competitions = []
+        comps_result = await db.execute(
+            select(Competition).where(Competition.organizer_id == uuid.UUID(organizer_id))
+            .order_by(Competition.date_start.desc())
+        )
+        competitions = comps_result.scalars().all()
         for ca in comp_assignments:
             comp = await db.get(Competition, ca.competition_id)
             if comp:
@@ -216,10 +220,40 @@ async def organizer_profile(organizer_id: str, request: Request):
             .order_by(OrganizerSponsor.tier)
         )
         sponsors = sponsors_result.scalars().all()
-        competitions = []
+        comps_result = await db.execute(
+            select(Competition).where(Competition.organizer_id == uuid.UUID(organizer_id))
+            .order_by(Competition.date_start.desc())
+        )
+        competitions = comps_result.scalars().all()
     return templates.TemplateResponse("organizer_profile.html", {
         "request": request,
         "organizer": org,
         "sponsors": sponsors,
         "competitions": competitions,
+    })
+
+
+@app.get("/judges-list")
+async def judges_list(request: Request):
+    from sqlalchemy import select
+    from models.judge import Judge
+    async with SessionLocal() as db:
+        result = await db.execute(select(Judge).order_by(Judge.last_name))
+        judges = result.scalars().all()
+    return templates.TemplateResponse("judges_list.html", {
+        "request": request,
+        "judges": judges,
+    })
+
+
+@app.get("/organizers-list")
+async def organizers_list(request: Request):
+    from sqlalchemy import select
+    from models.organizer import Organizer
+    async with SessionLocal() as db:
+        result = await db.execute(select(Organizer).order_by(Organizer.name))
+        organizers = result.scalars().all()
+    return templates.TemplateResponse("organizers_list.html", {
+        "request": request,
+        "organizers": organizers,
     })

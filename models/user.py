@@ -15,3 +15,5 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     athlete_id = Column(UUID(as_uuid=True), ForeignKey("athletes.id"), nullable=True)
+    judge_id = Column(UUID(as_uuid=True), ForeignKey("judges.id"), nullable=True)
+    organizer_id = Column(UUID(as_uuid=True), ForeignKey("organizers.id"), nullable=True)
