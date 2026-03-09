@@ -1,5 +1,6 @@
 import datetime
 from sqlalchemy import Column, String, Boolean, DateTime, Integer, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from db.base import Base
 
 
@@ -13,3 +14,4 @@ class User(Base):
     role = Column(String(50), nullable=False, default="REFEREE")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    athlete_id = Column(UUID(as_uuid=True), ForeignKey("athletes.id"), nullable=True)

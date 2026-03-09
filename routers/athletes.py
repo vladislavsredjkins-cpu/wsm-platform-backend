@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 from db.database import get_db
+from auth.dependencies import get_current_user
+from models.user import User
 from models.athlete import Athlete
 from models.participant import Participant
 from pydantic import BaseModel
@@ -60,6 +62,14 @@ class ParticipantResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+@router.get("/{athlete_id}", response_model=AthleteResponse)
+async def get_athlete(athlete_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    athlete = await db.get(Athlete, athlete_id)
+    if not athlete:
+        raise HTTPException(status_code=404, detail="Athlete not found")
+    return athlete
 
 
 @router.get("/search", response_model=list[AthleteResponse])
@@ -183,11 +193,14 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 async def upload_photo(
     athlete_id: uuid.UUID,
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     athlete = await db.get(Athlete, athlete_id)
     if not athlete:
         raise HTTPException(status_code=404, detail="Athlete not found")
+    if current_user.athlete_id != athlete_id and current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not allowed")
 
     ext = file.filename.split(".")[-1].lower()
     if ext not in ["jpg", "jpeg", "png", "webp"]:
@@ -207,10 +220,12 @@ async def upload_photo(
 
 
 @router.patch("/{athlete_id}", response_model=AthleteResponse)
-async def update_athlete(athlete_id: uuid.UUID, data: AthleteCreate, db: AsyncSession = Depends(get_db)):
+async def update_athlete(athlete_id: uuid.UUID, data: AthleteCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     athlete = await db.get(Athlete, athlete_id)
     if not athlete:
         raise HTTPException(status_code=404, detail="Athlete not found")
+    if current_user.athlete_id != athlete_id and current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not allowed")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(athlete, field, value)
     await db.commit()
