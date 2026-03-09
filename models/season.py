@@ -15,4 +15,4 @@ class Season(Base):
     status = Column(String(50), nullable=True)
     created_at = Column(DateTime(), default=datetime.datetime.utcnow)
 
-    competitions = relationship("Competition", back_populates="season")
+    

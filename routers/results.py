@@ -6,6 +6,8 @@ from models.discipline_result import DisciplineResult
 from models.discipline_standing import DisciplineStanding
 from models.competition_discipline import CompetitionDiscipline
 from models.participant import Participant
+from auth.dependencies import require_referee
+from models.user import User
 from pydantic import BaseModel
 from typing import Optional
 from decimal import Decimal
@@ -46,7 +48,8 @@ class StandingResponse(BaseModel):
 async def upsert_result(
     discipline_id: uuid.UUID,
     data: ResultCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_referee),
 ):
     discipline = await db.get(CompetitionDiscipline, discipline_id)
     if not discipline:
@@ -56,11 +59,9 @@ async def upsert_result(
     if not participant:
         raise HTTPException(status_code=404, detail="Participant not found")
 
-    # проверяем что participant принадлежит этому division
     if participant.competition_division_id != discipline.competition_division_id:
         raise HTTPException(status_code=400, detail="Participant does not belong to this discipline's division")
 
-    # upsert — обновляем если уже есть
     result = await db.execute(
         select(DisciplineResult).where(
             DisciplineResult.competition_discipline_id == discipline_id,

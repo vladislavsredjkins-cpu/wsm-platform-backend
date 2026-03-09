@@ -23,7 +23,7 @@ async def get_current_user(
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(select(User).where(User.id == int(user_id)))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -33,12 +33,19 @@ async def get_current_user(
     return user
 
 
-async def require_role(*roles: str):
+def require_roles(*roles: str):
     async def checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Required roles: {roles}. Your role: {current_user.role}"
+                detail=f"Required roles: {list(roles)}. Your role: {current_user.role}"
             )
         return current_user
     return checker
+
+
+# Готовые зависимости для использования в роутерах
+require_admin = require_roles("WSM_ADMIN")
+require_federation = require_roles("WSM_ADMIN", "FEDERATION_ADMIN")
+require_organizer = require_roles("WSM_ADMIN", "FEDERATION_ADMIN", "ORGANIZER")
+require_referee = require_roles("WSM_ADMIN", "FEDERATION_ADMIN", "ORGANIZER", "REFEREE")

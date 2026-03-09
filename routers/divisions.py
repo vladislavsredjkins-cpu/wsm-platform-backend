@@ -5,7 +5,10 @@ from db.database import get_db
 from models.competition_division import CompetitionDivision
 from models.competition_division_q import CompetitionDivisionQ
 from services.finalization_service import FinalizationService
+from services.overall_standing_service import OverallStandingService
 from services.ranking_service import RankingService
+from auth.dependencies import require_admin, require_federation, require_referee
+from models.user import User
 from pydantic import BaseModel
 from typing import Optional
 from decimal import Decimal
@@ -99,7 +102,11 @@ async def validate_division(division_id: uuid.UUID, db: AsyncSession = Depends(g
 
 
 @router.post("/{division_id}/lock")
-async def lock_division(division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def lock_division(
+    division_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_federation),
+):
     service = FinalizationService(db)
     try:
         division = await service.lock(division_id)
@@ -109,18 +116,25 @@ async def lock_division(division_id: uuid.UUID, db: AsyncSession = Depends(get_d
 
 
 @router.post("/{division_id}/process-ranking")
-async def process_ranking(division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def process_ranking(
+    division_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
     service = RankingService(db)
     try:
         awards = await service.process_division(division_id)
         return {"status": "ok", "awards_created": len(awards)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
-from services.overall_standing_service import OverallStandingService
+
 
 @router.post("/{division_id}/calculate-overall")
-async def calculate_overall(division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def calculate_overall(
+    division_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_referee),
+):
     service = OverallStandingService(db)
     standings = await service.calculate(division_id)
     return {"status": "ok", "standings_created": len(standings)}
