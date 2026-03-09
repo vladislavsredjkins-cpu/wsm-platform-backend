@@ -147,3 +147,16 @@ async def athlete_profile(athlete_id: str, request: Request):
             "upcoming_count": len(upcoming),
             "sponsors": sponsors,
         })
+
+
+@app.get("/athletes-list")
+async def athletes_list(request: Request):
+    from sqlalchemy import select
+    from models.athlete import Athlete
+    async with SessionLocal() as db:
+        result = await db.execute(select(Athlete).order_by(Athlete.last_name))
+        athletes = result.scalars().all()
+    return templates.TemplateResponse("athletes_list.html", {
+        "request": request,
+        "athletes": athletes,
+    })
