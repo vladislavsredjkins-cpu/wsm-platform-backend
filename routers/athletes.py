@@ -167,3 +167,97 @@ async def remove_participant(participant_id: uuid.UUID, db: AsyncSession = Depen
     await db.delete(p)
     await db.commit()
     return {"status": "ok"}
+
+
+import shutil, os
+from fastapi import UploadFile, File
+from pathlib import Path
+
+UPLOAD_DIR = Path("uploads/athletes")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@router.post("/{athlete_id}/photo")
+async def upload_photo(
+    athlete_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
+):
+    athlete = await db.get(Athlete, athlete_id)
+    if not athlete:
+        raise HTTPException(status_code=404, detail="Athlete not found")
+
+    ext = file.filename.split(".")[-1].lower()
+    if ext not in ["jpg", "jpeg", "png", "webp"]:
+        raise HTTPException(status_code=400, detail="Only jpg/png/webp allowed")
+
+    filename = f"{athlete_id}.{ext}"
+    filepath = UPLOAD_DIR / filename
+
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    photo_url = f"/uploads/athletes/{filename}"
+    athlete.photo_url = photo_url
+    await db.commit()
+
+    return {"photo_url": photo_url}
+
+
+@router.patch("/{athlete_id}", response_model=AthleteResponse)
+async def update_athlete(athlete_id: uuid.UUID, data: AthleteCreate, db: AsyncSession = Depends(get_db)):
+    athlete = await db.get(Athlete, athlete_id)
+    if not athlete:
+        raise HTTPException(status_code=404, detail="Athlete not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(athlete, field, value)
+    await db.commit()
+    await db.refresh(athlete)
+    return athlete
+
+
+import shutil, os
+from fastapi import UploadFile, File
+from pathlib import Path
+
+UPLOAD_DIR = Path("uploads/athletes")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@router.post("/{athlete_id}/photo")
+async def upload_photo(
+    athlete_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
+):
+    athlete = await db.get(Athlete, athlete_id)
+    if not athlete:
+        raise HTTPException(status_code=404, detail="Athlete not found")
+
+    ext = file.filename.split(".")[-1].lower()
+    if ext not in ["jpg", "jpeg", "png", "webp"]:
+        raise HTTPException(status_code=400, detail="Only jpg/png/webp allowed")
+
+    filename = f"{athlete_id}.{ext}"
+    filepath = UPLOAD_DIR / filename
+
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    photo_url = f"/uploads/athletes/{filename}"
+    athlete.photo_url = photo_url
+    await db.commit()
+
+    return {"photo_url": photo_url}
+
+
+@router.patch("/{athlete_id}", response_model=AthleteResponse)
+async def update_athlete(athlete_id: uuid.UUID, data: AthleteCreate, db: AsyncSession = Depends(get_db)):
+    athlete = await db.get(Athlete, athlete_id)
+    if not athlete:
+        raise HTTPException(status_code=404, detail="Athlete not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(athlete, field, value)
+    await db.commit()
+    await db.refresh(athlete)
+    return athlete
