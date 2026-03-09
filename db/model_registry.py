@@ -31,6 +31,12 @@ from models.team_sponsor import TeamSponsor
 from models.match import Match
 from models.match_discipline_result import MatchDisciplineResult
 from models.team_standing import TeamStanding
+from models.asl_league import ASLLeague
+from models.asl_division import ASLDivision
+from models.asl_team_division import ASLTeamDivision
+from models.asl_league import ASLLeague
+from models.asl_division import ASLDivision
+from models.asl_team_division import ASLTeamDivision
 from models.person import Person
 from models.user import User
 

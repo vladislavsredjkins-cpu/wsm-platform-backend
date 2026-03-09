@@ -7,7 +7,8 @@ from db.base import Base
 class TeamStanding(Base):
     __tablename__ = "team_standings"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id"), nullable=False)
+    asl_division_id = Column(UUID(as_uuid=True), ForeignKey("asl_divisions.id"), nullable=True)
+    competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id"), nullable=True)
     team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
     matches_played = Column(Integer, default=0)
     wins = Column(Integer, default=0)

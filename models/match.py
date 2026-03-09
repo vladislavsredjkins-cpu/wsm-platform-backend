@@ -8,7 +8,8 @@ from db.base import Base
 class Match(Base):
     __tablename__ = "matches"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id"), nullable=False)
+    asl_division_id = Column(UUID(as_uuid=True), ForeignKey("asl_divisions.id"), nullable=True)
+    competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id"), nullable=True)
     home_team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
     away_team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
     match_date = Column(Date, nullable=True)

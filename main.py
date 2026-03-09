@@ -5,7 +5,7 @@ from db.database import SessionLocal
 
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams, matches
+from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams, matches, asl
 
 app = FastAPI(title="World Strongman Platform API", version="2.0.0")
 
@@ -35,6 +35,7 @@ app.include_router(organizers.router)
 app.include_router(coaches.router)
 app.include_router(teams.router)
 app.include_router(matches.router)
+app.include_router(asl.router)
 
 
 @app.get("/")
@@ -302,4 +303,69 @@ async def team_room(team_id: str, request: Request):
         "sponsors": sponsors,
         "coach": coach,
         "matches": matches,
+    })
+
+
+@app.get("/asl/{league_id}")
+async def asl_home(league_id: str, request: Request):
+    from sqlalchemy import select
+    from models.asl_league import ASLLeague
+    from models.asl_division import ASLDivision
+    from models.asl_team_division import ASLTeamDivision
+    from models.team_standing import TeamStanding
+    from models.team import Team
+    from models.match import Match
+    import uuid
+    lid = uuid.UUID(league_id)
+    async with SessionLocal() as db:
+        league = await db.get(ASLLeague, lid)
+        if not league:
+            return {"error": "League not found"}
+        divs_result = await db.execute(
+            select(ASLDivision).where(ASLDivision.league_id == lid).order_by(ASLDivision.name)
+        )
+        divisions = divs_result.scalars().all()
+        standings_by_division = {}
+        total_teams = 0
+        for div in divisions:
+            td_result = await db.execute(
+                select(ASLTeamDivision).where(ASLTeamDivision.division_id == div.id)
+            )
+            total_teams += len(td_result.scalars().all())
+            s_result = await db.execute(
+                select(TeamStanding)
+                .where(TeamStanding.asl_division_id == div.id)
+                .order_by(TeamStanding.points.desc(), TeamStanding.disciplines_won.desc())
+            )
+            standings = s_result.scalars().all()
+            for s in standings:
+                s.team = await db.get(Team, s.team_id)
+            standings_by_division[str(div.id)] = standings
+        matches_result = await db.execute(
+            select(Match).where(Match.asl_division_id.in_([d.id for d in divisions]))
+            .order_by(Match.match_date.desc()).limit(20)
+        )
+        recent_matches = matches_result.scalars().all()
+        team_names = {}
+        div_names = {str(d.id): d.name for d in divisions}
+        for m in recent_matches:
+            for tid in [m.home_team_id, m.away_team_id]:
+                if str(tid) not in team_names:
+                    t = await db.get(Team, tid)
+                    if t:
+                        team_names[str(tid)] = t.name
+        matches_count_result = await db.execute(
+            select(Match).where(Match.asl_division_id.in_([d.id for d in divisions]))
+        )
+        total_matches = len(matches_count_result.scalars().all())
+    return templates.TemplateResponse("asl_home.html", {
+        "request": request,
+        "league": league,
+        "divisions": divisions,
+        "standings_by_division": standings_by_division,
+        "recent_matches": recent_matches,
+        "team_names": team_names,
+        "div_names": div_names,
+        "total_teams": total_teams,
+        "total_matches": total_matches,
     })
