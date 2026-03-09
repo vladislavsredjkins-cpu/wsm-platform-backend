@@ -23,6 +23,14 @@ from models.judge_certificate import JudgeCertificate
 from models.judge_competition import JudgeCompetition
 from models.organizer import Organizer
 from models.organizer_sponsor import OrganizerSponsor
+from models.coach import Coach
+from models.coach_certificate import CoachCertificate
+from models.team import Team
+from models.team_member import TeamMember
+from models.team_sponsor import TeamSponsor
+from models.match import Match
+from models.match_discipline_result import MatchDisciplineResult
+from models.team_standing import TeamStanding
 from models.person import Person
 from models.user import User
 
