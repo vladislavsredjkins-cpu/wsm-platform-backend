@@ -260,3 +260,46 @@ async def organizers_list(request: Request):
         "request": request,
         "organizers": organizers,
     })
+
+
+@app.get("/teams/{team_id}/room")
+async def team_room(team_id: str, request: Request):
+    from sqlalchemy import select
+    from models.team import Team
+    from models.team_member import TeamMember
+    from models.team_sponsor import TeamSponsor
+    from models.athlete import Athlete
+    from models.coach import Coach
+    from models.match import Match
+    import uuid
+    tid = uuid.UUID(team_id)
+    async with SessionLocal() as db:
+        team = await db.get(Team, tid)
+        if not team:
+            return {"error": "Team not found"}
+        members_result = await db.execute(
+            select(TeamMember).where(TeamMember.team_id == tid)
+        )
+        members = members_result.scalars().all()
+        for m in members:
+            if m.athlete_id:
+                m.athlete = await db.get(Athlete, m.athlete_id)
+        sponsors_result = await db.execute(
+            select(TeamSponsor).where(TeamSponsor.team_id == tid)
+        )
+        sponsors = sponsors_result.scalars().all()
+        coach = await db.get(Coach, team.coach_id) if team.coach_id else None
+        matches_result = await db.execute(
+            select(Match).where(
+                (Match.home_team_id == tid) | (Match.away_team_id == tid)
+            ).order_by(Match.round_number, Match.match_date)
+        )
+        matches = matches_result.scalars().all()
+    return templates.TemplateResponse("team_room.html", {
+        "request": request,
+        "team": team,
+        "members": members,
+        "sponsors": sponsors,
+        "coach": coach,
+        "matches": matches,
+    })

@@ -183,3 +183,20 @@ async def remove_sponsor(team_id: uuid.UUID, sponsor_id: uuid.UUID,
     await db.delete(sponsor)
     await db.commit()
     return {"status": "removed"}
+
+
+@router.post("/{team_id}/team-photo")
+async def upload_team_photo(team_id: uuid.UUID, file: UploadFile = File(...),
+                             db: AsyncSession = Depends(get_db),
+                             current_user=Depends(get_current_user)):
+    team = await db.get(Team, team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    os.makedirs("uploads/teams", exist_ok=True)
+    ext = file.filename.split(".")[-1]
+    filename = f"uploads/teams/{team_id}_photo.{ext}"
+    with open(filename, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    team.team_photo_url = f"/{filename}"
+    await db.commit()
+    return {"team_photo_url": team.team_photo_url}
