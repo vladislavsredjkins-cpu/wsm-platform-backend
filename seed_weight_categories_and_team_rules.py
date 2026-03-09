@@ -1,4 +1,5 @@
 import os
+import json
 from sqlalchemy import create_engine, text
 
 db_url = os.getenv("DATABASE_URL")
@@ -46,25 +47,24 @@ weight_categories = [
     ("PARA_WOMEN_U79", "Up to 79kg", "PARA", "WOMEN", 73, 79, False, 8, True),
     ("PARA_WOMEN_U86", "Up to 86kg", "PARA", "WOMEN", 79, 86, False, 9, True),
     ("PARA_WOMEN_PLUS_86", "Over 86kg", "PARA", "WOMEN", 86, None, True, 10, True),
-    
-    for row in team_rules:
-        conn.execute(
-            text("""
-                INSERT INTO team_rules
-                (code, name, description, member_rules, sort_order, is_active)
-                VALUES
-                (:code, :name, :description, :member_rules, :sort_order, :is_active)
-                ON CONFLICT (code) DO NOTHING
-            """),
-            {
-                "code": row[0],
-                "name": row[1],
-                "description": row[2],
-                "member_rules": json.dumps(row[3]),
-                "sort_order": row[4],
-                "is_active": row[5],
-            }
-        )
+]
+
+team_rules = [
+    (
+        "TEAM_SPLIT_110",
+        "Team ±110",
+        "Two-athlete team: one athlete up to 110 kg, second athlete over 110 kg",
+        {
+            "athletes_per_team": 2,
+            "rules": [
+                {"athlete_no": 1, "max_weight": 110},
+                {"athlete_no": 2, "min_weight": 110},
+            ],
+        },
+        1,
+        True,
+    ),
+]
 
 with engine.begin() as conn:
     for row in weight_categories:
@@ -93,19 +93,18 @@ with engine.begin() as conn:
         conn.execute(
             text("""
                 INSERT INTO team_rules
-                (code, name, description, athletes_per_team, athlete1_max_weight, athlete2_min_weight, is_active)
+                (code, name, description, member_rules, sort_order, is_active)
                 VALUES
-                (:code, :name, :description, :athletes_per_team, :athlete1_max_weight, :athlete2_min_weight, :is_active)
+                (:code, :name, :description, :member_rules, :sort_order, :is_active)
                 ON CONFLICT (code) DO NOTHING
             """),
             {
                 "code": row[0],
                 "name": row[1],
                 "description": row[2],
-                "athletes_per_team": row[3],
-                "athlete1_max_weight": row[4],
-                "athlete2_min_weight": row[5],
-                "is_active": row[6],
+                "member_rules": json.dumps(row[3]),
+                "sort_order": row[4],
+                "is_active": row[5],
             }
         )
 

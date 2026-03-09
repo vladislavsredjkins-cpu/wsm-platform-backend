@@ -1,299 +1,29 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from sqlalchemy import select, func
 import sqlalchemy as sa
-from datetime import date, datetime
-from uuid import UUID
-from typing import Literal
-
 from db.database import SessionLocal
 
-from models.athlete import Athlete
-from models.competition import Competition
-from models.result import Result
-from models.competition_division import CompetitionDivision
-from models.competition_discipline import CompetitionDiscipline
-from models.participant import Participant
-from models.discipline_result import DisciplineResult
-from models.ranking_point import RankingPoint
-from models.discipline_standing import DisciplineStanding
-from models.overall_standing import OverallStanding
-from models.ranking_snapshot import RankingSnapshot
-from models.season import Season
-from models.competition_class import CompetitionClass
-from models.protest import Protest
+from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth
 
-from api.athletes import router as athletes_router
-from api.competitions import router as competitions_router
-from api.divisions import router as divisions_router
-from api.disciplines import router as disciplines_router
-from api.participants import router as participants_router
-from api.discipline_results import router as discipline_results_router
-from api.standings import router as standings_router
-from api.ranking import router as ranking_router
-from api.protests import router as protests_router
-from api.finalization import router as finalization_router
-
-# =========================
-# Pydantic Schemas
-# =========================
-
-class AthleteCreate(BaseModel):
-    first_name: str
-    last_name: str
-    country: str
-
-
-class AthleteOut(BaseModel):
-    id: UUID
-    first_name: str
-    last_name: str
-    country: str
-
-    class Config:
-        from_attributes = True
-
-
-class CompetitionCreate(BaseModel):
-    name: str
-    date_start: date
-    date_end: date | None = None
-    city: str | None = None
-    country: str | None = None
-    coefficient_q: float = Field(1.0, ge=0.1, le=10.0)
-
-
-class CompetitionOut(CompetitionCreate):
-    id: UUID
-
-    class Config:
-        from_attributes = True
-
-
-DivisionKey = Literal["MEN", "WOMEN", "PARA"]
-CompetitionFormat = Literal["CLASSIC", "PARA", "RELAY", "TEAM_BATTLE"]
-LifecycleStatus = Literal["DRAFT", "SUBMITTED", "APPROVED", "LIVE", "RESULTS_VALIDATED", "LOCKED"]
-
-DisciplineMode = Literal[
-    "TIME_WITH_DISTANCE_FALLBACK",
-    "AMRAP_REPS",
-    "AMRAP_DISTANCE",
-    "MAX_WEIGHT_WITHIN_CAP",
-    "RELAY_DUAL_METRIC",
-]
-
-
-class DivisionCreate(BaseModel):
-    division_key: DivisionKey
-    format: CompetitionFormat
-    status: LifecycleStatus = "DRAFT"
-
-
-class DivisionOut(DivisionCreate):
-    id: UUID
-    competition_id: UUID
-    approved_at: datetime | None = None
-    live_at: datetime | None = None
-    locked_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
-
-
-class DisciplineCreate(BaseModel):
-    order_no: int = Field(..., ge=1, le=50)
-    discipline_name: str
-    discipline_mode: DisciplineMode
-    time_cap_seconds: int | None = Field(None, ge=1, le=3600)
-    lanes_per_heat: int | None = Field(None, ge=1, le=20)
-    track_length_meters: int | None = Field(None, ge=1, le=10000)
-
-
-class DisciplineOut(DisciplineCreate):
-    id: UUID
-    competition_division_id: UUID
-
-    class Config:
-        from_attributes = True
-
-
-class ParticipantCreate(BaseModel):
-    athlete_id: UUID
-    bib_no: int | None = Field(None, ge=1, le=9999)
-    bodyweight_kg: float | None = Field(None, ge=0.0, le=400.0)
-
-
-class ParticipantOut(ParticipantCreate):
-    id: UUID
-    competition_division_id: UUID
-
-    class Config:
-        from_attributes = True
-
-
-StatusFlag = Literal["OK", "DNF", "DQ", "DNS"]
-
-
-class DisciplineResultCreate(BaseModel):
-    athlete_id: UUID
-    primary_value: float | None = None
-    secondary_value: float | None = None
-    status_flag: StatusFlag = "OK"
-
-
-class DisciplineResultOut(DisciplineResultCreate):
-    id: UUID
-    competition_discipline_id: UUID
-    participant_id: UUID
-
-    class Config:
-        from_attributes = True
-
-class DisciplineLeaderboardRow(BaseModel):
-    participant_id: UUID
-    athlete_id: UUID
-    bib_no: int | None = None
-    place: int
-    primary_value: float | None = None
-    secondary_value: float | None = None
-    status_flag: StatusFlag
-
-class DisciplineLeaderboardOut(BaseModel):
-    competition_discipline_id: UUID
-    discipline_mode: DisciplineMode
-    items: list[DisciplineLeaderboardRow]
-
-class DivisionOverallRow(BaseModel):
-    participant_id: UUID
-    athlete_id: UUID
-    bib_no: int | None = None
-    total_points: float
-    place: int
-
-class DivisionOverallOut(BaseModel):
-    division_id: UUID
-    items: list[DivisionOverallRow]
-
-class ResultCreate(BaseModel):
-    competition_id: UUID
-    athlete_id: UUID
-    place: int = Field(..., ge=1, le=500)
-    status: str = "approved"
-
-
-class ResultOut(ResultCreate):
-    id: UUID
-
-    class Config:
-        from_attributes = True
-
-class FinalizeOut(BaseModel):
-    competition_id: UUID
-    season_year: int
-    rows_written: int
-
-
-class RankingItem(BaseModel):
-    athlete_id: UUID
-    first_name: str
-    last_name: str
-    country: str
-    points: float
-
-
-class RankingOut(BaseModel):
-    division: DivisionKey
-    format: CompetitionFormat
-    season_year: int
-    limit: int
-    offset: int
-    items: list[RankingItem]
-
-class RankingSnapshotOut(BaseModel):
-    snapshot_created: int
-
-class DisciplineStandingRow(BaseModel):
-    participant_id: UUID
-    athlete_id: UUID
-    bib_no: int | None = None
-    place: int
-    points_for_discipline: float
-
-class DisciplineStandingOut(BaseModel):
-    competition_discipline_id: UUID
-    items: list[DisciplineStandingRow]
-
-
-class OverallStandingRow(BaseModel):
-    participant_id: UUID
-    athlete_id: UUID
-    bib_no: int | None = None
-    total_points: float
-    place: int
-    tie_break_value: float | None = None
-
-class OverallStandingOut(BaseModel):
-    division_id: UUID
-    items: list[OverallStandingRow]
-
-ProtestStatus = Literal["SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED"]
-
-
-class ProtestCreate(BaseModel):
-    competition_id: UUID
-    athlete_id: UUID
-    reason: str = Field(..., min_length=3, max_length=2000)
-
-
-class ProtestReview(BaseModel):
-    status: ProtestStatus
-
-
-class ProtestOut(BaseModel):
-    id: UUID
-    competition_id: UUID
-    athlete_id: UUID
-    reason: str
-    status: ProtestStatus
-    created_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
-
-# =========================
-# App
-# =========================
-
-app = FastAPI(title="World Strongman Platform API", version="1.0.0")
-
+app = FastAPI(title="World Strongman Platform API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://vladislavredjkins-cpu.github.io",
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(athletes_router)
-app.include_router(competitions_router)
-app.include_router(divisions_router)
-app.include_router(disciplines_router)
-app.include_router(participants_router)
-app.include_router(discipline_results_router)
-app.include_router(standings_router)
-app.include_router(ranking_router)
-app.include_router(protests_router)
-app.include_router(finalization_router)
+app.include_router(competitions.router)
+app.include_router(divisions.router)
+app.include_router(athletes.router)
+app.include_router(ranking.router)
+app.include_router(disciplines.router)
+app.include_router(participants.router)
+app.include_router(results.router)
+app.include_router(auth.router)
 
-# =========================
-# Basic endpoints
-# =========================
 
 @app.get("/")
 def root():
@@ -305,42 +35,8 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/__build")
-def __build():
-    return {"service": "wsm-platform-backend", "build": "RANKING_V1_CORE_06_FINALIZE_FIX"}
-
 @app.get("/db-test")
 async def db_test():
     async with SessionLocal() as session:
         result = await session.execute(sa.text("SELECT 1"))
         return {"database": "connected", "result": result.scalar()}
-
-
-
-
-# =========================
-# Legacy results
-# =========================
-
-@app.post("/results", response_model=ResultOut)
-async def create_result(payload: ResultCreate):
-    async with SessionLocal() as session:
-        r = Result(**payload.model_dump())
-        session.add(r)
-        await session.commit()
-        await session.refresh(r)
-        return r
-
-
-@app.get("/results", response_model=list[ResultOut])
-async def list_results(competition_id: UUID | None = None):
-    async with SessionLocal() as session:
-        stmt = select(Result)
-
-        if competition_id:
-            stmt = stmt.where(Result.competition_id == competition_id)
-
-        res = await session.execute(stmt.order_by(Result.place.asc()))
-
-        return list(res.scalars().all())
-
