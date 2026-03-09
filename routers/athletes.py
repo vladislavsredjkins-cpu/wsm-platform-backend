@@ -301,3 +301,37 @@ async def remove_sponsor(athlete_id: uuid.UUID, sponsor_id: uuid.UUID, db: Async
     await db.delete(sponsor)
     await db.commit()
     return {"status": "ok"}
+
+
+@router.post("/{athlete_id}/sponsors/{sponsor_id}/logo")
+async def upload_sponsor_logo(
+    athlete_id: uuid.UUID,
+    sponsor_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.athlete_id != athlete_id and current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    sponsor = await db.get(AthleteSponsor, sponsor_id)
+    if not sponsor or sponsor.athlete_id != athlete_id:
+        raise HTTPException(status_code=404, detail="Sponsor not found")
+
+    ext = file.filename.split(".")[-1].lower()
+    if ext not in ["jpg", "jpeg", "png", "webp"]:
+        raise HTTPException(status_code=400, detail="Only jpg/png/webp allowed")
+
+    logo_dir = Path("uploads/sponsors")
+    logo_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{sponsor_id}.{ext}"
+    filepath = logo_dir / filename
+
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    sponsor.logo_url = f"/uploads/sponsors/{filename}"
+    await db.commit()
+
+    return {"logo_url": sponsor.logo_url}
