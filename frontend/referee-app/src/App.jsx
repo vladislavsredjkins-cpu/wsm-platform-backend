@@ -1,16 +1,24 @@
-import { AuthProvider, useAuth } from './AuthContext';
-import { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Divisions from './pages/Divisions';
-import Disciplines from './pages/Disciplines';
-import Results from './pages/Results';
 
-function AppContent() {
+// Referee
+import RefereeDisciplines from './pages/referee/Disciplines';
+import RefereeResults from './pages/referee/Results';
+
+// Organizer
+import OrganizerCompetitions from './pages/organizer/Competitions';
+import OrganizerCompetitionDetail from './pages/organizer/CompetitionDetail';
+
+function ProtectedRoute({ children, roles }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" />;
+  return children;
+}
+
+export default function App() {
   const { user, loading } = useAuth();
-  const [competition, setCompetition] = useState(null);
-  const [division, setDivision] = useState(null);
-  const [discipline, setDiscipline] = useState(null);
 
   if (loading) return (
     <div style={{ color: '#fff', textAlign: 'center', marginTop: '40vh', background: '#0a0a0a', minHeight: '100vh' }}>
@@ -18,47 +26,20 @@ function AppContent() {
     </div>
   );
 
-  if (!user) return <Login />;
-
-  const handleBack = (to) => {
-    if (to === 'competitions') { setCompetition(null); setDivision(null); setDiscipline(null); }
-    if (to === 'divisions') { setDivision(null); setDiscipline(null); }
-    if (to === 'disciplines') { setDiscipline(null); }
-  };
-
-  if (discipline) return (
-    <Results
-      competition={competition}
-      division={division}
-      discipline={discipline}
-      onBack={handleBack}
-    />
-  );
-
-  if (division) return (
-    <Disciplines
-      competition={competition}
-      division={division}
-      onBack={handleBack}
-      onSelect={setDiscipline}
-    />
-  );
-
-  if (competition) return (
-    <Divisions
-      competition={competition}
-      onBack={() => setCompetition(null)}
-      onSelect={setDivision}
-    />
-  );
-
-  return <Dashboard onSelect={setCompetition} />;
-}
-
-export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <Routes>
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+      {/* Referee routes */}
+      <Route path="/referee/:divisionId/disciplines" element={<ProtectedRoute><RefereeDisciplines /></ProtectedRoute>} />
+      <Route path="/referee/:disciplineId/results" element={<ProtectedRoute><RefereeResults /></ProtectedRoute>} />
+
+      {/* Organizer routes */}
+      <Route path="/organizer/competitions" element={<ProtectedRoute><OrganizerCompetitions /></ProtectedRoute>} />
+      <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><OrganizerCompetitionDetail /></ProtectedRoute>} />
+
+      <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+    </Routes>
   );
 }

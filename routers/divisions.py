@@ -49,9 +49,9 @@ async def create_division(data: DivisionCreate, db: AsyncSession = Depends(get_d
         competition_id=data.competition_id,
         division_key=data.division_key,
         format=data.format,
-        status="OPEN",
-        is_locked=False,
-        created_at=datetime.datetime.utcnow(),
+        status="DRAFT",
+        
+        
     )
     db.add(division)
     await db.commit()
