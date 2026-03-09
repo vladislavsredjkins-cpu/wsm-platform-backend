@@ -130,3 +130,15 @@ async def list_results(discipline_id: uuid.UUID, db: AsyncSession = Depends(get_
         .where(DisciplineResult.competition_discipline_id == discipline_id)
     )
     return result.scalars().all()
+
+
+@router.get("/discipline/{discipline_id}/standings")
+async def get_standings(discipline_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.discipline_standing import DisciplineStanding
+    result = await db.execute(
+        select(DisciplineStanding)
+        .where(DisciplineStanding.competition_discipline_id == discipline_id)
+        .order_by(DisciplineStanding.place)
+    )
+    standings = result.scalars().all()
+    return [{"participant_id": str(s.participant_id), "place": s.place, "points_for_discipline": str(s.points_for_discipline)} for s in standings]

@@ -1,6 +1,5 @@
 import uuid
-import datetime
-from sqlalchemy import Column, Integer, DateTime, Numeric, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, Numeric, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from db.base import Base
@@ -17,7 +16,6 @@ class DisciplineStanding(Base):
     participant_id = Column(UUID(as_uuid=True), ForeignKey("participants.id", ondelete="CASCADE"), nullable=False)
     place = Column(Integer(), nullable=False)
     points_for_discipline = Column(Numeric(6, 2), nullable=False, default=0)
-    created_at = Column(DateTime(), default=datetime.datetime.utcnow)
 
     discipline = relationship("CompetitionDiscipline", back_populates="standings")
     participant = relationship("Participant", back_populates="discipline_standings")
