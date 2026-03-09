@@ -5,7 +5,7 @@ from db.database import SessionLocal
 
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams
+from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams, matches
 
 app = FastAPI(title="World Strongman Platform API", version="2.0.0")
 
@@ -34,6 +34,7 @@ app.include_router(judges.router)
 app.include_router(organizers.router)
 app.include_router(coaches.router)
 app.include_router(teams.router)
+app.include_router(matches.router)
 
 
 @app.get("/")
