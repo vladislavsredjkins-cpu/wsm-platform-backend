@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
+import DisciplinesTab from '../../components/DisciplinesTab';
 import api from '../../api';
 
 const gold = '#c9a84c';
@@ -410,9 +411,7 @@ export default function CompetitionDetail() {
 
       {/* DISCIPLINES TAB */}
       {tab === 'Disciplines' && (
-        <div>
-          <p style={{ color: '#555' }}>Disciplines management — coming soon</p>
-        </div>
+        <DisciplinesTab divisions={divisions} competitionId={competitionId} />
       )}
     </Layout>
   );

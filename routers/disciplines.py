@@ -20,6 +20,9 @@ class DisciplineCreate(BaseModel):
     order_no: Optional[int] = 1
     time_cap_seconds: Optional[int] = None
     lanes_count: Optional[int] = None
+    track_length_meters: Optional[Decimal] = None
+    implement_weight: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class DisciplineResponse(BaseModel):
@@ -29,9 +32,22 @@ class DisciplineResponse(BaseModel):
     discipline_mode: Optional[str]
     order_no: Optional[int]
     time_cap_seconds: Optional[int]
+    track_length_meters: Optional[Decimal]
+    implement_weight: Optional[str]
+    notes: Optional[str]
 
     class Config:
         from_attributes = True
+
+
+class DisciplineUpdate(BaseModel):
+    discipline_name: Optional[str] = None
+    discipline_mode: Optional[str] = None
+    order_no: Optional[int] = None
+    time_cap_seconds: Optional[int] = None
+    track_length_meters: Optional[Decimal] = None
+    implement_weight: Optional[str] = None
+    notes: Optional[str] = None
 
 
 @router.post("/", response_model=DisciplineResponse)
@@ -47,6 +63,9 @@ async def create_discipline(data: DisciplineCreate, db: AsyncSession = Depends(g
         order_no=data.order_no,
         time_cap_seconds=data.time_cap_seconds,
         lanes_count=data.lanes_count,
+        track_length_meters=data.track_length_meters,
+        implement_weight=data.implement_weight,
+        notes=data.notes,
     )
     db.add(discipline)
     await db.commit()
@@ -70,6 +89,28 @@ async def get_discipline(discipline_id: uuid.UUID, db: AsyncSession = Depends(ge
     if not discipline:
         raise HTTPException(status_code=404, detail="Discipline not found")
     return discipline
+
+
+@router.patch("/{discipline_id}", response_model=DisciplineResponse)
+async def update_discipline(discipline_id: uuid.UUID, data: DisciplineUpdate, db: AsyncSession = Depends(get_db)):
+    discipline = await db.get(CompetitionDiscipline, discipline_id)
+    if not discipline:
+        raise HTTPException(status_code=404, detail="Discipline not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(discipline, field, value)
+    await db.commit()
+    await db.refresh(discipline)
+    return discipline
+
+
+@router.delete("/{discipline_id}")
+async def delete_discipline(discipline_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    discipline = await db.get(CompetitionDiscipline, discipline_id)
+    if not discipline:
+        raise HTTPException(status_code=404, detail="Discipline not found")
+    await db.delete(discipline)
+    await db.commit()
+    return {"status": "ok"}
 
 
 @router.post("/{discipline_id}/calculate-standings")
