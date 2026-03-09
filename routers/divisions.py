@@ -36,7 +36,6 @@ class DivisionResponse(BaseModel):
     division_key: str
     format: str
     status: str
-    is_locked: bool
     locked_at: Optional[datetime.datetime]
 
     class Config:
@@ -138,3 +137,12 @@ async def calculate_overall(
     service = OverallStandingService(db)
     standings = await service.calculate(division_id)
     return {"status": "ok", "standings_created": len(standings)}
+
+@router.get("/competition/{competition_id}", response_model=list[DivisionResponse])
+async def list_divisions(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(CompetitionDivision)
+        .where(CompetitionDivision.competition_id == competition_id)
+        .order_by(CompetitionDivision.division_key)
+    )
+    return result.scalars().all()

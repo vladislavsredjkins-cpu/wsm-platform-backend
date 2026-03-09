@@ -1,6 +1,5 @@
 import uuid
-import datetime
-from sqlalchemy import Column, String, DateTime, Numeric, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Numeric, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from db.base import Base
@@ -8,16 +7,12 @@ from db.base import Base
 
 class Participant(Base):
     __tablename__ = "participants"
-    __table_args__ = (
-        UniqueConstraint("competition_division_id", "athlete_id", name="uq_participant_division_athlete"),
-    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id", ondelete="CASCADE"), nullable=False)
-    athlete_id = Column(UUID(as_uuid=True), ForeignKey("athletes.id", ondelete="CASCADE"), nullable=False)
-    weight_in = Column(Numeric(6, 2), nullable=True)
-    status = Column(String(50), nullable=False, default="REGISTERED")
-    created_at = Column(DateTime(), default=datetime.datetime.utcnow)
+    competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id"), nullable=False)
+    athlete_id = Column(UUID(as_uuid=True), ForeignKey("athletes.id"), nullable=False)
+    bib_no = Column(Integer(), nullable=True)
+    bodyweight_kg = Column(Numeric(6, 2), nullable=True)
 
     division = relationship("CompetitionDivision", back_populates="participants")
     athlete = relationship("Athlete", back_populates="participants")

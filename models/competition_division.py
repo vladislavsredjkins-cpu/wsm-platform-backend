@@ -1,42 +1,23 @@
 import uuid
 import datetime
-import enum
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, String, DateTime, Numeric, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from db.base import Base
-
-
-class DivisionKey(str, enum.Enum):
-    MEN = "MEN"
-    WOMEN = "WOMEN"
-    PARA = "PARA"
-
-
-class CompetitionFormat(str, enum.Enum):
-    CLASSIC = "CLASSIC"
-    PARA = "PARA"
-    RELAY = "RELAY"
-    TEAM_BATTLE = "TEAM_BATTLE"
-
-
-class DivisionStatus(str, enum.Enum):
-    OPEN = "OPEN"
-    RESULTS_VALIDATED = "RESULTS_VALIDATED"
-    LOCKED = "LOCKED"
 
 
 class CompetitionDivision(Base):
     __tablename__ = "competition_divisions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    competition_id = Column(UUID(as_uuid=True), ForeignKey("competitions.id", ondelete="CASCADE"), nullable=False)
-    division_key = Column(String(50), nullable=False)
-    format = Column(String(50), nullable=False)
-    status = Column(String(50), nullable=False, default="OPEN")
-    is_locked = Column(Boolean(), default=False)
+    competition_id = Column(UUID(as_uuid=True), ForeignKey("competitions.id"), nullable=False)
+    division_key = Column(String(100), nullable=False)
+    format = Column(String(50), nullable=True)
+    status = Column(String(50), default="OPEN")
+    approved_at = Column(DateTime(), nullable=True)
+    live_at = Column(DateTime(), nullable=True)
     locked_at = Column(DateTime(), nullable=True)
-    created_at = Column(DateTime(), default=datetime.datetime.utcnow)
+    q_effective = Column(Numeric(10, 2), nullable=True)
 
     competition = relationship("Competition", back_populates="divisions")
     disciplines = relationship("CompetitionDiscipline", back_populates="division", cascade="all, delete-orphan")

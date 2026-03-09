@@ -1,89 +1,120 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from db.database import get_db
 from models.discipline_result import DisciplineResult
 from models.discipline_standing import DisciplineStanding
 from models.competition_discipline import CompetitionDiscipline
 from models.participant import Participant
+from models.athlete import Athlete
 from auth.dependencies import require_referee
 from models.user import User
 from pydantic import BaseModel
 from typing import Optional
 from decimal import Decimal
 import uuid
-import datetime
 
 router = APIRouter(prefix="/results", tags=["results"])
 
 
-class ResultCreate(BaseModel):
+class ResultUpsert(BaseModel):
     participant_id: uuid.UUID
-    result_value: Optional[Decimal] = None
-    is_zero: bool = False
-    payload: Optional[dict] = None
+    primary_value: Optional[Decimal] = None
+    secondary_value: Optional[Decimal] = None
+    status_flag: Optional[str] = None
 
 
 class ResultResponse(BaseModel):
     id: uuid.UUID
     competition_discipline_id: uuid.UUID
     participant_id: uuid.UUID
-    result_value: Optional[Decimal]
-    is_zero: bool
+    primary_value: Optional[Decimal]
+    secondary_value: Optional[Decimal]
+    status_flag: Optional[str]
 
     class Config:
         from_attributes = True
 
 
-class StandingResponse(BaseModel):
+class ParticipantWithResult(BaseModel):
     participant_id: uuid.UUID
-    place: int
-    points_for_discipline: Decimal
+    bib_no: Optional[int]
+    first_name: str
+    last_name: str
+    country: Optional[str]
+    primary_value: Optional[Decimal] = None
+    secondary_value: Optional[Decimal] = None
+    status_flag: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+@router.get("/discipline/{discipline_id}/sheet", response_model=list[ParticipantWithResult])
+async def get_result_sheet(discipline_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    discipline = await db.get(CompetitionDiscipline, discipline_id)
+    if not discipline:
+        raise HTTPException(status_code=404, detail="Discipline not found")
+
+    participants = await db.execute(
+        select(Participant)
+        .where(Participant.competition_division_id == discipline.competition_division_id)
+        .options(selectinload(Participant.athlete))
+        .order_by(Participant.bib_no)
+    )
+    participants = participants.scalars().all()
+
+    results = await db.execute(
+        select(DisciplineResult)
+        .where(DisciplineResult.competition_discipline_id == discipline_id)
+    )
+    results_map = {r.participant_id: r for r in results.scalars().all()}
+
+    sheet = []
+    for p in participants:
+        r = results_map.get(p.id)
+        sheet.append(ParticipantWithResult(
+            participant_id=p.id,
+            bib_no=p.bib_no,
+            first_name=p.athlete.first_name,
+            last_name=p.athlete.last_name,
+            country=p.athlete.country,
+            primary_value=r.primary_value if r else None,
+            secondary_value=r.secondary_value if r else None,
+            status_flag=r.status_flag if r else None,
+        ))
+    return sheet
 
 
 @router.post("/discipline/{discipline_id}", response_model=ResultResponse)
 async def upsert_result(
     discipline_id: uuid.UUID,
-    data: ResultCreate,
+    data: ResultUpsert,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_referee),
 ):
-    discipline = await db.get(CompetitionDiscipline, discipline_id)
-    if not discipline:
-        raise HTTPException(status_code=404, detail="Discipline not found")
-
-    participant = await db.get(Participant, data.participant_id)
-    if not participant:
-        raise HTTPException(status_code=404, detail="Participant not found")
-
-    if participant.competition_division_id != discipline.competition_division_id:
-        raise HTTPException(status_code=400, detail="Participant does not belong to this discipline's division")
-
-    result = await db.execute(
+    existing = await db.execute(
         select(DisciplineResult).where(
             DisciplineResult.competition_discipline_id == discipline_id,
             DisciplineResult.participant_id == data.participant_id,
         )
     )
-    existing = result.scalar_one_or_none()
+    existing = existing.scalar_one_or_none()
 
     if existing:
-        existing.result_value = data.result_value
-        existing.is_zero = data.is_zero
-        existing.payload = data.payload
+        existing.primary_value = data.primary_value
+        existing.secondary_value = data.secondary_value
+        existing.status_flag = data.status_flag
         obj = existing
     else:
         obj = DisciplineResult(
             id=uuid.uuid4(),
             competition_discipline_id=discipline_id,
             participant_id=data.participant_id,
-            result_value=data.result_value,
-            is_zero=data.is_zero,
-            payload=data.payload,
-            created_at=datetime.datetime.utcnow(),
+            primary_value=data.primary_value,
+            secondary_value=data.secondary_value,
+            status_flag=data.status_flag,
         )
         db.add(obj)
 
@@ -97,15 +128,5 @@ async def list_results(discipline_id: uuid.UUID, db: AsyncSession = Depends(get_
     result = await db.execute(
         select(DisciplineResult)
         .where(DisciplineResult.competition_discipline_id == discipline_id)
-    )
-    return result.scalars().all()
-
-
-@router.get("/discipline/{discipline_id}/standings", response_model=list[StandingResponse])
-async def get_standings(discipline_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(DisciplineStanding)
-        .where(DisciplineStanding.competition_discipline_id == discipline_id)
-        .order_by(DisciplineStanding.place)
     )
     return result.scalars().all()

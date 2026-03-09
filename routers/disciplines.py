@@ -7,43 +7,46 @@ from models.competition_division import CompetitionDivision
 from services.discipline_standing_service import DisciplineStandingService
 from pydantic import BaseModel
 from typing import Optional
+from decimal import Decimal
 import uuid
-import datetime
 
 router = APIRouter(prefix="/disciplines", tags=["disciplines"])
 
 
 class DisciplineCreate(BaseModel):
     competition_division_id: uuid.UUID
-    name: str
-    discipline_mode: str
-    sort_order: int = 1
+    discipline_name: str
+    discipline_mode: Optional[str] = None
+    order_no: Optional[int] = 1
+    time_cap_seconds: Optional[int] = None
+    lanes_count: Optional[int] = None
 
 
 class DisciplineResponse(BaseModel):
     id: uuid.UUID
     competition_division_id: uuid.UUID
-    name: str
-    discipline_mode: str
-    sort_order: int
+    discipline_name: str
+    discipline_mode: Optional[str]
+    order_no: Optional[int]
+    time_cap_seconds: Optional[int]
 
     class Config:
         from_attributes = True
 
 
-@router.post("/", response_model=DisciplineResponse, tags=["disciplines"])
+@router.post("/", response_model=DisciplineResponse)
 async def create_discipline(data: DisciplineCreate, db: AsyncSession = Depends(get_db)):
     division = await db.get(CompetitionDivision, data.competition_division_id)
     if not division:
         raise HTTPException(status_code=404, detail="Division not found")
-
     discipline = CompetitionDiscipline(
         id=uuid.uuid4(),
         competition_division_id=data.competition_division_id,
-        name=data.name,
+        discipline_name=data.discipline_name,
         discipline_mode=data.discipline_mode,
-        sort_order=data.sort_order,
-        created_at=datetime.datetime.utcnow(),
+        order_no=data.order_no,
+        time_cap_seconds=data.time_cap_seconds,
+        lanes_count=data.lanes_count,
     )
     db.add(discipline)
     await db.commit()
@@ -56,7 +59,7 @@ async def list_disciplines(division_id: uuid.UUID, db: AsyncSession = Depends(ge
     result = await db.execute(
         select(CompetitionDiscipline)
         .where(CompetitionDiscipline.competition_division_id == division_id)
-        .order_by(CompetitionDiscipline.sort_order)
+        .order_by(CompetitionDiscipline.order_no)
     )
     return result.scalars().all()
 
