@@ -21,6 +21,8 @@ from models.athlete_sponsor import AthleteSponsor
 from models.judge import Judge
 from models.judge_certificate import JudgeCertificate
 from models.judge_competition import JudgeCompetition
+from models.organizer import Organizer
+from models.organizer_sponsor import OrganizerSponsor
 from models.person import Person
 from models.user import User
 

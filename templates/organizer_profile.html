@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ organizer.name }} — World Strongman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; min-height: 100vh; }
+
+        .header {
+            background: #0a0a0a; border-bottom: 2px solid #c9a84c;
+            padding: 16px 40px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .header-logo { display: flex; align-items: center; gap: 12px; }
+        .header-logo img { height: 52px; width: 52px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+
+        .hero {
+            background: linear-gradient(180deg, #111 0%, #0a0a0a 100%);
+            border-bottom: 1px solid #1e1e1e;
+            padding: 60px 40px 40px; display: flex; gap: 50px;
+            align-items: flex-start; max-width: 1200px; margin: 0 auto;
+        }
+
+        .org-photo-wrap { flex-shrink: 0; position: relative; }
+        .org-photo {
+            width: 220px; height: 220px; object-fit: cover;
+            border: 3px solid #c9a84c; display: block;
+            border-radius: 4px;
+        }
+        .org-photo-placeholder {
+            width: 220px; height: 220px; background: #1a1a1a;
+            border: 3px solid #333; display: flex;
+            align-items: center; justify-content: center;
+            color: #444; font-size: 64px; border-radius: 4px;
+        }
+        .country-badge {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(201,168,76,0.95); color: #0a0a0a;
+            text-align: center; padding: 6px; font-weight: 700;
+            font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        .org-info { flex: 1; padding-top: 8px; }
+        .org-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 8px; }
+        .org-name {
+            font-size: 42px; font-weight: 900; line-height: 1.1;
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;
+        }
+        .org-name span { color: #c9a84c; }
+
+        .type-badge {
+            display: inline-block; border: 2px solid #c9a84c;
+            color: #c9a84c; padding: 6px 16px; font-size: 11px;
+            letter-spacing: 3px; text-transform: uppercase; margin-bottom: 24px;
+        }
+        .type-badge.federation { border-color: #c9a84c; color: #c9a84c; }
+        .type-badge.club { border-color: #7a9a9a; color: #7a9a9a; }
+        .type-badge.person { border-color: #9a7a9a; color: #9a7a9a; }
+
+        .stats-row { display: flex; gap: 32px; margin-bottom: 30px; }
+        .stat-box {
+            text-align: center; border: 1px solid #2a2a2a;
+            padding: 16px 24px; min-width: 90px; background: #111;
+        }
+        .stat-value { font-size: 28px; font-weight: 900; color: #c9a84c; line-height: 1; }
+        .stat-label { font-size: 10px; color: #666; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+
+        .org-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+        .meta-item { font-size: 13px; color: #aaa; }
+        .meta-item strong { color: #fff; }
+        .meta-item a { color: #c9a84c; text-decoration: none; }
+
+        .content {
+            max-width: 1200px; margin: 0 auto;
+            padding: 40px; display: grid;
+            grid-template-columns: 1fr 1fr; gap: 24px;
+        }
+        .section {
+            background: #111; border: 1px solid #1e1e1e;
+            border-top: 3px solid #c9a84c; padding: 28px;
+        }
+        .section-full { grid-column: 1 / -1; }
+        .section-title {
+            font-size: 11px; letter-spacing: 4px; color: #c9a84c;
+            text-transform: uppercase; margin-bottom: 20px;
+            padding-bottom: 10px; border-bottom: 1px solid #1e1e1e;
+        }
+
+        /* SPONSORS */
+        .sponsors-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .sponsor-box {
+            border: 1px solid #2a2a2a; padding: 20px;
+            text-align: center; background: #0f0f0f;
+            transition: border-color 0.2s;
+        }
+        .sponsor-box:hover { border-color: #c9a84c; }
+        .sponsor-box.title { border-color: #c9a84c; border-width: 2px; }
+        .sponsor-box.gold { border-color: #c9a84c88; }
+        .sponsor-box.silver { border-color: #88888888; }
+        .sponsor-box.bronze { border-color: #cd7f3288; }
+        .sponsor-logo { max-height: 48px; margin-bottom: 8px; opacity: 0.85; }
+        .sponsor-name { font-size: 13px; font-weight: 700; color: #aaa; letter-spacing: 1px; text-transform: uppercase; }
+        .sponsor-tier {
+            font-size: 9px; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase;
+        }
+        .sponsor-tier.TITLE { color: #c9a84c; }
+        .sponsor-tier.GOLD { color: #c9a84c88; }
+        .sponsor-tier.SILVER { color: #888; }
+        .sponsor-tier.BRONZE { color: #cd7f32; }
+        .sponsor-expires { font-size: 10px; color: #444; margin-top: 3px; }
+
+        /* COMPETITIONS */
+        .comp-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 14px 0; border-bottom: 1px solid #1a1a1a;
+        }
+        .comp-item:last-child { border-bottom: none; }
+        .comp-date {
+            background: #c9a84c; color: #0a0a0a;
+            padding: 6px 10px; text-align: center; min-width: 52px; flex-shrink: 0;
+        }
+        .comp-date-day { font-size: 20px; font-weight: 900; line-height: 1; }
+        .comp-date-month { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .comp-name { font-size: 14px; font-weight: 700; }
+        .comp-location { font-size: 12px; color: #666; margin-top: 2px; }
+
+        .no-data { color: #444; font-size: 13px; text-align: center; padding: 20px 0; letter-spacing: 1px; }
+
+        .footer {
+            border-top: 1px solid #1e1e1e; padding: 24px 40px;
+            text-align: center; color: #333; font-size: 11px;
+            letter-spacing: 2px; text-transform: uppercase; margin-top: 20px;
+        }
+        .footer span { color: #c9a84c; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">International Union</div>
+        </div>
+    </div>
+    <div style="font-size:11px; color:#444; letter-spacing:2px; text-transform:uppercase;">Organizer Profile</div>
+</div>
+
+<div style="max-width:1200px; margin:0 auto;">
+<div class="hero">
+    <div class="org-photo-wrap">
+        {% if organizer.photo_url %}
+            <img src="{{ organizer.photo_url }}" alt="{{ organizer.name }}" class="org-photo">
+        {% else %}
+            <div class="org-photo-placeholder">
+                {% if organizer.type == 'federation' %}🏛️{% elif organizer.type == 'club' %}🏋️{% else %}👤{% endif %}
+            </div>
+        {% endif %}
+        {% if organizer.country %}
+            <div class="country-badge">{{ organizer.country }}</div>
+        {% endif %}
+    </div>
+
+    <div class="org-info">
+        <div class="org-label">WSM Certified Organizer</div>
+        <div class="org-name">{{ organizer.name }}</div>
+
+        <div class="type-badge {{ organizer.type }}">
+            {% if organizer.type == 'federation' %}Federation
+            {% elif organizer.type == 'club' %}Club
+            {% else %}Private Organizer{% endif %}
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-value">{{ competitions|length }}</div>
+                <div class="stat-label">Events</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">{{ sponsors|length }}</div>
+                <div class="stat-label">Sponsors</div>
+            </div>
+        </div>
+
+        <div class="org-meta">
+            {% if organizer.country %}
+                <div class="meta-item">Country <strong>{{ organizer.country }}</strong></div>
+            {% endif %}
+            {% if organizer.city %}
+                <div class="meta-item">City <strong>{{ organizer.city }}</strong></div>
+            {% endif %}
+            {% if organizer.website %}
+                <div class="meta-item">Web <a href="{{ organizer.website }}" target="_blank"><strong>{{ organizer.website }}</strong></a></div>
+            {% endif %}
+            {% if organizer.email %}
+                <div class="meta-item">Email <strong>{{ organizer.email }}</strong></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="content">
+
+    <!-- SPONSORS -->
+    <div class="section section-full">
+        <div class="section-title">🎽 Sponsors</div>
+        {% if sponsors %}
+        <div class="sponsors-grid">
+            {% for s in sponsors %}
+            <div class="sponsor-box {{ s.tier|lower }}">
+                {% if s.logo_url %}
+                    <img src="{{ s.logo_url }}" class="sponsor-logo">
+                {% endif %}
+                <div class="sponsor-name">{{ s.name }}</div>
+                <div class="sponsor-tier {{ s.tier }}">{{ s.tier }}</div>
+                {% if s.paid_until %}
+                    <div class="sponsor-expires">Until {{ s.paid_until }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+            <div class="no-data">No sponsors yet</div>
+        {% endif %}
+    </div>
+
+    <!-- COMPETITIONS -->
+    <div class="section section-full">
+        <div class="section-title">🏆 Competitions Organized</div>
+        {% if competitions %}
+            {% for c in competitions %}
+            <div class="comp-item">
+                {% if c.date %}
+                <div class="comp-date">
+                    <div class="comp-date-day">{{ c.date.strftime('%d') }}</div>
+                    <div class="comp-date-month">{{ c.date.strftime('%b %Y') }}</div>
+                </div>
+                {% endif %}
+                <div>
+                    <div class="comp-name">{{ c.name }}</div>
+                    {% if c.location %}<div class="comp-location">{{ c.location }}</div>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-data">No competitions organized yet</div>
+        {% endif %}
+    </div>
+
+</div>
+
+<div class="footer">
+    © 2026 <span>World Strongman</span> International Union · All Rights Reserved
+</div>
+
+</body>
+</html>

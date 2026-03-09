@@ -5,7 +5,7 @@ from db.database import SessionLocal
 
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth, judges
+from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers
 
 app = FastAPI(title="World Strongman Platform API", version="2.0.0")
 
@@ -31,6 +31,7 @@ app.include_router(participants.router)
 app.include_router(results.router)
 app.include_router(auth.router)
 app.include_router(judges.router)
+app.include_router(organizers.router)
 
 
 @app.get("/")
@@ -196,4 +197,29 @@ async def judge_profile(judge_id: str, request: Request):
         "certificates": certificates,
         "competitions": competitions,
         "level_label": level_label,
+    })
+
+
+@app.get("/organizers/{organizer_id}/profile")
+async def organizer_profile(organizer_id: str, request: Request):
+    import uuid
+    from models.organizer import Organizer
+    from models.organizer_sponsor import OrganizerSponsor
+    from models.competition import Competition
+    from sqlalchemy import select
+    async with SessionLocal() as db:
+        org = await db.get(Organizer, uuid.UUID(organizer_id))
+        if not org:
+            return {"error": "Organizer not found"}
+        sponsors_result = await db.execute(
+            select(OrganizerSponsor).where(OrganizerSponsor.organizer_id == uuid.UUID(organizer_id))
+            .order_by(OrganizerSponsor.tier)
+        )
+        sponsors = sponsors_result.scalars().all()
+        competitions = []
+    return templates.TemplateResponse("organizer_profile.html", {
+        "request": request,
+        "organizer": org,
+        "sponsors": sponsors,
+        "competitions": competitions,
     })
