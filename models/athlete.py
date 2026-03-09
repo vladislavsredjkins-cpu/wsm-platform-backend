@@ -1,6 +1,6 @@
 import uuid
 import datetime
-from sqlalchemy import Column, String, Date, Text
+from sqlalchemy import Column, String, Date, Text, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from db.base import Base
@@ -19,6 +19,7 @@ class Athlete(Base):
     phone = Column(String(50), nullable=True)
     photo_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
+    bodyweight_kg = Column(Numeric(5, 2), nullable=True)
     instagram = Column(String(100), nullable=True)
 
     participants = relationship("Participant", back_populates="athlete")

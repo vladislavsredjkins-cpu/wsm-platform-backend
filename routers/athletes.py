@@ -20,6 +20,7 @@ class AthleteCreate(BaseModel):
     country: Optional[str] = None
     gender: Optional[str] = None
     date_of_birth: Optional[datetime.date] = None
+    bodyweight_kg: Optional[Decimal] = None
     email: Optional[str] = None
     phone: Optional[str] = None
 
@@ -31,6 +32,7 @@ class AthleteResponse(BaseModel):
     country: Optional[str]
     gender: Optional[str]
     date_of_birth: Optional[datetime.date]
+    bodyweight_kg: Optional[Decimal] = None
     email: Optional[str]
 
     class Config:
@@ -217,47 +219,70 @@ async def update_athlete(athlete_id: uuid.UUID, data: AthleteCreate, db: AsyncSe
 
 
 import shutil, os
-from fastapi import UploadFile, File
-from pathlib import Path
-
-UPLOAD_DIR = Path("uploads/athletes")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-@router.post("/{athlete_id}/photo")
-async def upload_photo(
-    athlete_id: uuid.UUID,
-    file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db)
-):
+# ── SPONSORS ──────────────────────────────────────────────────────────────────
+from models.athlete_sponsor import AthleteSponsor
+
+class SponsorCreate(BaseModel):
+    name: str
+    logo_url: Optional[str] = None
+    website_url: Optional[str] = None
+
+class SponsorResponse(BaseModel):
+    id: uuid.UUID
+    athlete_id: uuid.UUID
+    name: str
+    logo_url: Optional[str]
+    website_url: Optional[str]
+    tier: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/{athlete_id}/sponsors", response_model=list[SponsorResponse])
+async def get_sponsors(athlete_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(AthleteSponsor).where(AthleteSponsor.athlete_id == athlete_id)
+    )
+    return result.scalars().all()
+
+
+@router.post("/{athlete_id}/sponsors", response_model=SponsorResponse)
+async def add_sponsor(athlete_id: uuid.UUID, data: SponsorCreate, db: AsyncSession = Depends(get_db)):
     athlete = await db.get(Athlete, athlete_id)
     if not athlete:
         raise HTTPException(status_code=404, detail="Athlete not found")
 
-    ext = file.filename.split(".")[-1].lower()
-    if ext not in ["jpg", "jpeg", "png", "webp"]:
-        raise HTTPException(status_code=400, detail="Only jpg/png/webp allowed")
+    count = await db.execute(
+        select(AthleteSponsor).where(
+            AthleteSponsor.athlete_id == athlete_id,
+            AthleteSponsor.tier == "free"
+        )
+    )
+    if len(count.scalars().all()) >= 3:
+        raise HTTPException(status_code=400, detail="Free tier limit: max 3 sponsors")
 
-    filename = f"{athlete_id}.{ext}"
-    filepath = UPLOAD_DIR / filename
-
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    photo_url = f"/uploads/athletes/{filename}"
-    athlete.photo_url = photo_url
+    sponsor = AthleteSponsor(
+        id=uuid.uuid4(),
+        athlete_id=athlete_id,
+        name=data.name,
+        logo_url=data.logo_url,
+        website_url=data.website_url,
+        tier="free",
+    )
+    db.add(sponsor)
     await db.commit()
+    await db.refresh(sponsor)
+    return sponsor
 
-    return {"photo_url": photo_url}
 
-
-@router.patch("/{athlete_id}", response_model=AthleteResponse)
-async def update_athlete(athlete_id: uuid.UUID, data: AthleteCreate, db: AsyncSession = Depends(get_db)):
-    athlete = await db.get(Athlete, athlete_id)
-    if not athlete:
-        raise HTTPException(status_code=404, detail="Athlete not found")
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(athlete, field, value)
+@router.delete("/{athlete_id}/sponsors/{sponsor_id}")
+async def remove_sponsor(athlete_id: uuid.UUID, sponsor_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    sponsor = await db.get(AthleteSponsor, sponsor_id)
+    if not sponsor or sponsor.athlete_id != athlete_id:
+        raise HTTPException(status_code=404, detail="Sponsor not found")
+    await db.delete(sponsor)
     await db.commit()
-    await db.refresh(athlete)
-    return athlete
+    return {"status": "ok"}

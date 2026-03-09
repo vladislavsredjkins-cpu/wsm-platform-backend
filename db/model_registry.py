@@ -16,5 +16,9 @@ from models.ranking_award import RankingAward
 from models.ranking_entry import RankingEntry
 from models.weight_category import WeightCategory
 from models.team_rule import TeamRule
+from models.country import Country
+from models.athlete_sponsor import AthleteSponsor
+from models.person import Person
+from models.user import User
 
 target_metadata = Base.metadata
