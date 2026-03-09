@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASL Final Four {{ league.season }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; }
+        .header { background: #0a0a0a; border-bottom: 2px solid #c9a84c; padding: 16px 40px; display: flex; align-items: center; justify-content: space-between; }
+        .header-logo { display: flex; align-items: center; gap: 12px; }
+        .header-logo img { height: 52px; width: 52px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .nav { display: flex; gap: 24px; }
+        .nav a { font-size: 11px; letter-spacing: 2px; color: #888; text-decoration: none; text-transform: uppercase; padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .nav a:hover, .nav a.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+        .hero { background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); border-bottom: 1px solid #1e1e1e; padding: 50px 40px; text-align: center; position: relative; overflow: hidden; }
+        .hero::before { content: 'F4'; position: absolute; font-size: 400px; font-weight: 900; color: #c9a84c; opacity: 0.025; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .hero-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 10px; }
+        .hero-title { font-size: 56px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; line-height: 1; }
+        .hero-title span { color: #c9a84c; }
+        .hero-sub { font-size: 13px; color: #666; letter-spacing: 3px; margin-top: 12px; }
+        .content { max-width: 1100px; margin: 0 auto; padding: 50px 40px 80px; }
+
+        /* BRACKET */
+        .bracket { display: grid; grid-template-columns: 1fr 120px 1fr; gap: 0; align-items: center; margin-bottom: 60px; }
+        .semis { display: flex; flex-direction: column; gap: 60px; }
+        .semi-match { background: #111; border: 1px solid #1e1e1e; border-top: 3px solid #c9a84c; position: relative; }
+        .semi-match.third { border-top-color: #cd7f32; }
+        .match-label { padding: 8px 16px; font-size: 9px; letter-spacing: 3px; color: #555; text-transform: uppercase; border-bottom: 1px solid #1a1a1a; }
+        .match-label.gold { color: #c9a84c; }
+        .match-label.bronze { color: #cd7f32; }
+        .bracket-team { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #1a1a1a; cursor: default; }
+        .bracket-team:last-of-type { border-bottom: none; }
+        .bracket-team.winner { background: #0f0f0a; }
+        .bracket-team-logo { width: 32px; height: 32px; object-fit: contain; background: #1a1a1a; border: 1px solid #222; }
+        .bracket-team-logo-ph { width: 32px; height: 32px; background: #1a1a1a; border: 1px solid #222; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .bracket-team-name { flex: 1; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .bracket-team-country { font-size: 10px; color: #666; }
+        .bracket-team-score { font-size: 20px; font-weight: 900; color: #c9a84c; min-width: 28px; text-align: right; }
+        .bracket-team-score.loser { color: #444; }
+        .bracket-team-tbd { padding: 14px 16px; font-size: 11px; color: #333; letter-spacing: 2px; text-transform: uppercase; border-bottom: 1px solid #1a1a1a; }
+        .bracket-team-tbd:last-child { border-bottom: none; }
+
+        /* CENTER CONNECTOR */
+        .bracket-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; height: 100%; }
+        .connector { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .connector-line { width: 2px; background: #2a2a2a; flex: 1; }
+        .connector-arrow { font-size: 18px; color: #c9a84c; }
+
+        /* FINAL */
+        .final-block { display: flex; flex-direction: column; gap: 20px; }
+        .final-match { background: #111; border: 1px solid #c9a84c; border-top: 4px solid #c9a84c; }
+        .third-match { background: #111; border: 1px solid #cd7f32; border-top: 4px solid #cd7f32; }
+
+        /* CHAMPION */
+        .champion-block { text-align: center; margin-top: 60px; padding: 40px; background: linear-gradient(135deg, #111 0%, #1a1500 100%); border: 1px solid #c9a84c; position: relative; overflow: hidden; }
+        .champion-block::before { content: '★'; position: absolute; font-size: 300px; color: #c9a84c; opacity: 0.03; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .champion-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 12px; }
+        .champion-name { font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
+        .champion-sub { font-size: 13px; color: #888; letter-spacing: 3px; margin-top: 8px; }
+        .champion-logo { width: 80px; height: 80px; object-fit: contain; margin: 0 auto 16px; display: block; }
+        .champion-tbd { font-size: 32px; font-weight: 900; color: #333; letter-spacing: 4px; }
+
+        /* QUALIFIERS */
+        .qualifiers { margin-bottom: 50px; }
+        .qual-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .qual-card { background: #111; border: 1px solid #1e1e1e; border-top: 3px solid #7a9a7a; padding: 16px; text-align: center; }
+        .qual-div { font-size: 10px; letter-spacing: 2px; color: #7a9a7a; text-transform: uppercase; margin-bottom: 8px; }
+        .qual-logo { width: 48px; height: 48px; object-fit: contain; margin: 0 auto 8px; display: block; background: #1a1a1a; border: 1px solid #222; }
+        .qual-logo-ph { width: 48px; height: 48px; background: #1a1a1a; border: 1px solid #222; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 8px; }
+        .qual-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .qual-country { font-size: 11px; color: #666; margin-top: 4px; }
+        .qual-tbd { font-size: 12px; color: #333; letter-spacing: 2px; text-transform: uppercase; padding: 20px 0; }
+
+        .section-title { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #1e1e1e; }
+        .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .footer span { color: #c9a84c; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">Asian Strongman League</div>
+        </div>
+    </div>
+    <nav class="nav">
+        <a href="/asl/{{ league.id }}">Standings</a>
+        <a href="/asl/{{ league.id }}/final-four" class="active">Final Four</a>
+        <a href="/teams/">Teams</a>
+    </nav>
+</div>
+
+<div class="hero">
+    <div class="hero-label">ASL Season {{ league.season }} · Playoffs</div>
+    <div class="hero-title">FINAL <span>FOUR</span></div>
+    <div class="hero-sub">4 Division Champions · Semi-Finals · Final · Champion</div>
+</div>
+
+<div class="content">
+
+    <!-- QUALIFIERS -->
+    <div class="qualifiers">
+        <div class="section-title">🏆 Division Champions — Qualified</div>
+        <div class="qual-grid">
+            {% for div in divisions %}
+            <div class="qual-card">
+                <div class="qual-div">{{ div.name }}</div>
+                {% if qualifiers.get(div.id|string) %}
+                    {% set q = qualifiers[div.id|string] %}
+                    {% if q.logo_url %}
+                        <img class="qual-logo" src="{{ q.logo_url }}" alt="">
+                    {% else %}
+                        <div class="qual-logo-ph">🏋️</div>
+                    {% endif %}
+                    <div class="qual-name">{{ q.name }}</div>
+                    <div class="qual-country">{{ q.country or '' }}</div>
+                {% else %}
+                    <div class="qual-logo-ph" style="color:#222;">?</div>
+                    <div class="qual-tbd">Season in progress</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- BRACKET -->
+    <div class="section-title">⚡ Tournament Bracket</div>
+    <div class="bracket">
+
+        <!-- LEFT SEMIS -->
+        <div class="semis">
+            <div class="semi-match">
+                <div class="match-label">Semi-Final 1</div>
+                {% if sf1 %}
+                    {% for team, score, is_winner in sf1_teams %}
+                    <div class="bracket-team {% if is_winner %}winner{% endif %}">
+                        {% if team and team.logo_url %}
+                            <img class="bracket-team-logo" src="{{ team.logo_url }}" alt="">
+                        {% else %}
+                            <div class="bracket-team-logo-ph">🏋️</div>
+                        {% endif %}
+                        <div>
+                            <div class="bracket-team-name">{{ team.name if team else 'TBD' }}</div>
+                            <div class="bracket-team-country">{{ team.country if team else '' }}</div>
+                        </div>
+                        <div class="bracket-team-score {% if not is_winner and sf1.status == 'completed' %}loser{% endif %}">
+                            {% if sf1.status == 'completed' %}{{ score }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="bracket-team-tbd">Division 1 Champion</div>
+                    <div class="bracket-team-tbd">Division 2 Champion</div>
+                {% endif %}
+            </div>
+
+            <div class="semi-match third">
+                <div class="match-label bronze">3rd Place Match</div>
+                {% if third %}
+                    {% for team, score, is_winner in third_teams %}
+                    <div class="bracket-team {% if is_winner %}winner{% endif %}">
+                        {% if team and team.logo_url %}
+                            <img class="bracket-team-logo" src="{{ team.logo_url }}" alt="">
+                        {% else %}
+                            <div class="bracket-team-logo-ph">🏋️</div>
+                        {% endif %}
+                        <div>
+                            <div class="bracket-team-name">{{ team.name if team else 'TBD' }}</div>
+                            <div class="bracket-team-country">{{ team.country if team else '' }}</div>
+                        </div>
+                        <div class="bracket-team-score">
+                            {% if third.status == 'completed' %}{{ score }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="bracket-team-tbd">Semi-Final 1 Loser</div>
+                    <div class="bracket-team-tbd">Semi-Final 2 Loser</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- CENTER -->
+        <div class="bracket-center" style="padding: 0 20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;">
+            <div style="width:40px; height:2px; background:#2a2a2a;"></div>
+            <div style="font-size:10px; color:#c9a84c; letter-spacing:3px; text-transform:uppercase; writing-mode:vertical-lr; transform:rotate(180deg); padding:10px 0;">Final</div>
+            <div style="width:40px; height:2px; background:#2a2a2a;"></div>
+        </div>
+
+        <!-- RIGHT: FINAL + 3RD -->
+        <div class="final-block">
+            <div class="final-match">
+                <div class="match-label gold">🏆 Grand Final</div>
+                {% if final %}
+                    {% for team, score, is_winner in final_teams %}
+                    <div class="bracket-team {% if is_winner %}winner{% endif %}">
+                        {% if team and team.logo_url %}
+                            <img class="bracket-team-logo" src="{{ team.logo_url }}" alt="">
+                        {% else %}
+                            <div class="bracket-team-logo-ph">🏋️</div>
+                        {% endif %}
+                        <div>
+                            <div class="bracket-team-name">{{ team.name if team else 'TBD' }}</div>
+                            <div class="bracket-team-country">{{ team.country if team else '' }}</div>
+                        </div>
+                        <div class="bracket-team-score {% if not is_winner and final.status == 'completed' %}loser{% endif %}">
+                            {% if final.status == 'completed' %}{{ score }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="bracket-team-tbd">SF1 Winner</div>
+                    <div class="bracket-team-tbd">SF2 Winner</div>
+                {% endif %}
+            </div>
+
+            <div class="semi-match" style="border-top-color:#5a7a5a;">
+                <div class="match-label">Semi-Final 2</div>
+                {% if sf2 %}
+                    {% for team, score, is_winner in sf2_teams %}
+                    <div class="bracket-team {% if is_winner %}winner{% endif %}">
+                        {% if team and team.logo_url %}
+                            <img class="bracket-team-logo" src="{{ team.logo_url }}" alt="">
+                        {% else %}
+                            <div class="bracket-team-logo-ph">🏋️</div>
+                        {% endif %}
+                        <div>
+                            <div class="bracket-team-name">{{ team.name if team else 'TBD' }}</div>
+                            <div class="bracket-team-country">{{ team.country if team else '' }}</div>
+                        </div>
+                        <div class="bracket-team-score {% if not is_winner and sf2.status == 'completed' %}loser{% endif %}">
+                            {% if sf2.status == 'completed' %}{{ score }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="bracket-team-tbd">Division 3 Champion</div>
+                    <div class="bracket-team-tbd">Division 4 Champion</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAMPION -->
+    <div class="champion-block">
+        <div class="champion-label">🏆 ASL Season {{ league.season }} Champion</div>
+        {% if champion %}
+            {% if champion.logo_url %}
+                <img class="champion-logo" src="{{ champion.logo_url }}" alt="">
+            {% endif %}
+            <div class="champion-name">{{ champion.name }}</div>
+            <div class="champion-sub">{{ champion.country or '' }} · Asian Strongman League Champion</div>
+        {% else %}
+            <div class="champion-tbd">TO BE DETERMINED</div>
+            <div class="champion-sub" style="margin-top:12px;">Season in progress · Final Four not yet played</div>
+        {% endif %}
+    </div>
+
+</div>
+<div class="footer">© 2026 <span>World Strongman</span> International Union · Asian Strongman League</div>
+</body>
+</html>

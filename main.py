@@ -369,3 +369,57 @@ async def asl_home(league_id: str, request: Request):
         "total_teams": total_teams,
         "total_matches": total_matches,
     })
+
+
+@app.get("/asl/{league_id}/final-four")
+async def asl_final_four(league_id: str, request: Request):
+    from sqlalchemy import select
+    from models.asl_league import ASLLeague
+    from models.asl_division import ASLDivision
+    from models.team_standing import TeamStanding
+    from models.team import Team
+    from models.match import Match
+    import uuid
+    lid = uuid.UUID(league_id)
+    async with SessionLocal() as db:
+        league = await db.get(ASLLeague, lid)
+        if not league:
+            return {"error": "League not found"}
+        divs_result = await db.execute(
+            select(ASLDivision).where(ASLDivision.league_id == lid).order_by(ASLDivision.name)
+        )
+        divisions = divs_result.scalars().all()
+        # Лидеры каждого дивизиона
+        qualifiers = {}
+        for div in divisions:
+            s_result = await db.execute(
+                select(TeamStanding)
+                .where(TeamStanding.asl_division_id == div.id)
+                .order_by(TeamStanding.points.desc(), TeamStanding.disciplines_won.desc())
+                .limit(1)
+            )
+            top = s_result.scalar_one_or_none()
+            if top:
+                qualifiers[str(div.id)] = await db.get(Team, top.team_id)
+        # Final Four матчи по типу
+        ff_matches = await db.execute(
+            select(Match).where(
+                Match.asl_division_id == None,
+                Match.competition_division_id == None
+            )
+        )
+        # Пока финальные матчи хранятся отдельно — упрощённая версия
+        sf1 = sf2 = final = third = None
+        sf1_teams = sf2_teams = final_teams = third_teams = []
+        champion = None
+    return templates.TemplateResponse("asl_final_four.html", {
+        "request": request,
+        "league": league,
+        "divisions": divisions,
+        "qualifiers": qualifiers,
+        "sf1": sf1, "sf1_teams": sf1_teams,
+        "sf2": sf2, "sf2_teams": sf2_teams,
+        "final": final, "final_teams": final_teams,
+        "third": third, "third_teams": third_teams,
+        "champion": champion,
+    })
