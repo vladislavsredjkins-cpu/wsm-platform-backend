@@ -121,6 +121,18 @@
             .header-text-top { font-size: 10px; }
             .nav-item { padding: 14px 10px; font-size: 10px; }
         }
+
+        /* ── BURGER MENU ─────────────────────────────────────── */
+        .burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 8px; }
+        .burger span { width: 24px; height: 2px; background: #c9a84c; display: block; transition: all 0.3s; }
+        .mobile-nav { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0a0a0a; z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+        .mobile-nav.open { display: flex; }
+        .mobile-nav .nav-item { font-size: 14px; padding: 16px 24px; letter-spacing: 3px; }
+        .mobile-nav-close { position: absolute; top: 20px; right: 20px; font-size: 24px; color: #c9a84c; cursor: pointer; background: none; border: none; }
+        @media (max-width: 768px) {
+            .burger { display: flex; }
+            .main-nav { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -144,6 +156,24 @@
        style="padding:8px 18px;border:1px solid #c9a84c;color:#c9a84c;font-size:11px;font-weight:700;letter-spacing:2px;text-decoration:none;text-transform:uppercase;">
         ⚡ LOGIN
     </a>
+    <button class="burger" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="mobile-nav" id="mobile-nav">
+        <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
+        <a href="/competitions-list" class="nav-item"><span>🏆</span> Competitions</a>
+        <a href="/rankings" class="nav-item"><span>📊</span> Rankings</a>
+        <a href="/athletes-list" class="nav-item"><span>💪</span> Athletes</a>
+        <a href="/judges-list" class="nav-item"><span>⚖️</span> Judges</a>
+        <a href="/organizers-list" class="nav-item"><span>🏛️</span> Organizers</a>
+        <a href="/teams-list" class="nav-item"><span>👥</span> Teams</a>
+        <a href="/register/organizer" class="nav-item" style="color:#c9a84c;border:1px solid #c9a84c;margin-top:16px;">⚡ LOGIN</a>
+    </div>
+    <script>
+    function toggleMobileNav() {
+        document.getElementById('mobile-nav').classList.toggle('open');
+    }
+    </script>
 </header>
 
 <div class="hero">
