@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol — {{ competition.name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #fff; color: #111; font-family: Arial, sans-serif; font-size: 12px; }
+
+        /* Screen only */
+        @media screen {
+            body { padding: 20px; max-width: 1200px; margin: 0 auto; }
+            .print-btn { position: fixed; top: 20px; right: 20px; padding: 12px 28px; background: #c9a84c; color: #000; border: none; border-radius: 4px; font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 1px; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+            .print-btn:hover { background: #b8943d; }
+        }
+
+        /* Print */
+        @media print {
+            .print-btn { display: none !important; }
+            .page-break { page-break-before: always; }
+            body { padding: 0; font-size: 11px; }
+        }
+
+        /* Header */
+        .protocol-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0 16px; border-bottom: 3px solid #c9a84c; margin-bottom: 20px; }
+        .header-logos { display: flex; align-items: center; gap: 16px; }
+        .header-logo-img { height: 60px; width: 60px; border-radius: 50%; object-fit: cover; }
+        .header-logo-text { }
+        .header-logo-name { font-size: 16px; font-weight: 900; letter-spacing: 2px; color: #111; text-transform: uppercase; }
+        .header-logo-sub { font-size: 9px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+        .header-center { text-align: center; flex: 1; }
+        .header-doc-type { font-size: 10px; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; margin-bottom: 4px; }
+        .header-comp-name { font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #111; }
+        .header-meta { font-size: 11px; color: #666; margin-top: 4px; letter-spacing: 1px; }
+        .header-right { text-align: right; min-width: 120px; }
+        .header-date { font-size: 11px; color: #888; }
+        .header-doc-no { font-size: 10px; color: #bbb; margin-top: 4px; }
+
+        /* Division block */
+        .division-block { margin-bottom: 32px; }
+        .division-title { font-size: 13px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; color: #111; padding: 8px 12px; background: #f5f0e8; border-left: 4px solid #c9a84c; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+        .division-status { font-size: 9px; letter-spacing: 2px; padding: 2px 8px; border: 1px solid #c9a84c; color: #c9a84c; }
+
+        /* Results table */
+        .section-label { font-size: 9px; letter-spacing: 3px; color: #999; text-transform: uppercase; margin-bottom: 6px; margin-top: 16px; }
+        .results-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        .results-table th { padding: 6px 8px; font-size: 8px; letter-spacing: 1px; color: #888; text-transform: uppercase; border-bottom: 2px solid #c9a84c; text-align: center; background: #fafafa; white-space: nowrap; }
+        .results-table th.left { text-align: left; }
+        .results-table th.disc-group { background: #f5f0e8; border-left: 1px solid #e0d5c0; color: #c9a84c; font-size: 8px; }
+        .results-table td { padding: 5px 8px; font-size: 11px; text-align: center; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+        .results-table td.left { text-align: left; }
+        .results-table tbody tr:nth-child(even) { background: #fafafa; }
+        .results-table tbody tr:hover { background: #f5f0e8; }
+        .place-col { font-size: 14px; font-weight: 900; color: #ccc; }
+        .place-col.p1 { color: #c9a84c; }
+        .place-col.p2 { color: #888; }
+        .place-col.p3 { color: #cd7f32; }
+        .athlete-name { font-weight: 700; font-size: 12px; color: #111; }
+        .athlete-country { font-size: 10px; color: #888; }
+        .disc-cell { border-left: 1px solid #eee; }
+        .disc-result { font-weight: 700; color: #111; }
+        .disc-place { font-size: 10px; color: #888; }
+        .disc-pts { font-size: 10px; color: #c9a84c; font-weight: 700; }
+        .total-pts { font-size: 14px; font-weight: 900; color: #c9a84c; }
+
+        /* Start order */
+        .start-order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .start-order-disc { border: 1px solid #e0e0e0; border-top: 3px solid #c9a84c; padding: 10px 12px; }
+        .start-order-disc-name { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #c9a84c; margin-bottom: 8px; }
+        .start-order-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #f5f5f5; }
+        .start-order-num { font-size: 11px; font-weight: 700; color: #c9a84c; width: 20px; }
+        .start-order-name { font-size: 11px; font-weight: 600; color: #111; flex: 1; }
+        .start-order-country { font-size: 10px; color: #888; }
+
+        /* Footer */
+        .protocol-footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: flex-end; }
+        .footer-sign { text-align: center; min-width: 160px; }
+        .footer-sign-line { border-top: 1px solid #333; margin-bottom: 4px; }
+        .footer-sign-label { font-size: 9px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+        .footer-wsm { font-size: 9px; color: #bbb; letter-spacing: 2px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨️ PRINT / SAVE PDF</button>
+
+<!-- HEADER -->
+<div class="protocol-header">
+    <div class="header-logos">
+        <img class="header-logo-img" src="/static/logo.jpg" alt="WSM">
+        <div class="header-logo-text">
+            <div class="header-logo-name">World Strongman</div>
+            <div class="header-logo-sub">International Union</div>
+        </div>
+    </div>
+    <div class="header-center">
+        <div class="header-doc-type">Official Results Protocol</div>
+        <div class="header-comp-name">{{ competition.name }}</div>
+        <div class="header-meta">
+            {% if competition.city %}{{ competition.city }}{% if competition.country %}, {{ competition.country }}{% endif %}{% endif %}
+            {% if competition.date_start %} · {{ competition.date_start }}{% if competition.date_end %} — {{ competition.date_end }}{% endif %}{% endif %}
+            · Q × {{ competition.coefficient_q }}
+        </div>
+    </div>
+    <div class="header-right" style="text-align:right;">
+        {% if organizer and organizer.photo_url %}
+        <img src="{{ organizer.photo_url }}" alt="{{ organizer.name }}" style="height:50px;max-width:120px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;">
+        {% endif %}
+        {% if organizer %}
+        <div style="font-size:11px;font-weight:700;color:#111;">{{ organizer.name }}</div>
+        {% endif %}
+        <div class="header-date">{{ competition.date_end or competition.date_start or '' }}</div>
+        <div class="header-doc-no">DOC #{{ competition.id|string|truncate(8, true, '') }}</div>
+    </div>
+</div>
+
+{% for dd in divisions_data %}
+<div class="division-block {% if not loop.first %}page-break{% endif %}">
+
+    <div class="division-title">
+        {{ dd.division.division_key }} — {{ dd.division.age_group }}
+        <span class="division-status">{{ dd.division.status }}</span>
+    </div>
+
+    <!-- RESULTS TABLE -->
+    <div class="section-label">📊 Final Results</div>
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th style="width:30px;">#</th>
+                <th style="width:25px;">Lot</th>
+                <th style="width:30px;">Bib</th>
+                <th class="left" style="min-width:150px;">Athlete</th>
+                <th style="width:50px;">Country</th>
+                {% for disc in dd.disciplines %}
+                <th class="disc-group" colspan="3">
+                    {{ disc.discipline_name }}
+                    {% if disc.result_unit %}<br><span style="font-size:7px;color:#aaa;">{{ disc.result_unit }}</span>{% endif %}
+                </th>
+                {% endfor %}
+                <th style="min-width:40px;">Pts</th>
+                <th style="min-width:30px;">Pl</th>
+            </tr>
+            <tr style="background:#fafafa;">
+                <th colspan="5"></th>
+                {% for disc in dd.disciplines %}
+                <th class="disc-group" style="font-size:7px;color:#aaa;font-weight:400;">Res</th>
+                <th class="disc-group" style="font-size:7px;color:#aaa;font-weight:400;">М</th>
+                <th class="disc-group" style="font-size:7px;color:#c9a84c;font-weight:700;">Pts</th>
+                {% endfor %}
+                <th colspan="2"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in dd.participants %}
+            {% set ath = dd.athlete_map.get(p.id|string) %}
+            {% set overall = dd.overall_standings.get(p.id|string) %}
+            <tr>
+                <td><span class="place-col {% if overall and overall.overall_place == 1 %}p1{% elif overall and overall.overall_place == 2 %}p2{% elif overall and overall.overall_place == 3 %}p3{% endif %}">{{ overall.overall_place if overall else '—' }}</span></td>
+                <td style="color:#aaa;font-size:10px;">{{ p.lot_number or '—' }}</td>
+                <td style="font-weight:700;color:#666;">{{ p.bib_no or '—' }}</td>
+                <td class="left">
+                    <div class="athlete-name">{{ ath.first_name ~ ' ' ~ ath.last_name if ath else '—' }}</div>
+                </td>
+                <td class="athlete-country">{{ ath.country if ath else '—' }}</td>
+                {% for disc in dd.disciplines %}
+                {% set res = dd.results_map.get(disc.id|string, {}).get(p.id|string) %}
+                {% set st = dd.standings_map.get(disc.id|string, {}).get(p.id|string) %}
+                <td class="disc-cell">
+                    <div class="disc-result">
+                        {% if res %}
+                            {% if res.reps %}{{ res.reps }}r
+                            {% elif res.primary_value %}{{ res.primary_value }}{% endif %}
+                        {% else %}—{% endif %}
+                    </div>
+                </td>
+                <td class="disc-cell"><div class="disc-place">{{ st.place if st else '—' }}</div></td>
+                <td class="disc-cell"><div class="disc-pts">{{ st.points_for_discipline if st else '—' }}</div></td>
+                {% endfor %}
+                <td class="total-pts">{{ overall.total_points if overall else '—' }}</td>
+                <td><span class="place-col {% if overall and overall.overall_place == 1 %}p1{% elif overall and overall.overall_place == 2 %}p2{% elif overall and overall.overall_place == 3 %}p3{% endif %}">{{ overall.overall_place if overall else '—' }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- START ORDER -->
+    {% if dd.disciplines %}
+    <div class="section-label" style="margin-top:20px;">🚦 Start Order by Discipline</div>
+    <div class="start-order-grid">
+        {% for disc in dd.disciplines %}
+        <div class="start-order-disc">
+            <div class="start-order-disc-name">{{ loop.index }}. {{ disc.discipline_name }}</div>
+            {% for p in dd.participants %}
+            {% set start_no = dd.start_orders.get(disc.id|string, {}).get(p.id|string) %}
+            {% set ath = dd.athlete_map.get(p.id|string) %}
+            <div class="start-order-row">
+                <span class="start-order-num">{{ start_no or '—' }}</span>
+                <span class="start-order-name">{{ ath.first_name ~ ' ' ~ ath.last_name if ath else '—' }}</span>
+                <span class="start-order-country">{{ ath.country if ath else '' }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>
+{% endfor %}
+
+<!-- FOOTER -->
+<div class="protocol-footer">
+    <div class="footer-sign">
+        <div class="footer-sign-line"></div>
+        <div class="footer-sign-label">Chief Referee</div>
+    </div>
+    <div class="footer-wsm">© 2026 World Strongman International Union</div>
+    <div class="footer-sign">
+        <div class="footer-sign-line"></div>
+        <div class="footer-sign-label">Competition Director</div>
+    </div>
+</div>
+
+</body>
+</html>
