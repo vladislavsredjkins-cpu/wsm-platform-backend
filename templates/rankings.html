@@ -66,6 +66,16 @@
         .result-chip-place { color: #555; }
 
         .empty { text-align: center; padding: 80px; color: #333; font-size: 13px; letter-spacing: 2px; }
+        .btn-share { padding: 5px 12px; background: transparent; border: 1px solid #2a2a2a; color: #555; border-radius: 3px; font-size: 10px; font-weight: 700; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+        .btn-share:hover { border-color: #c9a84c; color: #c9a84c; }
+        .share-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; }
+        .share-modal.open { display: flex; }
+        .share-box { background: #111; border: 1px solid #2a2a2a; border-radius: 6px; padding: 24px; max-width: 420px; width: 90%; text-align: center; }
+        .share-box-title { font-size: 11px; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; margin-bottom: 16px; }
+        .share-canvas-wrap { margin: 0 auto 16px; }
+        .share-actions { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+        .btn-download { padding: 10px 24px; background: #c9a84c; color: #000; border: none; border-radius: 3px; font-size: 11px; font-weight: 900; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; }
+        .btn-close-modal { padding: 10px 24px; background: transparent; border: 1px solid #2a2a2a; color: #666; border-radius: 3px; font-size: 11px; cursor: pointer; }
         .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: 60px; }
         .footer span { color: #c9a84c; }
         .stat-bar { display: flex; gap: 32px; padding: 20px 0 0; }
@@ -144,6 +154,7 @@
                 <th style="width:48px;">#</th>
                 <th>Athlete</th>
                 <th class="right">Competitions</th>
+                <th style="text-align:center;">Share</th>
                 <th class="right">Best Result</th>
                 <th class="right">Total Pts</th>
             </tr>
@@ -169,6 +180,17 @@
                 </div>
             </td>
             <td class="comps-cell">{{ r.results|length }}</td>
+            <td style="text-align:center;">
+                <button class="btn-share" onclick="event.stopPropagation(); showShare(
+                    {{ r.rank }},
+                    '{{ ath.first_name ~ " " ~ ath.last_name if ath else "" }}',
+                    '{{ ath.country if ath else "" }}',
+                    '{{ "%.1f"|format(r.total) }}',
+                    '{{ ath.photo_url if ath and ath.photo_url else "" }}',
+                    '{{ selected_division }}',
+                    {{ selected_year }}
+                )">⬆ SHARE</button>
+            </td>
             <td class="best-cell">
                 {% set best = r.results|selectattr('place')|sort(attribute='place')|first %}
                 {% if best %}{{ best.place }}. place · {{ best.comp_name }}{% endif %}
@@ -208,6 +230,172 @@ function navigate(division, year) {
 function toggleExpand(id) {
     const el = document.getElementById(id);
     el.classList.toggle('open');
+}
+</script>
+<!-- Share Modal -->
+<div class="share-modal" id="share-modal" onclick="closeShare()">
+    <div class="share-box" onclick="event.stopPropagation()">
+        <div class="share-box-title">⬆ Share Your Ranking</div>
+        <div class="share-canvas-wrap">
+            <canvas id="share-canvas" width="400" height="500" style="border-radius:4px;max-width:100%;"></canvas>
+        </div>
+        <div class="share-actions">
+            <button class="btn-download" onclick="downloadCard()">⬇ DOWNLOAD</button>
+            <button class="btn-close-modal" onclick="closeShare()">CLOSE</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const WSM_GOLD = '#c9a84c';
+const WSM_DARK = '#0a0a0a';
+
+function showShare(rank, name, country, points, photoUrl, division, year) {
+    document.getElementById('share-modal').classList.add('open');
+    const canvas = document.getElementById('share-canvas');
+    const ctx = canvas.getContext('2d');
+    drawCard(ctx, canvas, rank, name, country, points, photoUrl, division, year);
+}
+
+function closeShare() {
+    document.getElementById('share-modal').classList.remove('open');
+}
+
+function downloadCard() {
+    const canvas = document.getElementById('share-canvas');
+    const link = document.createElement('a');
+    link.download = 'wsm-ranking-card.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+function drawCard(ctx, canvas, rank, name, country, points, photoUrl, division, year) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, W, H);
+
+    // Gold border
+    ctx.strokeStyle = WSM_GOLD;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(10, 10, W-20, H-20);
+
+    // Inner border
+    ctx.strokeStyle = 'rgba(201,168,76,0.2)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(18, 18, W-36, H-36);
+
+    // Top gold bar
+    ctx.fillStyle = WSM_GOLD;
+    ctx.fillRect(10, 10, W-20, 4);
+
+    // WSM Label
+    ctx.fillStyle = WSM_GOLD;
+    ctx.font = '700 11px Arial';
+    ctx.letterSpacing = '3px';
+    ctx.textAlign = 'center';
+    ctx.fillText('WORLD STRONGMAN · WORLD RANKINGS', W/2, 50);
+
+    // Division + Year
+    ctx.fillStyle = '#444';
+    ctx.font = '400 11px Arial';
+    ctx.fillText(division + ' · ' + year, W/2, 70);
+
+    // Rank number
+    const placeColor = rank === 1 ? WSM_GOLD : rank === 2 ? '#aaa' : rank === 3 ? '#cd7f32' : '#555';
+    ctx.fillStyle = placeColor;
+    ctx.font = '900 96px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('#' + rank, W/2, 185);
+
+    // Rank label
+    ctx.fillStyle = '#333';
+    ctx.font = '700 11px Arial';
+    ctx.fillText('WORLD RANKING', W/2, 210);
+
+    // Divider
+    ctx.strokeStyle = '#1e1e1e';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 230); ctx.lineTo(W-40, 230);
+    ctx.stroke();
+
+    // Photo circle (if available)
+    const photoY = 270;
+    if (photoUrl) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(W/2, photoY, 50, 0, Math.PI*2);
+            ctx.clip();
+            ctx.drawImage(img, W/2-50, photoY-50, 100, 100);
+            ctx.restore();
+            // Gold ring
+            ctx.strokeStyle = WSM_GOLD;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(W/2, photoY, 51, 0, Math.PI*2);
+            ctx.stroke();
+            drawNameSection(ctx, W, H, name, country, points);
+        };
+        img.onerror = () => {
+            drawAvatarPlaceholder(ctx, W/2, photoY);
+            drawNameSection(ctx, W, H, name, country, points);
+        };
+        img.src = photoUrl;
+    } else {
+        drawAvatarPlaceholder(ctx, W/2, photoY);
+        drawNameSection(ctx, W, H, name, country, points);
+    }
+}
+
+function drawAvatarPlaceholder(ctx, x, y) {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.arc(x, y, 50, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = WSM_GOLD;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 51, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.fillStyle = '#333';
+    ctx.font = '40px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('💪', x, y+14);
+}
+
+function drawNameSection(ctx, W, H, name, country, points) {
+    // Name
+    ctx.fillStyle = '#fff';
+    ctx.font = '900 22px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(name.toUpperCase(), W/2, 350);
+
+    // Country
+    ctx.fillStyle = '#555';
+    ctx.font = '400 13px Arial';
+    ctx.fillText(country, W/2, 372);
+
+    // Points
+    ctx.fillStyle = WSM_GOLD;
+    ctx.font = '900 32px Arial';
+    ctx.fillText(points + ' PTS', W/2, 420);
+
+    ctx.fillStyle = '#333';
+    ctx.font = '400 10px Arial';
+    ctx.fillText('TOTAL RANKING POINTS', W/2, 440);
+
+    // Footer
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(10, H-50, W-20, 40);
+    ctx.fillStyle = WSM_GOLD;
+    ctx.font = '700 10px Arial';
+    ctx.fillText('STRONGMANRANKING.ORG', W/2, H-25);
 }
 </script>
 </body>
