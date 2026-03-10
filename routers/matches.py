@@ -14,7 +14,8 @@ from auth.dependencies import get_current_user
 router = APIRouter(prefix="/matches", tags=["matches"])
 
 class MatchCreate(BaseModel):
-    competition_division_id: uuid.UUID
+    asl_division_id: Optional[uuid.UUID] = None
+    competition_division_id: Optional[uuid.UUID] = None
     home_team_id: uuid.UUID
     away_team_id: uuid.UUID
     match_date: Optional[date] = None
@@ -58,8 +59,10 @@ def update_standings(standings_home: TeamStanding, standings_away: TeamStanding,
 @router.get("/division/{division_id}")
 async def list_matches(division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(Match).where(Match.competition_division_id == division_id)
-        .order_by(Match.round_number, Match.match_date)
+        select(Match).where(
+            (Match.competition_division_id == division_id) |
+            (Match.asl_division_id == division_id)
+        ).order_by(Match.round_number, Match.match_date)
     )
     return result.scalars().all()
 
@@ -131,20 +134,33 @@ async def submit_score(match_id: uuid.UUID, data: ScoreSubmit,
     match.status = "completed"
 
     # Обновляем standings
-    div_id = match.competition_division_id
+    div_id = match.asl_division_id or match.competition_division_id
 
     async def get_or_create_standing(team_id):
-        res = await db.execute(
-            select(TeamStanding).where(
-                TeamStanding.team_id == team_id,
-                TeamStanding.competition_division_id == div_id
+        is_asl = match.asl_division_id is not None
+        if is_asl:
+            res = await db.execute(
+                select(TeamStanding).where(
+                    TeamStanding.team_id == team_id,
+                    TeamStanding.asl_division_id == div_id
+                )
             )
-        )
+        else:
+            res = await db.execute(
+                select(TeamStanding).where(
+                    TeamStanding.team_id == team_id,
+                    TeamStanding.competition_division_id == div_id
+                )
+            )
         s = res.scalar_one_or_none()
         if not s:
-            s = TeamStanding(team_id=team_id, competition_division_id=div_id,
-                             matches_played=0, wins=0, losses=0,
-                             disciplines_won=0, disciplines_lost=0, points=0)
+            s = TeamStanding(
+                team_id=team_id,
+                asl_division_id=div_id if is_asl else None,
+                competition_division_id=None if is_asl else div_id,
+                matches_played=0, wins=0, losses=0,
+                disciplines_won=0, disciplines_lost=0, points=0
+            )
             db.add(s)
         return s
 
