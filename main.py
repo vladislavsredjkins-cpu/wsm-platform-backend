@@ -492,3 +492,16 @@ async def asl_final_four(league_id: str, request: Request):
     })
 
 
+
+
+@app.get("/competitions-list")
+async def competitions_list(request: Request):
+    from sqlalchemy import select
+    from models.competition import Competition
+    async with SessionLocal() as db:
+        result = await db.execute(select(Competition).order_by(Competition.date_start.desc()))
+        competitions = result.scalars().all()
+    return templates.TemplateResponse("competitions_list.html", {
+        "request": request,
+        "competitions": competitions,
+    })

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competitions — World Strongman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; }
+        .main-header { background: #0a0a0a; border-bottom: 2px solid #c9a84c; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header-logo { display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; }
+        .header-logo img { height: 48px; width: 48px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 9px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .main-nav { display: flex; align-items: center; gap: 4px; }
+        .nav-item { display: flex; align-items: center; gap: 6px; padding: 18px 14px; font-size: 11px; letter-spacing: 2px; color: #666; text-decoration: none; text-transform: uppercase; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap; }
+        .nav-item:hover { color: #fff; border-bottom-color: #444; }
+        .nav-item.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+        .nav-icon { font-size: 14px; }
+        .nav-divider { width: 1px; height: 20px; background: #2a2a2a; margin: 0 8px; }
+        .hero { background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); border-bottom: 1px solid #1e1e1e; padding: 50px 40px 30px; text-align: center; }
+        .hero-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 10px; }
+        .hero-title { font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; }
+        .hero-title span { color: #c9a84c; }
+        .hero-count { font-size: 13px; color: #666; letter-spacing: 2px; margin-top: 8px; }
+        .filters { max-width: 1200px; margin: 30px auto 0; padding: 0 40px; display: flex; gap: 16px; flex-wrap: wrap; }
+        .filter-input { background: #111; border: 1px solid #2a2a2a; color: #fff; padding: 10px 16px; font-size: 13px; outline: none; min-width: 200px; }
+        .filter-input:focus { border-color: #c9a84c; }
+        .filter-input::placeholder { color: #444; }
+        .filter-select { background: #111; border: 1px solid #2a2a2a; color: #fff; padding: 10px 16px; font-size: 13px; outline: none; }
+        .filter-select:focus { border-color: #c9a84c; }
+        .grid { max-width: 1200px; margin: 30px auto; padding: 0 40px 60px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .comp-card { background: #111; border: 1px solid #1e1e1e; border-top: 3px solid #c9a84c; text-decoration: none; color: #fff; display: block; transition: transform 0.2s; }
+        .comp-card:hover { transform: translateY(-3px); }
+        .comp-card-header { padding: 20px 20px 12px; border-bottom: 1px solid #1a1a1a; }
+        .comp-card-name { font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; }
+        .comp-card-body { padding: 14px 20px; }
+        .comp-card-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .comp-card-label { font-size: 10px; letter-spacing: 2px; color: #555; text-transform: uppercase; }
+        .comp-card-value { font-size: 12px; color: #ccc; letter-spacing: 1px; }
+        .comp-card-location { font-size: 13px; color: #888; margin-top: 4px; }
+        .comp-card-date { font-size: 13px; color: #c9a84c; font-weight: 700; }
+        .comp-card-coeff { font-size: 11px; letter-spacing: 2px; padding: 3px 8px; border: 1px solid #c9a84c; color: #c9a84c; text-transform: uppercase; display: inline-block; margin-top: 8px; }
+        .no-results { grid-column: 1/-1; text-align: center; color: #444; font-size: 14px; letter-spacing: 2px; padding: 60px 0; }
+        .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .footer span { color: #c9a84c; }
+        .upcoming-badge { font-size: 9px; letter-spacing: 2px; padding: 2px 8px; border: 1px solid #7a9a7a; color: #7a9a7a; text-transform: uppercase; display: inline-block; margin-left: 8px; vertical-align: middle; }
+        .past-badge { font-size: 9px; letter-spacing: 2px; padding: 2px 8px; border: 1px solid #555; color: #555; text-transform: uppercase; display: inline-block; margin-left: 8px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+<header class="main-header">
+    <a href="/" class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">International Union</div>
+        </div>
+    </a>
+    <nav class="main-nav">
+        <a href="/competitions-list" class="nav-item active"><span class="nav-icon">🏆</span> Competitions</a>
+        <a href="/rankings" class="nav-item"><span class="nav-icon">📊</span> Rankings</a>
+        <a href="/athletes-list" class="nav-item"><span class="nav-icon">💪</span> Athletes</a>
+        <a href="/judges-list" class="nav-item"><span class="nav-icon">⚖️</span> Judges</a>
+        <a href="/organizers-list" class="nav-item"><span class="nav-icon">🏛️</span> Organizers</a>
+        <div class="nav-divider"></div>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e" class="nav-item"><span class="nav-icon">🥊</span> ASL League</a>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e/final-four" class="nav-item"><span class="nav-icon">⚡</span> Final Four</a>
+    </nav>
+</header>
+<div class="hero">
+    <div class="hero-label">WSM Official Calendar</div>
+    <div class="hero-title">WORLD <span>COMPETITIONS</span></div>
+    <div class="hero-count">{{ competitions|length }} competitions</div>
+</div>
+<div class="filters">
+    <input class="filter-input" type="text" id="search" placeholder="Search by name..." oninput="filter()">
+    <input class="filter-input" type="text" id="country" placeholder="Filter by country..." oninput="filter()">
+    <select class="filter-select" id="year" onchange="filter()">
+        <option value="">All years</option>
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2027">2027</option>
+    </select>
+</div>
+<div class="grid" id="grid">
+    {% for c in competitions %}
+    <a class="comp-card" href="/competitions/{{ c.id }}/page"
+       data-name="{{ c.name }}"
+       data-country="{{ c.country or '' }}"
+       data-year="{{ c.date_start.strftime('%Y') if c.date_start else '' }}">
+        <div class="comp-card-header">
+            <div class="comp-card-name">
+                {{ c.name }}
+                {% if c.date_start and c.date_start.strftime('%Y-%m-%d') > '2026-03-10' %}
+                    <span class="upcoming-badge">Upcoming</span>
+                {% else %}
+                    <span class="past-badge">Past</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="comp-card-body">
+            <div class="comp-card-row">
+                <span class="comp-card-label">📍 Location</span>
+                <span class="comp-card-value">{{ c.city or '—' }}{% if c.country %}, {{ c.country }}{% endif %}</span>
+            </div>
+            <div class="comp-card-row">
+                <span class="comp-card-label">📅 Date</span>
+                <span class="comp-card-date">
+                    {{ c.date_start or '—' }}
+                    {% if c.date_end %} → {{ c.date_end }}{% endif %}
+                </span>
+            </div>
+            <div class="comp-card-row">
+                <span class="comp-card-label">⚡ Coefficient</span>
+                <span class="comp-card-value">Q × {{ c.coefficient_q }}</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+    <div class="no-results" id="no-results" style="display:none;">No competitions found</div>
+</div>
+<div class="footer">© 2026 <span>World Strongman</span> International Union · All Rights Reserved</div>
+<script>
+function filter() {
+    const s = document.getElementById('search').value.toLowerCase();
+    const c = document.getElementById('country').value.toLowerCase();
+    const y = document.getElementById('year').value;
+    const cards = document.querySelectorAll('.comp-card');
+    let visible = 0;
+    cards.forEach(card => {
+        const show = card.dataset.name.toLowerCase().includes(s) &&
+                     card.dataset.country.toLowerCase().includes(c) &&
+                     (y === '' || card.dataset.year === y);
+        card.style.display = show ? 'block' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+}
+</script>
+</body>
+</html>

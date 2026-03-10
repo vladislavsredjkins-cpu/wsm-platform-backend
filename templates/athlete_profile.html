@@ -15,6 +15,18 @@
         }
 
         /* HEADER */
+
+        .main-header { background: #0a0a0a; border-bottom: 2px solid #c9a84c; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header-logo { display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; }
+        .header-logo img { height: 48px; width: 48px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 9px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .main-nav { display: flex; align-items: center; gap: 4px; }
+        .nav-item { display: flex; align-items: center; gap: 6px; padding: 18px 14px; font-size: 11px; letter-spacing: 2px; color: #666; text-decoration: none; text-transform: uppercase; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap; }
+        .nav-item:hover { color: #fff; border-bottom-color: #444; }
+        .nav-item.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+        .nav-icon { font-size: 14px; }
+        .nav-divider { width: 1px; height: 20px; background: #2a2a2a; margin: 0 8px; }
         .header {
             background: #0a0a0a;
             border-bottom: 2px solid #c9a84c;
@@ -346,10 +358,25 @@
 <body>
 
 <!-- HEADER -->
-<div class="header">
-    <div>
-        <img src="/static/logo.jpg" style="height:52px; width:52px; border-radius:50%; object-fit:cover;">
-        <div class="header-sub">International Union</div>
+<header class="main-header">
+    <a href="/" class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">International Union</div>
+        </div>
+    </a>
+    <nav class="main-nav">
+        <a href="/competitions-list" class="nav-item "><span class="nav-icon">🏆</span> Competitions</a>
+        <a href="/rankings" class="nav-item "><span class="nav-icon">📊</span> Rankings</a>
+        <a href="/athletes-list" class="nav-item active"><span class="nav-icon">💪</span> Athletes</a>
+        <a href="/judges-list" class="nav-item "><span class="nav-icon">⚖️</span> Judges</a>
+        <a href="/organizers-list" class="nav-item "><span class="nav-icon">🏛️</span> Organizers</a>
+        <div class="nav-divider"></div>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e" class="nav-item "><span class="nav-icon">🥊</span> ASL League</a>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e/final-four" class="nav-item "><span class="nav-icon">⚡</span> Final Four</a>
+    </nav>
+</header>
     </div>
     <div style="font-size:11px; color:#444; letter-spacing:2px; text-transform:uppercase;">
         Athlete Profile
