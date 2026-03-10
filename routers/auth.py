@@ -116,3 +116,63 @@ async def link_organizer(
     current_user.organizer_id = data.organizer_id
     await db.commit()
     return {"status": "ok", "organizer_id": str(data.organizer_id)}
+
+
+class RegisterOrganizerRequest(BaseModel):
+    # User
+    email: str
+    password: str
+    # Organizer profile
+    name: str
+    type: str = "person"  # person / club / federation
+    country: str | None = None
+    city: str | None = None
+    website: str | None = None
+    phone: str | None = None
+    instagram: str | None = None
+
+@router.post("/register/organizer")
+async def register_organizer(data: RegisterOrganizerRequest, db: AsyncSession = Depends(get_db)):
+    from models.organizer import Organizer
+
+    # Проверяем email
+    result = await db.execute(select(User).where(User.email == data.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Создаём User с ролью PENDING
+    user = User(
+        email=data.email,
+        password_hash=hash_password(data.password),
+        role="PENDING",
+        is_active=True,
+    )
+    db.add(user)
+    await db.flush()  # получаем user.id
+
+    # Создаём Organizer профиль
+    org = Organizer(
+        user_id=user.id,
+        name=data.name,
+        type=data.type,
+        country=data.country,
+        city=data.city,
+        email=data.email,
+        website=data.website,
+        phone=data.phone,
+        instagram=data.instagram,
+    )
+    db.add(org)
+    await db.flush()
+
+    # Привязываем organizer к user
+    user.organizer_id = org.id
+    await db.commit()
+    await db.refresh(user)
+
+    return {
+        "status": "pending",
+        "message": "Registration submitted. Your account is pending approval by WSM Admin.",
+        "email": user.email,
+        "organizer_id": str(org.id),
+    }

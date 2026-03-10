@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register as Organizer — World Strongman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; min-height: 100vh; }
+        .main-header { background: #0a0a0a; border-bottom: 2px solid #c9a84c; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header-logo { display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; }
+        .header-logo img { height: 48px; width: 48px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 9px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .wrap { max-width: 600px; margin: 60px auto; padding: 0 24px 60px; }
+        .page-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 10px; }
+        .page-title { font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+        .page-sub { font-size: 13px; color: #555; margin-bottom: 40px; line-height: 1.6; }
+        .form-section { margin-bottom: 28px; }
+        .form-section-title { font-size: 10px; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #1e1e1e; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-grid.single { grid-template-columns: 1fr; }
+        .field { display: flex; flex-direction: column; gap: 6px; }
+        .field.full { grid-column: 1 / -1; }
+        label { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #888; text-transform: uppercase; }
+        input, select, textarea { padding: 11px 14px; background: #111; border: 1px solid #2a2a2a; border-radius: 3px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s; width: 100%; }
+        input:focus, select:focus, textarea:focus { border-color: #c9a84c; }
+        select option { background: #111; }
+        .submit-btn { width: 100%; padding: 16px; background: #c9a84c; color: #000; border: none; border-radius: 3px; font-size: 13px; font-weight: 900; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; margin-top: 24px; margin-bottom: 24px; transition: background 0.2s; display: block; }
+        .submit-btn:hover { background: #b8943d; }
+        .submit-btn:disabled { background: #444; color: #666; cursor: not-allowed; }
+        .msg { padding: 14px 18px; border-radius: 3px; font-size: 13px; margin-bottom: 20px; display: none; }
+        .msg.success { background: rgba(76,175,80,0.1); border: 1px solid #4caf50; color: #4caf50; }
+        .msg.error { background: rgba(255,82,82,0.1); border: 1px solid #ff5252; color: #ff5252; }
+        .login-link { text-align: center; margin-top: 24px; font-size: 13px; color: #555; }
+        .login-link a { color: #c9a84c; text-decoration: none; }
+        .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: 60px; }
+        .footer span { color: #c9a84c; }
+    </style>
+</head>
+<body>
+<header class="main-header">
+    <a href="/" class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">International Union</div>
+        </div>
+    </a>
+</header>
+
+<div class="wrap">
+    <div class="page-label">Organizer Portal</div>
+    <div class="page-title">Register</div>
+    <div class="page-sub">Create your organizer account to manage competitions on the WSM platform. Your account will be reviewed and activated by WSM Admin.</div>
+
+    <div class="msg success" id="msg-success">✓ Registration submitted! Your account is pending approval by WSM Admin. You will be notified by email.</div>
+    <div class="msg error" id="msg-error"></div>
+
+    <div class="form-section">
+        <div class="form-section-title">Account</div>
+        <div class="form-grid">
+            <div class="field full">
+                <label>Email *</label>
+                <input type="email" id="email" placeholder="organizer@example.com">
+            </div>
+            <div class="field">
+                <label>Password *</label>
+                <input type="password" id="password" placeholder="Min 8 characters">
+            </div>
+            <div class="field">
+                <label>Confirm Password *</label>
+                <input type="password" id="password2" placeholder="Repeat password">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <div class="form-section-title">Organization / Profile</div>
+        <div class="form-grid">
+            <div class="field full">
+                <label>Name / Organization Name *</label>
+                <input type="text" id="name" placeholder="e.g. Latvia Strongman Federation">
+            </div>
+            <div class="field">
+                <label>Type</label>
+                <select id="type">
+                    <option value="federation">Federation</option>
+                    <option value="club">Club</option>
+                    <option value="person">Individual</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Country</label>
+                <input type="text" id="country" placeholder="LAT">
+            </div>
+            <div class="field">
+                <label>City</label>
+                <input type="text" id="city" placeholder="Riga">
+            </div>
+            <div class="field">
+                <label>Phone</label>
+                <input type="text" id="phone" placeholder="+371 20000000">
+            </div>
+            <div class="field">
+                <label>Website</label>
+                <input type="text" id="website" placeholder="https://...">
+            </div>
+            <div class="field full">
+                <label>Instagram</label>
+                <input type="text" id="instagram" placeholder="@handle">
+            </div>
+            <div class="field full">
+                <label>Logo / Photo</label>
+                <input type="file" id="logo" accept=".jpg,.jpeg,.png,.webp" style="padding:8px 14px;background:#111;border:1px solid #2a2a2a;border-radius:3px;color:#888;font-size:13px;width:100%;">
+                <div style="font-size:10px;color:#444;margin-top:5px;letter-spacing:1px;">JPG, PNG, WEBP · Max 2MB · Recommended: square 400×400px</div>
+                <div id="logo-preview" style="margin-top:10px;display:none;align-items:center;gap:12px;">
+                    <img id="logo-img" style="height:80px;width:80px;object-fit:cover;border-radius:4px;border:1px solid #2a2a2a;">
+                    <div id="logo-info" style="font-size:11px;color:#666;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="height:32px;"></div><button id="submit-btn" onclick="submitForm()" style="display:block;width:100%;padding:16px;background:#c9a84c;color:#000;border:none;border-radius:3px;font-size:13px;font-weight:900;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">SUBMIT REGISTRATION →</button><div style="height:40px;"></div>
+
+    <div class="login-link">
+        Already have an account? <a href="https://psychic-eureka-pjxr6r56g5vwc6x59-5175.app.github.dev/login">Login →</a>
+    </div>
+</div>
+
+<div class="footer">© 2026 <span>World Strongman</span> International Union · All Rights Reserved</div>
+
+<script>
+// Logo preview
+document.getElementById('logo').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+        showError('Logo file is too large. Maximum size is 2MB.');
+        this.value = '';
+        return;
+    }
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+        showError('Invalid file format. Please use JPG, PNG, or WebP.');
+        this.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('logo-img').src = e.target.result;
+        document.getElementById('logo-preview').style.display = 'flex';
+        document.getElementById('logo-info').textContent = file.name + ' · ' + (file.size / 1024).toFixed(0) + ' KB';
+    };
+    reader.readAsDataURL(file);
+});
+
+async function submitForm() {
+    const btn = document.getElementById('submit-btn');
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const password2 = document.getElementById('password2').value;
+    const name = document.getElementById('name').value.trim();
+
+    // Validation
+    if (!email || !password || !name) {
+        showError('Please fill in all required fields (Email, Password, Name)');
+        return;
+    }
+    if (password.length < 8) {
+        showError('Password must be at least 8 characters');
+        return;
+    }
+    if (password !== password2) {
+        showError('Passwords do not match');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    try {
+        const res = await fetch('/auth/register/organizer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email,
+                password,
+                name,
+                type: document.getElementById('type').value,
+                country: document.getElementById('country').value || null,
+                city: document.getElementById('city').value || null,
+                phone: document.getElementById('phone').value || null,
+                website: document.getElementById('website').value || null,
+                instagram: document.getElementById('instagram').value || null,
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            // Логинимся чтобы загрузить фото
+            try {
+                const loginRes = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const loginData = await loginRes.json();
+                if (loginData.access_token) {
+                    await uploadLogo(data.organizer_id, loginData.access_token);
+                }
+            } catch(e) {}
+            document.getElementById('msg-success').style.display = 'block';
+            document.getElementById('msg-error').style.display = 'none';
+            btn.textContent = '✓ Submitted';
+            document.querySelectorAll('.form-section').forEach(s => s.style.display = 'none');
+        } else {
+            showError(data.detail || 'Registration failed');
+            btn.disabled = false;
+            btn.textContent = 'Submit Registration →';
+        }
+    } catch(e) {
+        showError('Network error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Submit Registration →';
+    }
+}
+
+function showError(msg) {
+    const el = document.getElementById('msg-error');
+    el.textContent = '✗ ' + msg;
+    el.style.display = 'block';
+    document.getElementById('msg-success').style.display = 'none';
+}
+</script>
+</body>
+</html>

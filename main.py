@@ -490,6 +490,17 @@ async def asl_final_four(league_id: str, request: Request):
 
 
 
+@app.get("/favicon.ico")
+async def favicon():
+    from fastapi.responses import FileResponse
+    return FileResponse("static/logo.jpg")
+
+
+@app.get("/register/organizer")
+async def register_organizer_page(request: Request):
+    return templates.TemplateResponse("register_organizer.html", {"request": request})
+
+
 @app.get("/competitions-list")
 async def competitions_list(request: Request):
     from sqlalchemy import select
