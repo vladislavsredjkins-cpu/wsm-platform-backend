@@ -1687,3 +1687,76 @@ async def rankings_page(request: Request, division: str = "MEN", year: int = 202
         "selected_division": division,
         "selected_year": year,
     })
+
+
+# ─── RANKINGS MAP DATA ───────────────────────────────────────────────────────
+
+@app.get("/rankings/map-data")
+async def rankings_map_data(division: str = "MEN", year: int = 2026):
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from models.overall_standing import OverallStanding
+    from sqlalchemy import select
+    from collections import defaultdict
+    import uuid
+
+    async with SessionLocal() as db:
+        comps_result = await db.execute(select(Competition).where(Competition.date_start != None))
+        all_comps = {str(c.id): c for c in comps_result.scalars().all()
+                     if c.date_start and c.date_start.year == year}
+
+        if not all_comps:
+            return []
+
+        comp_uuids = [uuid.UUID(c) for c in all_comps.keys()]
+        divs_result = await db.execute(
+            select(CompetitionDivision).where(
+                CompetitionDivision.competition_id.in_(comp_uuids),
+                CompetitionDivision.division_key == division,
+            )
+        )
+        divisions = divs_result.scalars().all()
+
+        country_data = defaultdict(lambda: {"athletes": set(), "total_points": 0, "top_athlete": None, "top_pts": 0})
+
+        for div in divisions:
+            comp = all_comps.get(str(div.competition_id))
+            if not comp:
+                continue
+            q = float(comp.coefficient_q or 1.0)
+
+            parts_result = await db.execute(
+                select(Participant).where(Participant.competition_division_id == div.id)
+            )
+            participants = {str(p.id): p for p in parts_result.scalars().all()}
+
+            overall_result = await db.execute(
+                select(OverallStanding).where(OverallStanding.competition_division_id == div.id)
+            )
+            for o in overall_result.scalars().all():
+                p = participants.get(str(o.participant_id))
+                if not p:
+                    continue
+                ath = await db.get(Athlete, p.athlete_id)
+                if not ath or not ath.country:
+                    continue
+                pts = float(o.total_points or 0) * q
+                country = ath.country.upper().strip()
+                country_data[country]["athletes"].add(str(ath.id))
+                country_data[country]["total_points"] += pts
+                if pts > country_data[country]["top_pts"]:
+                    country_data[country]["top_pts"] = pts
+                    country_data[country]["top_athlete"] = f"{ath.first_name} {ath.last_name}"
+
+        return [
+            {
+                "country": k,
+                "athletes": len(v["athletes"]),
+                "total_points": round(v["total_points"], 1),
+                "top_athlete": v["top_athlete"],
+                "top_pts": round(v["top_pts"], 1),
+            }
+            for k, v in country_data.items()
+        ]

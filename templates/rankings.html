@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Rankings — World Strongman</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; min-height: 100vh; }
@@ -68,6 +69,13 @@
         .empty { text-align: center; padding: 80px; color: #333; font-size: 13px; letter-spacing: 2px; }
         .btn-share { padding: 5px 12px; background: transparent; border: 1px solid #2a2a2a; color: #555; border-radius: 3px; font-size: 10px; font-weight: 700; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
         .btn-share:hover { border-color: #c9a84c; color: #c9a84c; }
+        .map-section { margin-top: 60px; }
+        .map-title { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #1e1e1e; }
+        #world-map { height: 400px; border-radius: 4px; border: 1px solid #1e1e1e; background: #0d0d0d; }
+        .map-stats { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
+        .map-stat { background: #111; border: 1px solid #1e1e1e; border-radius: 4px; padding: 12px 20px; }
+        .map-stat-num { font-size: 24px; font-weight: 900; color: #c9a84c; }
+        .map-stat-label { font-size: 10px; color: #555; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
         .share-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; }
         .share-modal.open { display: flex; }
         .share-box { background: #111; border: 1px solid #2a2a2a; border-radius: 6px; padding: 24px; max-width: 420px; width: 90%; text-align: center; }
@@ -220,6 +228,7 @@
 
 <div class="footer">© 2026 <span>World Strongman</span> International Union · All Rights Reserved</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 function navigate(division, year) {
     const d = division || document.querySelector('.filter-select').value;
@@ -232,6 +241,15 @@ function toggleExpand(id) {
     el.classList.toggle('open');
 }
 </script>
+<!-- World Map Section -->
+<div class="wrap">
+    <div class="map-section">
+        <div class="map-title">🌍 Athletes by Country</div>
+        <div id="world-map"></div>
+        <div class="map-stats" id="map-stats"></div>
+    </div>
+</div>
+
 <!-- Share Modal -->
 <div class="share-modal" id="share-modal" onclick="closeShare()">
     <div class="share-box" onclick="event.stopPropagation()">
@@ -247,6 +265,85 @@ function toggleExpand(id) {
 </div>
 
 <script>
+// ── MAP ──────────────────────────────────────────────────────────────────────
+const COUNTRY_COORDS = {
+    'LAT': [56.8796, 24.6032], 'LIT': [55.1694, 23.8813], 'EST': [58.5953, 25.0136],
+    'RUS': [61.5240, 105.3188], 'UKR': [48.3794, 31.1656], 'BLR': [53.7098, 27.9534],
+    'POL': [51.9194, 19.1451], 'FIN': [61.9241, 25.7482], 'SWE': [60.1282, 18.6435],
+    'NOR': [60.4720, 8.4689], 'DEN': [56.2639, 9.5018], 'GER': [51.1657, 10.4515],
+    'GBR': [55.3781, -3.4360], 'IRL': [53.1424, -7.6921], 'FRA': [46.2276, 2.2137],
+    'ESP': [40.4637, -3.7492], 'ITA': [41.8719, 12.5674], 'USA': [37.0902, -95.7129],
+    'CAN': [56.1304, -106.3468], 'AUS': [25.2744, 133.7751], 'NZL': [-40.9006, 174.8860],
+    'RSA': [-30.5595, 22.9375], 'BRA': [-14.2350, -51.9253], 'ISL': [64.9631, -19.0208],
+    'CZE': [49.8175, 15.4730], 'SVK': [48.6690, 19.6990], 'HUN': [47.1625, 19.5033],
+    'ROM': [45.9432, 24.9668], 'BGR': [42.7339, 25.4858], 'SRB': [44.0165, 21.0059],
+    'HRV': [45.1000, 15.2000], 'SVN': [46.1512, 14.9955], 'AUT': [47.5162, 14.5501],
+    'CHE': [46.8182, 8.2275], 'NED': [52.1326, 5.2913], 'BEL': [50.5039, 4.4699],
+    'PRT': [39.3999, -8.2245], 'GRC': [39.0742, 21.8243], 'TUR': [38.9637, 35.2433],
+    'KAZ': [48.0196, 66.9237], 'ARM': [40.0691, 45.0382], 'GEO': [42.3154, 43.3569],
+    'AZE': [40.1431, 47.5769], 'IRN': [32.4279, 53.6880], 'JPN': [36.2048, 138.2529],
+    'KOR': [35.9078, 127.7669], 'CHN': [35.8617, 104.1954], 'IND': [20.5937, 78.9629],
+};
+
+async function initMap() {
+    const division = document.querySelector('.filter-select') ? document.querySelector('.filter-select').value : 'MEN';
+    const year = document.querySelectorAll('.filter-select')[1] ? document.querySelectorAll('.filter-select')[1].value : '2026';
+
+    const res = await fetch(`/rankings/map-data?division=${division}&year=${year}`);
+    const data = await res.json();
+
+    if (!data.length) return;
+
+    const map = L.map('world-map', {
+        center: [30, 10],
+        zoom: 2,
+        zoomControl: true,
+        attributionControl: false,
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+    }).addTo(map);
+
+    // Макс очки для масштаба кругов
+    const maxPts = Math.max(...data.map(d => d.total_points));
+
+    data.forEach(d => {
+        const coords = COUNTRY_COORDS[d.country];
+        if (!coords) return;
+
+        const radius = 20000 + (d.total_points / maxPts) * 180000;
+
+        const circle = L.circle(coords, {
+            color: '#c9a84c',
+            fillColor: '#c9a84c',
+            fillOpacity: 0.3,
+            weight: 2,
+            radius: radius,
+        }).addTo(map);
+
+        circle.bindPopup(`
+            <div style="background:#111;color:#fff;padding:12px;border:1px solid #c9a84c;border-radius:4px;min-width:160px;">
+                <div style="font-size:13px;font-weight:900;color:#c9a84c;margin-bottom:4px;">${d.country}</div>
+                <div style="font-size:12px;margin-bottom:2px;">👤 ${d.athletes} athlete${d.athletes > 1 ? 's' : ''}</div>
+                <div style="font-size:12px;margin-bottom:2px;">🏆 ${d.total_points} pts</div>
+                ${d.top_athlete ? `<div style="font-size:11px;color:#888;">⭐ ${d.top_athlete}</div>` : ''}
+            </div>
+        `, { className: 'wsm-popup' });
+    });
+
+    // Stats below map
+    const totalAthletes = data.reduce((s, d) => s + d.athletes, 0);
+    const statsEl = document.getElementById('map-stats');
+    statsEl.innerHTML = `
+        <div class="map-stat"><div class="map-stat-num">${data.length}</div><div class="map-stat-label">Countries</div></div>
+        <div class="map-stat"><div class="map-stat-num">${totalAthletes}</div><div class="map-stat-label">Athletes</div></div>
+        <div class="map-stat"><div class="map-stat-num">${data[0]?.country || '—'}</div><div class="map-stat-label">Leading Country</div></div>
+    `;
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
+
 const WSM_GOLD = '#c9a84c';
 const WSM_DARK = '#0a0a0a';
 
