@@ -514,65 +514,6 @@ async def competitions_list(request: Request):
     })
 
 
-@app.get("/rankings")
-async def rankings_page(request: Request, division: str = "MEN_U80", age_group: str = "SENIOR"):
-    import datetime
-    from services.ranking_service import RankingService
-    from models.weight_category import WeightCategory
-    from sqlalchemy import select, and_
-    async with SessionLocal() as db:
-        svc = RankingService(db)
-        ranking = await svc.get_ranking(division, datetime.datetime.utcnow().year)
-        result = await db.execute(
-            select(WeightCategory)
-            .where(and_(WeightCategory.is_active == True, WeightCategory.age_group == age_group))
-            .order_by(WeightCategory.sort_order)
-        )
-        categories = result.scalars().all()
-    groups = {"MEN": [], "WOMEN": [], "PARA_MEN": [], "PARA_WOMEN": []}
-    for c in categories:
-        if c.code.startswith("PARA_WOMEN"):
-            groups["PARA_WOMEN"].append((c.code, c.name))
-        elif c.code.startswith("PARA_MEN"):
-            groups["PARA_MEN"].append((c.code, c.name))
-        elif "WOMEN" in c.code:
-            groups["WOMEN"].append((c.code, c.name))
-        else:
-            groups["MEN"].append((c.code, c.name))
-
-    if division.startswith("PARA_WOMEN"):
-        active_group = "PARA_WOMEN"
-    elif division.startswith("PARA_MEN"):
-        active_group = "PARA_MEN"
-    elif "WOMEN" in division:
-        active_group = "WOMEN"
-    else:
-        active_group = "MEN"
-
-    age_groups = [("SENIOR", "Senior"), ("JUNIOR", "Junior"), ("YOUTH", "Youth"), ("MASTERS", "Masters 40+")]
-
-    # MASTERS и JUNIOR/YOUTH не имеют PARA категорий
-    if age_group in ("MASTERS", "JUNIOR", "YOUTH"):
-        available_groups = ["MEN", "WOMEN"]
-        if active_group not in available_groups:
-            active_group = "MEN"
-    else:
-        available_groups = ["MEN", "WOMEN", "PARA_MEN", "PARA_WOMEN"]
-
-    active_categories = groups[active_group]
-    return templates.TemplateResponse("rankings.html", {
-        "request": request,
-        "ranking": ranking,
-        "active_division": division,
-        "active_group": active_group,
-        "active_age_group": age_group,
-        "active_categories": active_categories,
-        "groups": groups,
-        "age_groups": age_groups,
-        "season_year": datetime.datetime.utcnow().year,
-    })
-
-
 @app.get("/teams-list")
 async def teams_list_page(request: Request):
     from models.team import Team
@@ -1630,3 +1571,119 @@ async def send_certificate(competition_id: str, request: Request):
         })
 
     return {"ok": True, "sent_to": ath.email}
+
+
+# ─── RANKINGS PUBLIC PAGE ─────────────────────────────────────────────────────
+
+@app.get("/rankings")
+async def rankings_page(request: Request, division: str = "MEN", year: int = 2026):
+    from models.athlete import Athlete
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.participant import Participant
+    from models.overall_standing import OverallStanding
+    from sqlalchemy import select
+    from collections import defaultdict
+
+    async with SessionLocal() as db:
+        # Все дивизионы для фильтра
+        divs_result = await db.execute(
+            select(CompetitionDivision.division_key).distinct()
+        )
+        all_divisions = sorted(list(set([r[0] for r in divs_result.all() if r[0]])))
+
+        # Все годы
+        years_result = await db.execute(
+            select(Competition.date_start).where(Competition.date_start != None)
+        )
+        all_years = sorted(set(
+            d[0].year for d in years_result.all() if d[0]
+        ), reverse=True)
+        if not all_years:
+            all_years = [2026]
+
+        # Соревнования за выбранный год
+        comps_result = await db.execute(
+            select(Competition).where(
+                Competition.date_start != None,
+            )
+        )
+        all_comps = {str(c.id): c for c in comps_result.scalars().all()
+                     if c.date_start and c.date_start.year == year}
+
+        # Дивизионы выбранного типа за этот год
+        if not all_comps:
+            return templates.TemplateResponse("rankings.html", {
+                "request": request,
+                "rankings": [],
+                "all_divisions": all_divisions,
+                "all_years": all_years,
+                "selected_division": division if division in all_divisions else (all_divisions[0] if all_divisions else "MEN"),
+                "selected_year": year,
+            })
+
+        comp_ids = list(all_comps.keys())
+
+        import uuid as _uuid
+        comp_uuids = [_uuid.UUID(c) for c in all_comps.keys()]
+        divs_result2 = await db.execute(
+            select(CompetitionDivision).where(
+                CompetitionDivision.competition_id.in_(comp_uuids),
+                CompetitionDivision.division_key == division,
+            )
+        )
+        divisions = divs_result2.scalars().all()
+
+        # Собираем очки по атлетам
+        athlete_points = defaultdict(lambda: {"total": 0, "results": [], "athlete": None})
+
+        for div in divisions:
+            comp = all_comps.get(str(div.competition_id))
+            if not comp:
+                continue
+            q = float(comp.coefficient_q or 1.0)
+
+            parts_result = await db.execute(
+                select(Participant).where(Participant.competition_division_id == div.id)
+            )
+            participants = {str(p.id): p for p in parts_result.scalars().all()}
+
+            overall_result = await db.execute(
+                select(OverallStanding).where(OverallStanding.competition_division_id == div.id)
+            )
+            for o in overall_result.scalars().all():
+                p = participants.get(str(o.participant_id))
+                if not p:
+                    continue
+                ath_id = str(p.athlete_id)
+                pts = float(o.total_points or 0) * q
+                athlete_points[ath_id]["total"] += pts
+                athlete_points[ath_id]["results"].append({
+                    "comp_name": comp.name,
+                    "comp_id": str(comp.id),
+                    "place": o.overall_place,
+                    "points": float(o.total_points or 0),
+                    "q": q,
+                    "weighted": pts,
+                })
+                if not athlete_points[ath_id]["athlete"]:
+                    ath = await db.get(Athlete, p.athlete_id)
+                    athlete_points[ath_id]["athlete"] = ath
+
+        # Сортируем по очкам
+        rankings = sorted(
+            [{"athlete_id": k, **v} for k, v in athlete_points.items()],
+            key=lambda x: x["total"],
+            reverse=True
+        )
+        for i, r in enumerate(rankings):
+            r["rank"] = i + 1
+
+    return templates.TemplateResponse("rankings.html", {
+        "request": request,
+        "rankings": rankings,
+        "all_divisions": all_divisions,
+        "all_years": all_years,
+        "selected_division": division,
+        "selected_year": year,
+    })
