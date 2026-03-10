@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://psychic-eureka-pjxr6r56g5vwc6x59-8000.app.github.dev',
+  baseURL: 'https://ranking.worldstrongman.org',
 });
 
 api.interceptors.request.use((config) => {
