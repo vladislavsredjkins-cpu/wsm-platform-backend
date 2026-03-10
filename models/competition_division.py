@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, DateTime, Numeric, ForeignKey
+from sqlalchemy import Column, DateTime, Numeric, ForeignKey, String, Integer
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
 from db.base import Base
@@ -31,6 +31,8 @@ class CompetitionDivision(Base):
     live_at = Column(DateTime(), nullable=True)
     locked_at = Column(DateTime(), nullable=True)
     q_effective = Column(Numeric(10, 2), nullable=True)
+    weight_category_id = Column(Integer, ForeignKey("weight_categories.id"), nullable=True)
+    age_group = Column(String(30), nullable=True, default="SENIOR")
 
     competition = relationship("Competition", back_populates="divisions")
     disciplines = relationship("CompetitionDiscipline", back_populates="division", cascade="all, delete-orphan")
@@ -40,3 +42,4 @@ class CompetitionDivision(Base):
     division_q = relationship("CompetitionDivisionQ", back_populates="division", uselist=False)
     snapshots = relationship("CompetitionDivisionSnapshot", back_populates="division", cascade="all, delete-orphan")
     ranking_awards = relationship("RankingAward", back_populates="division", cascade="all, delete-orphan")
+    weight_category = relationship("WeightCategory")
