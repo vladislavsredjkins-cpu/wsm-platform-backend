@@ -306,6 +306,73 @@ async def team_room(team_id: str, request: Request):
     })
 
 
+@app.get("/asl/divisions/{division_id}")
+async def asl_division_page(division_id: str, request: Request):
+    from sqlalchemy import select
+    from models.asl_league import ASLLeague
+    from models.asl_division import ASLDivision
+    from models.team_standing import TeamStanding
+    from models.team import Team
+    from models.match import Match
+    from models.match_discipline_result import MatchDisciplineResult
+    from collections import defaultdict
+    import uuid
+    did = uuid.UUID(division_id)
+    async with SessionLocal() as db:
+        division = await db.get(ASLDivision, did)
+        if not division:
+            return {"error": "Division not found"}
+        league = await db.get(ASLLeague, division.league_id)
+        standings_result = await db.execute(
+            select(TeamStanding)
+            .where(TeamStanding.asl_division_id == did)
+            .order_by(TeamStanding.points.desc(), TeamStanding.disciplines_won.desc())
+        )
+        standings = standings_result.scalars().all()
+        team_map = {}
+        for s in standings:
+            t = await db.get(Team, s.team_id)
+            s.team = t
+            if t:
+                team_map[str(s.team_id)] = t
+        matches_result = await db.execute(
+            select(Match)
+            .where(Match.asl_division_id == did)
+            .order_by(Match.round_number, Match.match_date)
+        )
+        matches = matches_result.scalars().all()
+        for m in matches:
+            for tid in [m.home_team_id, m.away_team_id]:
+                if str(tid) not in team_map:
+                    t = await db.get(Team, tid)
+                    if t:
+                        team_map[str(tid)] = t
+        matches_by_round = defaultdict(list)
+        for m in matches:
+            matches_by_round[m.round_number or 1].append(m)
+        discipline_results = {}
+        for m in matches:
+            if m.status == 'completed':
+                dr_result = await db.execute(
+                    select(MatchDisciplineResult).where(MatchDisciplineResult.match_id == m.id)
+                )
+                discipline_results[str(m.id)] = dr_result.scalars().all()
+        completed_count = sum(1 for m in matches if m.status == 'completed')
+        rounds_order = sorted(matches_by_round.keys())
+    return templates.TemplateResponse("asl_division.html", {
+        "request": request,
+        "league": league,
+        "division": division,
+        "standings": standings,
+        "matches": matches,
+        "matches_by_round": dict(matches_by_round),
+        "rounds_order": rounds_order,
+        "team_map": team_map,
+        "discipline_results": discipline_results,
+        "completed_count": completed_count,
+    })
+
+
 @app.get("/asl/{league_id}")
 async def asl_home(league_id: str, request: Request):
     from sqlalchemy import select
@@ -423,3 +490,5 @@ async def asl_final_four(league_id: str, request: Request):
         "third": third, "third_teams": third_teams,
         "champion": champion,
     })
+
+

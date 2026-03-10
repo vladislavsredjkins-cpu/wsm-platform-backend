@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ division.name }} — ASL {{ league.season }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; }
+        .header { background: #0a0a0a; border-bottom: 2px solid #c9a84c; padding: 16px 40px; display: flex; align-items: center; justify-content: space-between; }
+        .header-logo { display: flex; align-items: center; gap: 12px; }
+        .header-logo img { height: 52px; width: 52px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .nav a { font-size: 11px; letter-spacing: 2px; color: #888; text-decoration: none; text-transform: uppercase; margin-left: 24px; }
+        .nav a:hover { color: #c9a84c; }
+        .hero { background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); border-bottom: 1px solid #1e1e1e; padding: 40px; text-align: center; }
+        .hero-back { font-size: 11px; letter-spacing: 2px; color: #666; text-transform: uppercase; margin-bottom: 12px; }
+        .hero-back a { color: #c9a84c; text-decoration: none; }
+        .hero-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 8px; }
+        .hero-title { font-size: 42px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; }
+        .hero-title span { color: #c9a84c; }
+        .hero-stats { display: flex; gap: 30px; justify-content: center; margin-top: 20px; }
+        .hero-stat-num { font-size: 28px; font-weight: 900; color: #c9a84c; }
+        .hero-stat-label { font-size: 10px; color: #666; letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
+        .content { max-width: 1000px; margin: 0 auto; padding: 40px; }
+        .section-title { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #1e1e1e; }
+        .standings-table { width: 100%; border-collapse: collapse; margin-bottom: 50px; }
+        .standings-table thead tr { background: #111; border-bottom: 2px solid #c9a84c; }
+        .standings-table thead th { padding: 12px 16px; font-size: 10px; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; text-align: center; }
+        .standings-table thead th.left { text-align: left; }
+        .standings-table tbody tr { border-bottom: 1px solid #1a1a1a; transition: background 0.15s; }
+        .standings-table tbody tr:hover { background: #111; }
+        .standings-table tbody tr.leader { background: #0f0f0a; }
+        .standings-table tbody td { padding: 14px 16px; font-size: 14px; text-align: center; }
+        .standings-table tbody td.left { text-align: left; }
+        .rank { font-size: 18px; font-weight: 900; color: #444; }
+        .rank.p1 { color: #c9a84c; } .rank.p2 { color: #aaa; } .rank.p3 { color: #cd7f32; }
+        .team-cell { display: flex; align-items: center; gap: 12px; }
+        .team-logo-ph { width: 40px; height: 40px; background: #1a1a1a; border: 1px solid #2a2a2a; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .team-logo-sm { width: 40px; height: 40px; object-fit: contain; background: #1a1a1a; border: 1px solid #2a2a2a; }
+        .team-name-link { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #fff; text-decoration: none; }
+        .team-name-link:hover { color: #c9a84c; }
+        .team-country { font-size: 11px; color: #666; margin-top: 2px; }
+        .pts-cell { font-size: 22px; font-weight: 900; color: #c9a84c; }
+        .dw-cell { color: #7a9a7a; font-weight: 700; }
+        .dl-cell { color: #9a4a4a; font-weight: 700; }
+        .diff-pos { color: #7a9a7a; font-weight: 700; }
+        .diff-neg { color: #9a4a4a; font-weight: 700; }
+        .qualify-badge { font-size: 9px; letter-spacing: 2px; color: #7a9a7a; border: 1px solid #7a9a7a; padding: 2px 6px; text-transform: uppercase; margin-left: 8px; }
+        .rounds { display: flex; flex-direction: column; gap: 24px; margin-bottom: 60px; }
+        .round-block { background: #111; border: 1px solid #1e1e1e; border-top: 3px solid #c9a84c; }
+        .round-header { padding: 10px 24px; font-size: 11px; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; border-bottom: 1px solid #1e1e1e; display: flex; justify-content: space-between; }
+        .round-date { color: #555; font-size: 10px; }
+        .match-row { display: grid; grid-template-columns: 1fr 160px 1fr; align-items: center; padding: 20px 24px; border-bottom: 1px solid #1a1a1a; gap: 16px; }
+        .match-row:last-child { border-bottom: none; }
+        .match-team { display: flex; align-items: center; gap: 12px; }
+        .match-team.away { flex-direction: row-reverse; }
+        .match-team-logo-ph { width: 44px; height: 44px; background: #1a1a1a; border: 1px solid #222; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .match-team-logo { width: 44px; height: 44px; object-fit: contain; background: #1a1a1a; border: 1px solid #222; }
+        .match-team-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .match-team-tag { font-size: 10px; color: #555; letter-spacing: 1px; margin-top: 2px; }
+        .match-team.away .match-team-info { text-align: right; }
+        .match-center { text-align: center; }
+        .match-score { font-size: 32px; font-weight: 900; color: #c9a84c; line-height: 1; }
+        .match-score.pending { color: #2a2a2a; font-size: 24px; }
+        .match-score-date { font-size: 11px; color: #555; margin-top: 4px; }
+        .match-status { font-size: 9px; letter-spacing: 2px; padding: 3px 8px; border: 1px solid; text-transform: uppercase; display: inline-block; margin-top: 6px; }
+        .match-status.completed { color: #7a9a7a; border-color: #7a9a7a; }
+        .match-status.scheduled { color: #444; border-color: #333; }
+        .disciplines-row { background: #0d0d0d; padding: 10px 24px; border-bottom: 1px solid #1a1a1a; display: flex; gap: 8px; flex-wrap: wrap; }
+        .disc-badge { font-size: 10px; padding: 3px 8px; border: 1px solid #1e1e1e; letter-spacing: 1px; }
+        .disc-badge.home-win { color: #c9a84c; border-color: #c9a84c; }
+        .disc-badge.away-win { color: #7a9acc; border-color: #7a9acc; }
+        .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .footer span { color: #c9a84c; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">Asian Strongman League</div>
+        </div>
+    </div>
+    <nav class="nav">
+        <a href="/asl/{{ league.id }}">Standings</a>
+        <a href="/asl/{{ league.id }}/final-four">Final Four</a>
+        <a href="/teams/">Teams</a>
+    </nav>
+</div>
+<div class="hero">
+    <div class="hero-back">← <a href="/asl/{{ league.id }}">ASL {{ league.season }}</a></div>
+    <div class="hero-label">ASL Season {{ league.season }}</div>
+    <div class="hero-title">{{ division.name | upper }}</div>
+    <div class="hero-stats">
+        <div class="hero-stat"><div class="hero-stat-num">{{ standings|length }}</div><div class="hero-stat-label">Teams</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">{{ matches|length }}</div><div class="hero-stat-label">Matches</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">{{ completed_count }}</div><div class="hero-stat-label">Played</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">{{ matches|length - completed_count }}</div><div class="hero-stat-label">Remaining</div></div>
+    </div>
+</div>
+<div class="content">
+    <div class="section-title">📊 Standings</div>
+    <table class="standings-table">
+        <thead>
+            <tr>
+                <th style="width:40px;">#</th>
+                <th class="left">Team</th>
+                <th>M</th><th>W</th><th>L</th><th>DW</th><th>DL</th><th>DIFF</th><th>PTS</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in standings %}
+            <tr class="{% if loop.index == 1 %}leader{% endif %}">
+                <td><div class="rank {% if loop.index==1 %}p1{% elif loop.index==2 %}p2{% elif loop.index==3 %}p3{% endif %}">{{ loop.index }}</div></td>
+                <td class="left">
+                    <div class="team-cell">
+                        {% if s.team and s.team.logo_url %}<img class="team-logo-sm" src="{{ s.team.logo_url }}" alt="">
+                        {% else %}<div class="team-logo-ph">🏋️</div>{% endif %}
+                        <div>
+                            <div><a class="team-name-link" href="/teams/{{ s.team_id }}/room">{{ s.team.name if s.team else s.team_id }}</a>
+                            {% if loop.index == 1 %}<span class="qualify-badge">● Leader</span>{% endif %}</div>
+                            <div class="team-country">{{ s.team.country if s.team else '' }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>{{ s.matches_played }}</td>
+                <td>{{ s.wins }}</td>
+                <td>{{ s.losses }}</td>
+                <td class="dw-cell">{{ s.disciplines_won }}</td>
+                <td class="dl-cell">{{ s.disciplines_lost }}</td>
+                <td class="{% if (s.disciplines_won-s.disciplines_lost)>0 %}diff-pos{% elif (s.disciplines_won-s.disciplines_lost)<0 %}diff-neg{% endif %}">
+                    {% set d = s.disciplines_won - s.disciplines_lost %}{% if d > 0 %}+{{ d }}{% else %}{{ d }}{% endif %}
+                </td>
+                <td class="pts-cell">{{ s.points }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="9" style="text-align:center;color:#444;padding:30px;">No standings yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="section-title">📅 Match Schedule & Results</div>
+    <div class="rounds">
+        {% for round_num in rounds_order %}
+        {% set round_matches = matches_by_round[round_num] %}
+        <div class="round-block">
+            <div class="round-header">
+                <span>Round {{ round_num }}</span>
+                <span class="round-date">{% if round_matches %}{{ round_matches[0].match_date or 'TBD' }}{% endif %}</span>
+            </div>
+            {% for m in round_matches %}
+            <div class="match-row">
+                <div class="match-team">
+                    {% set home = team_map.get(m.home_team_id|string) %}
+                    {% if home and home.logo_url %}<img class="match-team-logo" src="{{ home.logo_url }}" alt="">
+                    {% else %}<div class="match-team-logo-ph">🏋️</div>{% endif %}
+                    <div class="match-team-info">
+                        <div class="match-team-name">{{ home.name if home else '—' }}</div>
+                        <div class="match-team-tag">HOME</div>
+                    </div>
+                </div>
+                <div class="match-center">
+                    {% if m.status == 'completed' %}<div class="match-score">{{ m.home_score }} : {{ m.away_score }}</div>
+                    {% else %}<div class="match-score pending">— : —</div>{% endif %}
+                    <div class="match-score-date">{{ m.match_date or 'TBD' }}</div>
+                    <div class="match-status {{ m.status }}">{{ m.status }}</div>
+                </div>
+                <div class="match-team away">
+                    {% set away = team_map.get(m.away_team_id|string) %}
+                    {% if away and away.logo_url %}<img class="match-team-logo" src="{{ away.logo_url }}" alt="">
+                    {% else %}<div class="match-team-logo-ph">🏋️</div>{% endif %}
+                    <div class="match-team-info">
+                        <div class="match-team-name">{{ away.name if away else '—' }}</div>
+                        <div class="match-team-tag">AWAY</div>
+                    </div>
+                </div>
+            </div>
+            {% if m.status == 'completed' and discipline_results.get(m.id|string) %}
+            <div class="disciplines-row">
+                {% for dr in discipline_results[m.id|string] %}
+                <span class="disc-badge {% if dr.winner == 'home' %}home-win{% elif dr.winner == 'away' %}away-win{% endif %}">
+                    {{ dr.discipline_name }}{% if dr.winner == 'home' %} ←{% elif dr.winner == 'away' %} →{% endif %}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<div class="footer">© 2026 <span>World Strongman</span> International Union · Asian Strongman League</div>
+</body>
+</html>
