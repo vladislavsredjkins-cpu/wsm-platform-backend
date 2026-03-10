@@ -7,6 +7,7 @@ from models.competition_division_q import CompetitionDivisionQ
 from models.competition_division import CompetitionDivision
 from models.ranking_award import RankingAward
 from models.ranking_entry import RankingEntry
+from models.weight_category import WeightCategory
 from models.participant import Participant
 import uuid
 import datetime
@@ -35,6 +36,11 @@ class RankingService:
         division = result.scalar_one_or_none()
         if not division:
             raise ValueError(f"Division {competition_division_id} not found")
+
+        # 1b. Получаем weight_category если есть
+        weight_category = None
+        if division.weight_category_id:
+            weight_category = await self.db.get(WeightCategory, division.weight_category_id)
 
         # 2. Проверяем что division locked
         if not division.is_locked:
@@ -113,7 +119,7 @@ class RankingService:
                 id=uuid.uuid4(),
                 athlete_id=athlete_id,
                 ranking_award_id=award.id,
-                division_key=division.division_key,
+                division_key=weight_category.code if weight_category else division.division_key,
                 season_year=now.year,
                 points=s_awarded,
                 awarded_at=now,
@@ -123,7 +129,7 @@ class RankingService:
         await self.db.commit()
         return awards
 
-    async def get_ranking(self, division_key: str, season_year: int) -> List[dict]:
+    async def get_ranking(self, division_key: str, season_year: int, age_group: str = "SENIOR") -> List[dict]:
         # Rolling 365 дней
         cutoff_date = datetime.datetime.utcnow() - datetime.timedelta(days=365)
 
