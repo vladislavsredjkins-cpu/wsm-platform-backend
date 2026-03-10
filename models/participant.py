@@ -12,6 +12,7 @@ class Participant(Base):
     competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id"), nullable=False)
     athlete_id = Column(UUID(as_uuid=True), ForeignKey("athletes.id"), nullable=False)
     bib_no = Column(Integer(), nullable=True)
+    lot_number = Column(Integer(), nullable=True)
     bodyweight_kg = Column(Numeric(6, 2), nullable=True)
 
     division = relationship("CompetitionDivision", back_populates="participants")

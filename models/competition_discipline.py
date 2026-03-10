@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from db.base import Base
@@ -28,6 +28,8 @@ class CompetitionDiscipline(Base):
     lanes_per_heat = Column(Integer, nullable=True)
     track_length_meters = Column(Numeric(6, 2), nullable=True)
     implement_weight = Column(String(200), nullable=True)
+    result_unit = Column(String(20), nullable=True)  # kg/sec/m/reps
+    is_final = Column(Boolean, default=False, nullable=False)
     notes = Column(Text, nullable=True)
 
     division = relationship("CompetitionDivision", back_populates="disciplines")
