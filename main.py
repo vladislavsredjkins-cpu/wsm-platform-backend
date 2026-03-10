@@ -189,11 +189,7 @@ async def judge_profile(judge_id: str, request: Request):
             select(JudgeCompetition).where(JudgeCompetition.judge_id == uuid.UUID(judge_id))
         )
         comp_assignments = comps_result.scalars().all()
-        comps_result = await db.execute(
-            select(Competition).where(Competition.organizer_id == uuid.UUID(organizer_id))
-            .order_by(Competition.date_start.desc())
-        )
-        competitions = comps_result.scalars().all()
+        competitions = []
         for ca in comp_assignments:
             comp = await db.get(Competition, ca.competition_id)
             if comp:
@@ -504,4 +500,58 @@ async def competitions_list(request: Request):
     return templates.TemplateResponse("competitions_list.html", {
         "request": request,
         "competitions": competitions,
+    })
+
+
+@app.get("/rankings")
+async def rankings_page(request: Request, division: str = "MEN_U80"):
+    import datetime
+    from services.ranking_service import RankingService
+    from models.weight_category import WeightCategory
+    from sqlalchemy import select
+    async with SessionLocal() as db:
+        svc = RankingService(db)
+        ranking = await svc.get_ranking(division, datetime.datetime.utcnow().year)
+        result = await db.execute(
+            select(WeightCategory).where(WeightCategory.is_active == True).order_by(WeightCategory.sort_order)
+        )
+        categories = result.scalars().all()
+
+    groups = {"MEN": [], "WOMEN": [], "PARA": []}
+    for c in categories:
+        if c.code.startswith("PARA"):
+            groups["PARA"].append((c.code, c.name))
+        elif c.code.startswith("WOMEN"):
+            groups["WOMEN"].append((c.code, c.name))
+        else:
+            groups["MEN"].append((c.code, c.name))
+
+    # Определяем активную группу
+    if division.startswith("PARA"):
+        active_group = "PARA"
+    elif division.startswith("WOMEN"):
+        active_group = "WOMEN"
+    else:
+        active_group = "MEN"
+
+    return templates.TemplateResponse("rankings.html", {
+        "request": request,
+        "ranking": ranking,
+        "active_division": division,
+        "active_group": active_group,
+        "groups": groups,
+        "season_year": datetime.datetime.utcnow().year,
+    })
+
+
+@app.get("/teams-list")
+async def teams_list_page(request: Request):
+    from models.team import Team
+    from sqlalchemy import select
+    async with SessionLocal() as db:
+        result = await db.execute(select(Team).order_by(Team.name))
+        teams = result.scalars().all()
+    return templates.TemplateResponse("teams_list.html", {
+        "request": request,
+        "teams": teams,
     })

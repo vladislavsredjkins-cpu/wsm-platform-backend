@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rankings — World Strongman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; }
+        .main-header { background: #0a0a0a; border-bottom: 2px solid #c9a84c; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header-logo { display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; }
+        .header-logo img { height: 48px; width: 48px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 9px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .main-nav { display: flex; align-items: center; gap: 4px; }
+        .nav-item { display: flex; align-items: center; gap: 6px; padding: 18px 14px; font-size: 11px; letter-spacing: 2px; color: #666; text-decoration: none; text-transform: uppercase; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap; }
+        .nav-item:hover { color: #fff; border-bottom-color: #444; }
+        .nav-item.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+        .nav-icon { font-size: 14px; }
+        .nav-divider { width: 1px; height: 20px; background: #2a2a2a; margin: 0 8px; }
+        .hero { background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); border-bottom: 1px solid #1e1e1e; padding: 50px 40px 30px; text-align: center; }
+        .hero-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 10px; }
+        .hero-title { font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; }
+        .hero-title span { color: #c9a84c; }
+        .hero-sub { font-size: 12px; color: #555; letter-spacing: 2px; margin-top: 8px; }
+        .tabs-level1 { background: #0d0d0d; border-bottom: 1px solid #1e1e1e; padding: 0 40px; display: flex; gap: 4px; }
+        .tab-l1 { padding: 16px 28px; font-size: 12px; letter-spacing: 3px; color: #555; text-transform: uppercase; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; transition: all 0.2s; text-decoration: none; font-weight: 700; }
+        .tab-l1:hover { color: #fff; }
+        .tab-l1.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+        .tabs-level2 { background: #111; border-bottom: 1px solid #1e1e1e; padding: 0 40px; display: flex; gap: 2px; flex-wrap: wrap; }
+        .tab-l2 { padding: 10px 16px; font-size: 10px; letter-spacing: 2px; color: #444; text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; text-decoration: none; }
+        .tab-l2:hover { color: #aaa; }
+        .tab-l2.active { color: #fff; border-bottom-color: #c9a84c; }
+        .content { max-width: 1000px; margin: 0 auto; padding: 30px 40px 60px; }
+        .info-box { background: #111; border: 1px solid #1e1e1e; border-left: 3px solid #c9a84c; padding: 14px 20px; margin-bottom: 24px; font-size: 11px; color: #666; line-height: 1.6; letter-spacing: 1px; }
+        .info-box strong { color: #c9a84c; }
+        .ranking-table { width: 100%; border-collapse: collapse; }
+        .ranking-table thead tr { background: #111; border-bottom: 2px solid #c9a84c; }
+        .ranking-table thead th { padding: 12px 16px; font-size: 10px; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; text-align: center; }
+        .ranking-table thead th.left { text-align: left; }
+        .ranking-table tbody tr { border-bottom: 1px solid #1a1a1a; transition: background 0.15s; }
+        .ranking-table tbody tr:hover { background: #111; }
+        .ranking-table tbody td { padding: 14px 16px; font-size: 14px; text-align: center; }
+        .ranking-table tbody td.left { text-align: left; }
+        .rank { font-size: 20px; font-weight: 900; color: #444; }
+        .rank.p1 { color: #c9a84c; } .rank.p2 { color: #aaa; } .rank.p3 { color: #cd7f32; }
+        .athlete-cell { display: flex; align-items: center; gap: 12px; }
+        .athlete-photo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+        .athlete-photo-ph { width: 44px; height: 44px; border-radius: 50%; background: #1a1a1a; border: 1px solid #2a2a2a; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .athlete-name { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #fff; text-decoration: none; }
+        .athlete-name:hover { color: #c9a84c; }
+        .athlete-country { font-size: 11px; color: #666; margin-top: 2px; }
+        .pts-cell { font-size: 22px; font-weight: 900; color: #c9a84c; }
+        .comps-cell { font-size: 12px; color: #888; }
+        .best-cell { font-size: 12px; color: #7a9a7a; }
+        .empty-state { text-align: center; padding: 80px 40px; }
+        .empty-icon { font-size: 56px; margin-bottom: 16px; }
+        .empty-title { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: #444; margin-bottom: 8px; }
+        .empty-sub { font-size: 11px; color: #333; letter-spacing: 1px; }
+        .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .footer span { color: #c9a84c; }
+    </style>
+</head>
+<body>
+<header class="main-header">
+    <a href="/" class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">International Union</div>
+        </div>
+    </a>
+    <nav class="main-nav">
+        <a href="/competitions-list" class="nav-item"><span class="nav-icon">🏆</span> Competitions</a>
+        <a href="/rankings" class="nav-item active"><span class="nav-icon">📊</span> Rankings</a>
+        <a href="/athletes-list" class="nav-item"><span class="nav-icon">💪</span> Athletes</a>
+        <a href="/judges-list" class="nav-item"><span class="nav-icon">⚖️</span> Judges</a>
+        <a href="/organizers-list" class="nav-item"><span class="nav-icon">🏛️</span> Organizers</a>
+        <div class="nav-divider"></div>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e" class="nav-item"><span class="nav-icon">🥊</span> ASL League</a>
+        <a href="/teams-list" class="nav-item"><span class="nav-icon">👥</span> Teams</a>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e/final-four" class="nav-item"><span class="nav-icon">⚡</span> Final Four</a>
+    </nav>
+</header>
+<div class="hero">
+    <div class="hero-label">WSM Season {{ season_year }}</div>
+    <div class="hero-title">WORLD <span>RANKINGS</span></div>
+    <div class="hero-sub">Rolling 365-day · Top 8 results count · Q coefficient applied</div>
+</div>
+
+<div class="tabs-level1">
+    <a href="/rankings?division={{ groups['MEN'][0][0] if groups['MEN'] else 'MEN_U70' }}" class="tab-l1 {% if active_group == 'MEN' %}active{% endif %}">💪 Men</a>
+    <a href="/rankings?division={{ groups['WOMEN'][0][0] if groups['WOMEN'] else 'WOMEN_U55' }}" class="tab-l1 {% if active_group == 'WOMEN' %}active{% endif %}">🏋️ Women</a>
+    <a href="/rankings?division={{ groups['PARA'][0][0] if groups['PARA'] else 'PARA_MEN_U49' }}" class="tab-l1 {% if active_group == 'PARA' %}active{% endif %}">♿ Para</a>
+</div>
+
+<div class="tabs-level2">
+    {% for code, name in groups[active_group] %}
+    <a href="/rankings?division={{ code }}" class="tab-l2 {% if active_division == code %}active{% endif %}">{{ name }}</a>
+    {% endfor %}
+</div>
+
+<div class="content">
+    <div class="info-box">
+        <strong>Formula:</strong> Points = P × Q &nbsp;·&nbsp; P: 1st=10, 2nd=9 ... 10th=1 &nbsp;·&nbsp; Q = competition coefficient &nbsp;·&nbsp; Top 8 results / 365 days &nbsp;·&nbsp; Min 6 athletes per competition
+    </div>
+    {% if ranking %}
+    <table class="ranking-table">
+        <thead>
+            <tr>
+                <th style="width:50px;">#</th>
+                <th class="left">Athlete</th>
+                <th>Points</th>
+                <th>Competitions</th>
+                <th>Best Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in ranking %}
+            <tr>
+                <td><div class="rank {% if r.position==1 %}p1{% elif r.position==2 %}p2{% elif r.position==3 %}p3{% endif %}">{{ r.position }}</div></td>
+                <td class="left">
+                    <div class="athlete-cell">
+                        {% if r.get('athlete') and r.athlete.photo_url %}
+                        <img class="athlete-photo" src="{{ r.athlete.photo_url }}" alt="">
+                        {% else %}
+                        <div class="athlete-photo-ph">💪</div>
+                        {% endif %}
+                        <div>
+                            <a class="athlete-name" href="/athletes/{{ r.athlete_id }}/profile">{{ r.athlete_id }}</a>
+                            <div class="athlete-country"></div>
+                        </div>
+                    </div>
+                </td>
+                <td class="pts-cell">{{ "%.1f"|format(r.total_points) }}</td>
+                <td class="comps-cell">{{ r.competitions_count }}</td>
+                <td class="best-cell">{{ "%.1f"|format(r.best_result) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <div class="empty-title">No ranking data yet</div>
+        <div class="empty-sub">Rankings appear after competitions are completed and results validated</div>
+    </div>
+    {% endif %}
+</div>
+<div class="footer">© 2026 <span>World Strongman</span> International Union · All Rights Reserved</div>
+</body>
+</html>
