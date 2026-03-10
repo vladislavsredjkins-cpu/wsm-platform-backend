@@ -42,22 +42,22 @@ async def get_current_athlete(
 
 
 async def require_organizer(current_user: User = Depends(get_current_user)):
-    if current_user.role not in ("ORGANIZER", "ADMIN"):
+    if current_user.role not in ("ORGANIZER", "ADMIN", "WSM_ADMIN"):
         raise HTTPException(status_code=403, detail="Organizer role required")
     return current_user
 
 async def require_admin(current_user: User = Depends(get_current_user)):
-    if current_user.role != "ADMIN":
+    if current_user.role not in ("ADMIN", "WSM_ADMIN"):
         raise HTTPException(status_code=403, detail="Admin role required")
     return current_user
 
 
 async def require_referee(current_user: User = Depends(get_current_user)):
-    if current_user.role not in ("REFEREE", "ADMIN"):
+    if current_user.role not in ("REFEREE", "ADMIN", "WSM_ADMIN"):
         raise HTTPException(status_code=403, detail="Referee role required")
     return current_user
 
 async def require_federation(current_user: User = Depends(get_current_user)):
-    if current_user.role not in ("FEDERATION", "ADMIN"):
+    if current_user.role not in ("FEDERATION", "ADMIN", "WSM_ADMIN"):
         raise HTTPException(status_code=403, detail="Federation role required")
     return current_user
