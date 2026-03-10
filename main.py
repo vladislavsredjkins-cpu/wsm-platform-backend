@@ -1315,3 +1315,125 @@ async def competition_protocol(competition_id: str, request: Request):
         "divisions_data": divisions_data,
         "organizer": organizer,
     })
+
+
+# ─── WSM ADMIN PANEL ─────────────────────────────────────────────────────────
+
+@app.get("/admin/pending-organizers")
+async def admin_pending(request: Request):
+    return templates.TemplateResponse("admin_pending.html", {"request": request})
+
+@app.get("/admin/api/pending-organizers")
+async def api_pending_organizers(request: Request):
+    from models.user import User
+    from models.organizer import Organizer
+    from sqlalchemy import select
+    from auth.dependencies import get_current_user
+    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    from auth.security import decode_token
+    from jose import JWTError
+
+    # Проверяем токен из заголовка
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        from fastapi import HTTPException
+        raise HTTPException(403, "Not authorized")
+    token = auth.split(" ")[1]
+    try:
+        payload = decode_token(token)
+        user_id = payload.get("sub")
+    except:
+        from fastapi import HTTPException
+        raise HTTPException(403, "Invalid token")
+
+    async with SessionLocal() as db:
+        user = await db.get(User, int(user_id))
+        if not user or user.role != "WSM_ADMIN":
+            from fastapi import HTTPException
+            raise HTTPException(403, "WSM_ADMIN role required")
+
+        result = await db.execute(
+            select(User, Organizer)
+            .join(Organizer, Organizer.user_id == User.id, isouter=True)
+            .where(User.role == "PENDING")
+        )
+        rows = result.all()
+        return [
+            {
+                "user_id": u.id,
+                "email": u.email,
+                "organizer_id": str(o.id) if o else None,
+                "name": o.name if o else "—",
+                "type": o.type if o else "—",
+                "country": o.country if o else "—",
+                "city": o.city if o else "—",
+                "phone": o.phone if o else "—",
+                "website": o.website if o else "—",
+                "photo_url": o.photo_url if o else None,
+            }
+            for u, o in rows
+        ]
+
+@app.post("/admin/api/approve-organizer/{user_id}")
+async def api_approve_organizer(user_id: int, request: Request):
+    from models.user import User
+    from auth.security import decode_token
+
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        from fastapi import HTTPException
+        raise HTTPException(403, "Not authorized")
+    token = auth.split(" ")[1]
+    try:
+        payload = decode_token(token)
+        admin_id = payload.get("sub")
+    except:
+        from fastapi import HTTPException
+        raise HTTPException(403, "Invalid token")
+
+    async with SessionLocal() as db:
+        admin = await db.get(User, int(admin_id))
+        if not admin or admin.role != "WSM_ADMIN":
+            from fastapi import HTTPException
+            raise HTTPException(403, "WSM_ADMIN role required")
+
+        user = await db.get(User, user_id)
+        if not user:
+            from fastapi import HTTPException
+            raise HTTPException(404, "User not found")
+
+        user.role = "ORGANIZER"
+        await db.commit()
+    return {"ok": True, "user_id": user_id, "new_role": "ORGANIZER"}
+
+@app.post("/admin/api/reject-organizer/{user_id}")
+async def api_reject_organizer(user_id: int, request: Request):
+    from models.user import User
+    from auth.security import decode_token
+
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        from fastapi import HTTPException
+        raise HTTPException(403, "Not authorized")
+    token = auth.split(" ")[1]
+    try:
+        payload = decode_token(token)
+        admin_id = payload.get("sub")
+    except:
+        from fastapi import HTTPException
+        raise HTTPException(403, "Invalid token")
+
+    async with SessionLocal() as db:
+        admin = await db.get(User, int(admin_id))
+        if not admin or admin.role != "WSM_ADMIN":
+            from fastapi import HTTPException
+            raise HTTPException(403, "WSM_ADMIN role required")
+
+        user = await db.get(User, user_id)
+        if not user:
+            from fastapi import HTTPException
+            raise HTTPException(404, "User not found")
+
+        user.role = "REJECTED"
+        await db.commit()
+    return {"ok": True, "user_id": user_id, "new_role": "REJECTED"}

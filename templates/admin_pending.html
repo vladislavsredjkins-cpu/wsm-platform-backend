@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WSM Admin — Pending Organizers</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; min-height: 100vh; }
+        .header { background: #111; border-bottom: 2px solid #c9a84c; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-left img { height: 36px; width: 36px; border-radius: 50%; }
+        .header-title { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .header-email { font-size: 12px; color: #444; }
+        .btn-logout { background: transparent; border: 1px solid #2a2a2a; color: #666; padding: 6px 14px; border-radius: 3px; cursor: pointer; font-size: 12px; }
+        .wrap { max-width: 1000px; margin: 40px auto; padding: 0 24px; }
+        .page-title { font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+        .page-sub { font-size: 13px; color: #555; margin-bottom: 32px; }
+        .login-form { background: #111; border: 1px solid #2a2a2a; border-radius: 4px; padding: 32px; max-width: 400px; margin: 80px auto; }
+        .login-title { font-size: 14px; font-weight: 700; letter-spacing: 2px; color: #c9a84c; text-transform: uppercase; margin-bottom: 20px; }
+        input { width: 100%; padding: 11px 14px; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 3px; color: #fff; font-size: 14px; outline: none; margin-bottom: 12px; }
+        input:focus { border-color: #c9a84c; }
+        .btn-gold { width: 100%; padding: 12px; background: #c9a84c; color: #000; border: none; border-radius: 3px; font-size: 12px; font-weight: 900; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; }
+        .card { background: #111; border: 1px solid #1e1e1e; border-radius: 4px; padding: 20px 24px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .card-logo { width: 56px; height: 56px; border-radius: 4px; object-fit: cover; background: #1a1a1a; border: 1px solid #2a2a2a; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .card-info { flex: 1; }
+        .card-name { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+        .card-meta { font-size: 12px; color: #555; }
+        .card-email { font-size: 12px; color: #888; margin-top: 2px; }
+        .card-actions { display: flex; gap: 8px; }
+        .btn-approve { padding: 8px 20px; background: #2a5c2a; color: #4caf50; border: 1px solid #4caf50; border-radius: 3px; font-size: 11px; font-weight: 700; letter-spacing: 1px; cursor: pointer; }
+        .btn-approve:hover { background: #4caf50; color: #000; }
+        .btn-reject { padding: 8px 20px; background: transparent; color: #ff5252; border: 1px solid #ff5252; border-radius: 3px; font-size: 11px; font-weight: 700; letter-spacing: 1px; cursor: pointer; }
+        .btn-reject:hover { background: #ff5252; color: #fff; }
+        .empty { text-align: center; padding: 60px; color: #333; font-size: 13px; letter-spacing: 2px; }
+        .badge { font-size: 9px; letter-spacing: 1px; padding: 2px 8px; border: 1px solid #c9a84c; color: #c9a84c; border-radius: 2px; text-transform: uppercase; }
+        #login-section { display: block; }
+        #admin-section { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <img src="/static/logo.jpg" alt="WSM">
+        <span class="header-title">WSM Admin</span>
+    </div>
+    <div class="header-right">
+        <span class="header-email" id="admin-email"></span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-section">
+    <div class="login-form">
+        <div class="login-title">⚡ WSM Admin Login</div>
+        <input type="email" id="login-email" placeholder="admin@wsm.com">
+        <input type="password" id="login-password" placeholder="Password">
+        <div id="login-error" style="color:#ff5252;font-size:12px;margin-bottom:12px;display:none;"></div>
+        <button class="btn-gold" onclick="doLogin()">LOGIN →</button>
+    </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-section">
+    <div class="wrap">
+        <div class="page-title">Pending Organizers</div>
+        <div class="page-sub">Review and approve organizer registration requests</div>
+        <div id="list">Loading...</div>
+    </div>
+</div>
+
+<script>
+let token = localStorage.getItem('wsm_admin_token');
+if (token) initAdmin();
+
+async function doLogin() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    try {
+        const res = await fetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.role === 'WSM_ADMIN') {
+            token = data.access_token;
+            localStorage.setItem('wsm_admin_token', token);
+            document.getElementById('admin-email').textContent = data.email;
+            initAdmin();
+        } else if (res.ok && data.role !== 'WSM_ADMIN') {
+            showLoginError('Access denied. WSM Admin role required.');
+        } else {
+            showLoginError(data.detail || 'Login failed');
+        }
+    } catch(e) {
+        showLoginError('Network error');
+    }
+}
+
+function showLoginError(msg) {
+    const el = document.getElementById('login-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
+function initAdmin() {
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('admin-section').style.display = 'block';
+    loadPending();
+}
+
+async function loadPending() {
+    const res = await fetch('/admin/api/pending-organizers', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) { logout(); return; }
+    const data = await res.json();
+    const list = document.getElementById('list');
+    if (data.length === 0) {
+        list.innerHTML = '<div class="empty">NO PENDING REQUESTS</div>';
+        return;
+    }
+    list.innerHTML = data.map(o => `
+        <div class="card" id="card-${o.user_id}">
+            <div class="card-logo">
+                ${o.photo_url ? `<img src="${o.photo_url}" style="width:56px;height:56px;object-fit:cover;border-radius:4px;">` : '🏛️'}
+            </div>
+            <div class="card-info">
+                <div class="card-name">${o.name} <span class="badge">${o.type}</span></div>
+                <div class="card-meta">${o.country || '—'} ${o.city ? '· ' + o.city : ''} ${o.website ? '· <a href="' + o.website + '" target="_blank" style="color:#c9a84c;">' + o.website + '</a>' : ''}</div>
+                <div class="card-email">${o.email}</div>
+            </div>
+            <div class="card-actions">
+                <button class="btn-approve" onclick="approve(${o.user_id})">✓ APPROVE</button>
+                <button class="btn-reject" onclick="reject(${o.user_id})">✗ REJECT</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function approve(userId) {
+    const res = await fetch(`/admin/api/approve-organizer/${userId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+        const card = document.getElementById(`card-${userId}`);
+        card.style.opacity = '0.4';
+        card.innerHTML += '<div style="color:#4caf50;font-size:12px;font-weight:700;padding:8px;">✓ APPROVED — Role set to ORGANIZER</div>';
+        card.querySelector('.card-actions').remove();
+    }
+}
+
+async function reject(userId) {
+    if (!confirm('Reject this organizer request?')) return;
+    const res = await fetch(`/admin/api/reject-organizer/${userId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+        document.getElementById(`card-${userId}`).remove();
+    }
+}
+
+function logout() {
+    localStorage.removeItem('wsm_admin_token');
+    token = null;
+    document.getElementById('login-section').style.display = 'block';
+    document.getElementById('admin-section').style.display = 'none';
+}
+</script>
+</body>
+</html>
