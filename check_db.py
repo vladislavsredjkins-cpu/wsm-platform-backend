@@ -10,3 +10,4 @@ cur.execute("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 
 for row in cur.fetchall():
     print(row[0])
 conn.close()
+

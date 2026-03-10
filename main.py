@@ -144,6 +144,45 @@ async def athlete_profile(athlete_id: str, request: Request):
         except:
             pass
 
+        # Competition history для графика
+        competition_history = []
+        try:
+            from models.participant import Participant
+            from models.competition_division import CompetitionDivision
+            from models.competition import Competition
+            from models.overall_standing import OverallStanding
+            from sqlalchemy import select as sa_select
+
+            parts_res = await db.execute(
+                sa_select(Participant).where(Participant.athlete_id == uuid.UUID(athlete_id))
+            )
+            for p in parts_res.scalars().all():
+                div = await db.get(CompetitionDivision, p.competition_division_id)
+                if not div: continue
+                comp = await db.get(Competition, div.competition_id)
+                if not comp: continue
+                overall_res = await db.execute(
+                    sa_select(OverallStanding).where(
+                        OverallStanding.competition_division_id == div.id,
+                        OverallStanding.participant_id == p.id
+                    )
+                )
+                overall = overall_res.scalar_one_or_none()
+                if overall:
+                    q = float(comp.coefficient_q or 1.0)
+                    competition_history.append({
+                        "comp_name": comp.name,
+                        "date": str(comp.date_start) if comp.date_start else "2026-01-01",
+                        "place": overall.overall_place,
+                        "points": float(overall.total_points or 0),
+                        "weighted": round(float(overall.total_points or 0) * q, 1),
+                        "division": div.division_key,
+                        "q": q,
+                    })
+            competition_history.sort(key=lambda x: x["date"])
+        except Exception as e:
+            print(f"History error: {e}")
+
         return templates.TemplateResponse("athlete_profile.html", {
             "request": request,
             "athlete": athlete,
@@ -152,6 +191,7 @@ async def athlete_profile(athlete_id: str, request: Request):
             "upcoming": upcoming,
             "upcoming_count": len(upcoming),
             "sponsors": sponsors,
+            "competition_history": competition_history,
         })
 
 

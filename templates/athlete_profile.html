@@ -354,6 +354,7 @@
             letter-spacing: 1px;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -512,6 +513,24 @@
     </div>
 
     <!-- SPONSORS -->
+    {% if competition_history %}
+    <div class="section section-full">
+        <div class="section-title">📈 Performance History</div>
+        <div style="position:relative;height:280px;margin-bottom:16px;">
+            <canvas id="perf-chart"></canvas>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            {% for h in competition_history %}
+            <div style="background:#111;border:1px solid #1e1e1e;border-radius:3px;padding:8px 14px;font-size:11px;">
+                <div style="color:#888;margin-bottom:2px;">{{ h.comp_name }}</div>
+                <div style="color:#c9a84c;font-weight:700;">{{ h.place }}. place · {{ h.weighted }} pts</div>
+                <div style="color:#333;font-size:10px;">{{ h.date }} · Q×{{ h.q }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="section section-full">
         <div class="section-title">🎽 Sponsors</div>
         <div class="sponsors-grid">
@@ -537,5 +556,90 @@
     © 2026 <span>World Strongman</span> International Union · All Rights Reserved
 </div>
 
+<script>
+{% if competition_history %}
+const historyData = {{ competition_history | tojson }};
+const labels = historyData.map(h => h.comp_name + '\n' + h.date);
+const pointsData = historyData.map(h => h.weighted);
+const placesData = historyData.map(h => h.place);
+
+const ctx = document.getElementById('perf-chart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: historyData.map(h => h.comp_name),
+        datasets: [
+            {
+                label: 'Weighted Points',
+                data: pointsData,
+                borderColor: '#c9a84c',
+                backgroundColor: 'rgba(201,168,76,0.1)',
+                borderWidth: 2,
+                pointBackgroundColor: '#c9a84c',
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                fill: true,
+                tension: 0.3,
+                yAxisID: 'y',
+            },
+            {
+                label: 'Place',
+                data: placesData,
+                borderColor: '#555',
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderDash: [4, 4],
+                pointBackgroundColor: '#555',
+                pointRadius: 4,
+                fill: false,
+                tension: 0.3,
+                yAxisID: 'y2',
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: {
+                labels: { color: '#666', font: { size: 11 } }
+            },
+            tooltip: {
+                backgroundColor: '#111',
+                borderColor: '#c9a84c',
+                borderWidth: 1,
+                titleColor: '#c9a84c',
+                bodyColor: '#fff',
+                callbacks: {
+                    label: ctx => ctx.dataset.label === 'Place'
+                        ? ` Place: ${ctx.raw}`
+                        : ` Points: ${ctx.raw}`
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#555', font: { size: 10 } },
+                grid: { color: '#111' }
+            },
+            y: {
+                position: 'left',
+                ticks: { color: '#c9a84c', font: { size: 10 } },
+                grid: { color: '#1a1a1a' },
+                title: { display: true, text: 'Points', color: '#c9a84c', font: { size: 10 } }
+            },
+            y2: {
+                position: 'right',
+                reverse: true,
+                ticks: { color: '#555', font: { size: 10 } },
+                grid: { display: false },
+                title: { display: true, text: 'Place', color: '#555', font: { size: 10 } }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
 </body>
 </html>
