@@ -1437,3 +1437,196 @@ async def api_reject_organizer(user_id: int, request: Request):
         user.role = "REJECTED"
         await db.commit()
     return {"ok": True, "user_id": user_id, "new_role": "REJECTED"}
+
+
+# ─── CERTIFICATES ────────────────────────────────────────────────────────────
+
+@app.get("/competitions/{competition_id}/certificates")
+async def competition_certificates(competition_id: str, request: Request):
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from models.overall_standing import OverallStanding
+    from models.organizer import Organizer
+    from sqlalchemy import select
+    import uuid
+
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            return templates.TemplateResponse("404.html", {"request": request})
+
+        organizer = None
+        if comp.organizer_id:
+            organizer = await db.get(Organizer, comp.organizer_id)
+
+        divs_result = await db.execute(
+            select(CompetitionDivision).where(CompetitionDivision.competition_id == uuid.UUID(competition_id))
+        )
+        divisions = divs_result.scalars().all()
+
+        certificates = []
+        for div in divisions:
+            parts_result = await db.execute(
+                select(Participant).where(Participant.competition_division_id == div.id)
+            )
+            participants = parts_result.scalars().all()
+
+            overall_result = await db.execute(
+                select(OverallStanding).where(OverallStanding.competition_division_id == div.id)
+                .order_by(OverallStanding.overall_place)
+            )
+            overall_standings = {str(o.participant_id): o for o in overall_result.scalars().all()}
+
+            for p in participants:
+                ath = await db.get(Athlete, p.athlete_id)
+                overall = overall_standings.get(str(p.id))
+                if overall:
+                    certificates.append({
+                        "athlete": ath,
+                        "participant": p,
+                        "overall": overall,
+                        "division": div,
+                    })
+
+        certificates.sort(key=lambda x: (x["division"].division_key, x["overall"].overall_place))
+
+    return templates.TemplateResponse("competition_certificates.html", {
+        "request": request,
+        "competition": comp,
+        "organizer": organizer,
+        "certificates": certificates,
+    })
+
+
+# ─── SEND CERTIFICATE EMAIL ──────────────────────────────────────────────────
+
+@app.post("/competitions/{competition_id}/certificates/send")
+async def send_certificate(competition_id: str, request: Request):
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from models.overall_standing import OverallStanding
+    from models.organizer import Organizer
+    from sqlalchemy import select
+    from fastapi import HTTPException
+    import uuid, os, resend
+
+    data = await request.json()
+    participant_id = data.get("participant_id")
+    if not participant_id:
+        raise HTTPException(400, "participant_id required")
+
+    resend.api_key = os.getenv("RESEND_API_KEY")
+
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            raise HTTPException(404, "Competition not found")
+
+        organizer = None
+        if comp.organizer_id:
+            organizer = await db.get(Organizer, comp.organizer_id)
+
+        p = await db.get(Participant, uuid.UUID(participant_id))
+        if not p:
+            raise HTTPException(404, "Participant not found")
+
+        ath = await db.get(Athlete, p.athlete_id)
+        if not ath or not ath.email:
+            raise HTTPException(400, "Athlete has no email")
+
+        overall_result = await db.execute(
+            select(OverallStanding).where(
+                OverallStanding.competition_division_id == p.competition_division_id,
+                OverallStanding.participant_id == p.id
+            )
+        )
+        overall = overall_result.scalar_one_or_none()
+        if not overall:
+            raise HTTPException(400, "No standings found for this athlete")
+
+        div = await db.get(CompetitionDivision, p.competition_division_id)
+
+        place = overall.overall_place
+        suffix = "st" if place == 1 else "nd" if place == 2 else "rd" if place == 3 else "th"
+        place_color = "#c9a84c" if place == 1 else "#aaa" if place == 2 else "#cd7f32" if place == 3 else "#666"
+
+        org_block = ""
+        if organizer and organizer.photo_url:
+            org_block = f'<img src="{organizer.photo_url}" style="height:40px;max-width:100px;object-fit:contain;">'
+        elif organizer:
+            org_block = f'<span style="font-size:12px;color:#888;">{organizer.name}</span>'
+
+        html = f"""
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,sans-serif;">
+<div style="max-width:600px;margin:40px auto;background:#fff;border:2px solid #c9a84c;padding:40px;">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:2px solid #c9a84c;padding-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img src="https://psychic-eureka-pjxr6r56g5vwc6x59-8000.app.github.dev/static/logo.jpg" style="height:48px;width:48px;border-radius:50%;">
+      <div>
+        <div style="font-size:13px;font-weight:900;letter-spacing:2px;color:#111;text-transform:uppercase;">World Strongman</div>
+        <div style="font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;">International Union</div>
+      </div>
+    </div>
+    {org_block}
+  </div>
+
+  <!-- Body -->
+  <div style="text-align:center;padding:24px 0;">
+    <div style="font-size:10px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin-bottom:8px;">Certificate of Achievement</div>
+    <div style="font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:3px;color:#111;margin-bottom:4px;">{comp.name}</div>
+    <div style="font-size:11px;color:#888;letter-spacing:2px;margin-bottom:24px;">
+      {(comp.city or '') + (', ' + comp.country if comp.country else '')} · {comp.date_start or ''}
+    </div>
+
+    <div style="font-size:11px;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">This certificate is presented to</div>
+    <div style="font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:3px;color:#111;margin-bottom:4px;">{ath.first_name} {ath.last_name}</div>
+    <div style="font-size:12px;color:#888;letter-spacing:3px;text-transform:uppercase;margin-bottom:24px;">{ath.country or ''}</div>
+
+    <div style="margin-bottom:16px;">
+      <span style="font-size:64px;font-weight:900;color:{place_color};line-height:1;">{place}</span>
+      <span style="font-size:24px;font-weight:700;color:{place_color};vertical-align:super;">{suffix}</span>
+      <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;">Place</div>
+    </div>
+
+    <div style="font-size:14px;font-weight:700;letter-spacing:2px;color:#333;text-transform:uppercase;">{div.division_key} {div.age_group}</div>
+    <div style="font-size:12px;color:#c9a84c;margin-top:4px;">{overall.total_points} points</div>
+  </div>
+
+  <!-- Footer -->
+  <div style="display:flex;justify-content:space-between;border-top:1px solid #e0e0e0;padding-top:16px;margin-top:24px;">
+    <div style="text-align:center;min-width:130px;">
+      <div style="border-top:1px solid #333;margin-bottom:4px;"></div>
+      <div style="font-size:9px;color:#888;letter-spacing:1px;text-transform:uppercase;">Chief Referee</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:11px;font-weight:700;color:#333;text-transform:uppercase;">{comp.name}</div>
+      <div style="font-size:9px;color:#aaa;margin-top:2px;">{comp.date_end or comp.date_start or ''} · Q × {comp.coefficient_q}</div>
+    </div>
+    <div style="text-align:center;min-width:130px;">
+      <div style="border-top:1px solid #333;margin-bottom:4px;"></div>
+      <div style="font-size:9px;color:#888;letter-spacing:1px;text-transform:uppercase;">Competition Director</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
+"""
+
+        resend.Emails.send({
+            "from": "WSM Platform <onboarding@resend.dev>",
+            "to": ath.email,
+            "subject": f"🏆 Your Certificate — {comp.name}",
+            "html": html,
+        })
+
+    return {"ok": True, "sent_to": ath.email}

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificates — {{ competition.name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f0f0f0; font-family: Arial, sans-serif; }
+
+        @media screen {
+            .controls { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+            .btn { padding: 10px 20px; border: none; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; }
+            .btn-print { background: #c9a84c; color: #000; }
+            .btn-filter { background: #222; color: #c9a84c; border: 1px solid #c9a84c; }
+            .filter-bar { background: #111; padding: 16px 40px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+            .filter-bar label { font-size: 11px; color: #666; letter-spacing: 1px; text-transform: uppercase; }
+            .filter-bar select { padding: 6px 12px; background: #1a1a1a; border: 1px solid #2a2a2a; color: #fff; border-radius: 3px; font-size: 12px; }
+        }
+
+        @media print {
+            .controls, .filter-bar { display: none !important; }
+            body { background: #fff; }
+            .cert-page { page-break-after: always; }
+            .cert-page:last-child { page-break-after: avoid; }
+        }
+
+        /* Certificate */
+        .cert-page { width: 210mm; min-height: 148mm; margin: 20px auto; background: #fff; position: relative; overflow: hidden; }
+        .cert-inner { width: 100%; height: 100%; min-height: 148mm; padding: 24px 32px; position: relative; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e0e0e0; }
+
+        /* Gold border decoration */
+        .cert-inner::before { content: ''; position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px; border: 2px solid #c9a84c; pointer-events: none; }
+        .cert-inner::after { content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border: 1px solid rgba(201,168,76,0.3); pointer-events: none; }
+
+        /* Corner decorations */
+        .corner { position: absolute; width: 20px; height: 20px; }
+        .corner-tl { top: 4px; left: 4px; border-top: 3px solid #c9a84c; border-left: 3px solid #c9a84c; }
+        .corner-tr { top: 4px; right: 4px; border-top: 3px solid #c9a84c; border-right: 3px solid #c9a84c; }
+        .corner-bl { bottom: 4px; left: 4px; border-bottom: 3px solid #c9a84c; border-left: 3px solid #c9a84c; }
+        .corner-br { bottom: 4px; right: 4px; border-bottom: 3px solid #c9a84c; border-right: 3px solid #c9a84c; }
+
+        .cert-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .cert-logo { display: flex; align-items: center; gap: 10px; }
+        .cert-logo img { height: 44px; width: 44px; border-radius: 50%; object-fit: cover; }
+        .cert-logo-text-top { font-size: 11px; font-weight: 900; letter-spacing: 2px; color: #111; text-transform: uppercase; }
+        .cert-logo-text-sub { font-size: 8px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .cert-org-logo { text-align: right; }
+        .cert-org-logo img { height: 44px; max-width: 100px; object-fit: contain; }
+        .cert-org-name { font-size: 10px; color: #888; letter-spacing: 1px; }
+
+        .cert-body { text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px 0; }
+        .cert-label { font-size: 9px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 6px; }
+        .cert-title { font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; color: #111; margin-bottom: 4px; }
+        .cert-subtitle { font-size: 11px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+        .cert-presented { font-size: 10px; color: #aaa; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+        .cert-athlete { font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: #111; margin-bottom: 4px; }
+        .cert-country { font-size: 12px; color: #888; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px; }
+        .cert-place-wrap { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 12px; }
+        .cert-place { font-size: 64px; font-weight: 900; color: #c9a84c; line-height: 1; }
+        .cert-place.p2 { color: #888; }
+        .cert-place.p3 { color: #cd7f32; }
+        .cert-place-label { font-size: 11px; letter-spacing: 2px; color: #888; text-transform: uppercase; }
+        .cert-division { font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #333; text-transform: uppercase; }
+        .cert-points { font-size: 11px; color: #c9a84c; letter-spacing: 1px; margin-top: 4px; }
+
+        .cert-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; }
+        .cert-sign { text-align: center; min-width: 130px; }
+        .cert-sign-line { border-top: 1px solid #333; margin-bottom: 4px; }
+        .cert-sign-label { font-size: 8px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+        .cert-meta { text-align: center; }
+        .cert-meta-comp { font-size: 10px; font-weight: 700; color: #333; letter-spacing: 1px; text-transform: uppercase; }
+        .cert-meta-date { font-size: 9px; color: #aaa; letter-spacing: 1px; margin-top: 2px; }
+
+        /* Place ordinal suffix */
+        .cert-place-suffix { font-size: 24px; font-weight: 700; color: #c9a84c; vertical-align: super; }
+
+        /* Hidden class for filter */
+        .cert-page.hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <button class="btn btn-print" onclick="window.print()">🖨️ PRINT ALL</button>
+</div>
+
+<div class="filter-bar">
+    <label>Division:</label>
+    <select id="filter-div" onchange="applyFilter()">
+        <option value="">All Divisions</option>
+        {% for cert in certificates %}
+        <option value="{{ cert.division.division_key }}">{{ cert.division.division_key }} {{ cert.division.age_group }}</option>
+        {% endfor %}
+    </select>
+    <label style="margin-left:16px;">Place:</label>
+    <select id="filter-place" onchange="applyFilter()">
+        <option value="">All Places</option>
+        <option value="1">1st Place only</option>
+        <option value="2">2nd Place only</option>
+        <option value="3">3rd Place only</option>
+        <option value="top3">Top 3 only</option>
+    </select>
+    <span id="filter-count" style="font-size:12px;color:#555;margin-left:16px;"></span>
+</div>
+
+{% for cert in certificates %}
+{% set place = cert.overall.overall_place %}
+{% set ath = cert.athlete %}
+<div class="cert-page" data-div="{{ cert.division.division_key }}" data-place="{{ place }}">
+    <div class="cert-inner">
+        <!-- Corner decorations -->
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+
+        <!-- Header -->
+        <div class="cert-header">
+            <div class="cert-logo">
+                <img src="/static/logo.jpg" alt="WSM">
+                <div>
+                    <div class="cert-logo-text-top">World Strongman</div>
+                    <div class="cert-logo-text-sub">International Union</div>
+                </div>
+            </div>
+            <div class="cert-org-logo">
+                {% if organizer and organizer.photo_url %}
+                <img src="{{ organizer.photo_url }}" alt="{{ organizer.name }}">
+                {% elif organizer %}
+                <div class="cert-org-name">{{ organizer.name }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="cert-body">
+            <div class="cert-label">Certificate of Achievement</div>
+            <div class="cert-title">{{ competition.name }}</div>
+            <div class="cert-subtitle">
+                {% if competition.city %}{{ competition.city }}{% if competition.country %}, {{ competition.country }}{% endif %}{% endif %}
+                {% if competition.date_start %} · {{ competition.date_start }}{% endif %}
+            </div>
+
+            <div class="cert-presented">This certificate is presented to</div>
+            <div class="cert-athlete">{{ ath.first_name ~ ' ' ~ ath.last_name if ath else '—' }}</div>
+            <div class="cert-country">{{ ath.country if ath else '' }}</div>
+
+            <div class="cert-place-wrap">
+                <div>
+                    <div class="cert-place {% if place == 2 %}p2{% elif place == 3 %}p3{% endif %}">
+                        {{ place }}{% if place == 1 %}<span class="cert-place-suffix">st</span>{% elif place == 2 %}<span class="cert-place-suffix" style="color:#888;">nd</span>{% elif place == 3 %}<span class="cert-place-suffix" style="color:#cd7f32;">rd</span>{% else %}<span class="cert-place-suffix" style="color:#aaa;">th</span>{% endif %}
+                    </div>
+                    <div class="cert-place-label">Place</div>
+                </div>
+                <div>
+                    <div class="cert-division">{{ cert.division.division_key }} {{ cert.division.age_group }}</div>
+                    <div class="cert-points">{{ cert.overall.total_points }} points</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Send email btn (screen only) -->
+        <div class="send-btn-wrap" style="text-align:center;margin-bottom:8px;">
+            {% if ath and ath.email %}
+            <button onclick="sendCert('{{ cert.participant.id }}', this)"
+                style="padding:6px 18px;background:transparent;border:1px solid #c9a84c;color:#c9a84c;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">
+                ✉ SEND TO {{ ath.email }}
+            </button>
+            {% else %}
+            <span style="font-size:10px;color:#ccc;letter-spacing:1px;">No email on file</span>
+            {% endif %}
+        </div>
+        <!-- Footer -->
+        <div class="cert-footer">
+            <div class="cert-sign">
+                <div class="cert-sign-line"></div>
+                <div class="cert-sign-label">Chief Referee</div>
+            </div>
+            <div class="cert-meta">
+                <div class="cert-meta-comp">{{ competition.name }}</div>
+                <div class="cert-meta-date">{{ competition.date_end or competition.date_start or '' }} · Q × {{ competition.coefficient_q }}</div>
+            </div>
+            <div class="cert-sign">
+                <div class="cert-sign-line"></div>
+                <div class="cert-sign-label">Competition Director</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function applyFilter() {
+    const divFilter = document.getElementById('filter-div').value;
+    const placeFilter = document.getElementById('filter-place').value;
+    const cards = document.querySelectorAll('.cert-page');
+    let visible = 0;
+    cards.forEach(card => {
+        const div = card.dataset.div;
+        const place = parseInt(card.dataset.place);
+        let show = true;
+        if (divFilter && div !== divFilter) show = false;
+        if (placeFilter === 'top3' && place > 3) show = false;
+        else if (placeFilter && placeFilter !== 'top3' && place !== parseInt(placeFilter)) show = false;
+        card.classList.toggle('hidden', !show);
+        if (show) visible++;
+    });
+    document.getElementById('filter-count').textContent = visible + ' certificates';
+}
+applyFilter();
+
+async function sendCert(participantId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    try {
+        const compId = window.location.pathname.split('/')[2];
+        const res = await fetch(`/competitions/${compId}/certificates/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ participant_id: participantId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            btn.textContent = '✓ Sent to ' + data.sent_to;
+            btn.style.color = '#4caf50';
+            btn.style.borderColor = '#4caf50';
+        } else {
+            btn.textContent = '✗ ' + (data.detail || 'Error');
+            btn.style.color = '#ff5252';
+            btn.disabled = false;
+        }
+    } catch(e) {
+        btn.textContent = '✗ Network error';
+        btn.style.color = '#ff5252';
+        btn.disabled = false;
+    }
+}
+
+// Deduplicate division options
+const sel = document.getElementById('filter-div');
+const seen = new Set();
+Array.from(sel.options).forEach(opt => {
+    if (seen.has(opt.value)) opt.remove();
+    else seen.add(opt.value);
+});
+</script>
+</body>
+</html>
