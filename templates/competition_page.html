@@ -38,10 +38,12 @@
         .results-table thead tr { background: #111; }
         .results-table thead th { padding: 10px 12px; font-size: 9px; letter-spacing: 2px; color: #c9a84c; text-transform: uppercase; text-align: center; border-bottom: 2px solid #c9a84c; white-space: nowrap; }
         .results-table thead th.left { text-align: left; }
-        .results-table thead .disc-header { background: #0f0f0a; border-left: 1px solid #2a2a2a; }
+        .results-table thead .disc-header { background: #0f0f0a; border-left: 2px solid #2a2a2a; }
+        .results-table thead .disc-sub { background: #0d0d08; border-left: none; }
+        .results-table thead .disc-sub-first { border-left: 2px solid #2a2a2a; }
         .results-table tbody tr { border-bottom: 1px solid #1a1a1a; transition: background 0.15s; }
         .results-table tbody tr:hover { background: #111; }
-        .results-table tbody td { padding: 12px 12px; font-size: 12px; text-align: center; white-space: nowrap; }
+        .results-table tbody td { padding: 12px 8px; font-size: 12px; text-align: center; white-space: nowrap; }
         .results-table tbody td.left { text-align: left; }
         .rank-col { font-size: 18px; font-weight: 900; color: #444; width: 40px; }
         .rank-col.p1 { color: #c9a84c; } .rank-col.p2 { color: #aaa; } .rank-col.p3 { color: #cd7f32; }
@@ -51,11 +53,15 @@
         .athlete-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #fff; text-decoration: none; }
         .athlete-name:hover { color: #c9a84c; }
         .athlete-country { font-size: 10px; color: #555; }
-        .disc-cell { border-left: 1px solid #1e1e1e; padding: 8px 6px; }
+        /* Disc cells — левая граница только у первой sub-колонки дисциплины */
+        .disc-cell-result { border-left: 2px solid #2a2a2a; padding: 8px 8px; }
+        .disc-cell-place  { padding: 8px 6px; }
+        .disc-cell-pts    { padding: 8px 6px; }
         .disc-result { font-size: 13px; font-weight: 700; color: #fff; }
-        .disc-place { font-size: 10px; color: #888; margin-top: 2px; }
-        .disc-points { font-size: 11px; color: #c9a84c; margin-top: 1px; }
-        .disc-start { font-size: 9px; color: #444; margin-top: 2px; letter-spacing: 1px; }
+        .disc-result-secondary { font-size: 10px; color: #555; margin-top: 1px; }
+        .disc-place  { font-size: 15px; font-weight: 900; color: #aaa; }
+        .disc-pts    { font-size: 14px; font-weight: 700; color: #c9a84c; }
+        .disc-start  { font-size: 9px; color: #444; letter-spacing: 1px; }
         .total-pts { font-size: 18px; font-weight: 900; color: #c9a84c; }
         .lot-col { font-size: 11px; color: #555; }
         .bib-col { font-size: 13px; font-weight: 700; color: #888; }
@@ -119,12 +125,13 @@
         <div class="results-wrap">
         <table class="results-table">
             <thead>
+                <!-- ROW 1: discipline group headers -->
                 <tr>
-                    <th style="width:40px;">#</th>
-                    <th style="width:30px;">Lot</th>
-                    <th style="width:40px;">Bib</th>
-                    <th class="left" style="min-width:180px;">Athlete</th>
-                    <th>Country</th>
+                    <th rowspan="2" style="width:40px;">#</th>
+                    <th rowspan="2" style="width:30px;">Lot</th>
+                    <th rowspan="2" style="width:40px;">Bib</th>
+                    <th rowspan="2" class="left" style="min-width:180px;">Athlete</th>
+                    <th rowspan="2">Country</th>
                     {% for disc in dd.disciplines %}
                     <th class="disc-header" colspan="3">
                         {{ disc.discipline_name }}
@@ -132,21 +139,19 @@
                         {% if disc.result_unit %}<br><span style="color:#555;font-size:8px;">{{ disc.result_unit }}</span>{% endif %}
                     </th>
                     {% endfor %}
-                    <th style="min-width:60px;">Total<br>Pts</th>
-                    <th style="min-width:50px;">Place</th>
+                    <th rowspan="2" style="min-width:60px;">Total<br>Pts</th>
+                    <th rowspan="2" style="min-width:50px;">Place</th>
                 </tr>
+                <!-- ROW 2: sub-column labels -->
                 <tr style="background:#0a0a0a;">
-                    <th colspan="5"></th>
                     {% for disc in dd.disciplines %}
-                    <th class="disc-header" style="font-size:8px;color:#555;">Result</th>
-                    <th class="disc-header" style="font-size:8px;color:#555;">Pl/Pts</th>
-                    <th class="disc-header" style="font-size:8px;color:#555;">Start#</th>
+                    <th class="disc-sub disc-sub-first" style="font-size:8px;color:#666;font-weight:400;">Result</th>
+                    <th class="disc-sub" style="font-size:9px;color:#aaa;font-weight:700;letter-spacing:1px;">М</th>
+                    <th class="disc-sub" style="font-size:9px;color:#c9a84c;font-weight:700;letter-spacing:1px;">Pts</th>
                     {% endfor %}
-                    <th colspan="2"></th>
                 </tr>
             </thead>
             <tbody>
-                {% set sorted_parts = dd.participants | sort(attribute='bib_no') %}
                 {% for p in dd.participants %}
                 {% set ath = dd.athlete_map.get(p.id|string) %}
                 {% set overall = dd.overall_standings.get(p.id|string) %}
@@ -171,26 +176,29 @@
                     <td>{{ ath.country if ath else '—' }}</td>
                     {% for disc in dd.disciplines %}
                     {% set res = dd.results_map.get(disc.id|string, {}).get(p.id|string) %}
-                    {% set st = dd.standings_map.get(disc.id|string, {}).get(p.id|string) %}
+                    {% set st  = dd.standings_map.get(disc.id|string, {}).get(p.id|string) %}
                     {% set start_no = dd.start_orders.get(disc.id|string, {}).get(p.id|string) %}
-                    <td class="disc-cell">
+                    <!-- Result -->
+                    <td class="disc-cell-result">
                         {% if res %}
-                        <div class="disc-result">
-                            {% if res.reps %}{{ res.reps }} reps
-                            {% elif res.primary_value %}{{ res.primary_value }}{% if disc.result_unit %} {{ disc.result_unit }}{% endif %}
-                            {% else %}—{% endif %}
-                        </div>
-                        {% if res.secondary_value %}<div style="font-size:10px;color:#666;">{{ res.secondary_value }}</div>{% endif %}
-                        {% else %}<div class="disc-result" style="color:#333;">—</div>{% endif %}
+                            <div class="disc-result">
+                                {% if res.reps %}{{ res.reps }} reps
+                                {% elif res.primary_value %}{{ res.primary_value }}{% if disc.result_unit %} {{ disc.result_unit }}{% endif %}
+                                {% else %}—{% endif %}
+                            </div>
+                            {% if res.secondary_value %}<div class="disc-result-secondary">{{ res.secondary_value }}</div>{% endif %}
+                            {% if start_no %}<div class="disc-start">#{{ start_no }}</div>{% endif %}
+                        {% else %}
+                            <div class="disc-result" style="color:#333;">—</div>
+                        {% endif %}
                     </td>
-                    <td class="disc-cell">
-                        {% if st %}
-                        <div class="disc-place">{{ st.place if st.place is defined else '—' }}</div>
-                        <div class="disc-points">{{ st.points_for_discipline }}</div>
-                        {% else %}<div style="color:#333;">—</div>{% endif %}
+                    <!-- М (place) -->
+                    <td class="disc-cell-place">
+                        <div class="disc-place">{{ st.place if st else '—' }}</div>
                     </td>
-                    <td class="disc-cell">
-                        <div class="disc-start">{% if start_no %}#{{ start_no }}{% else %}—{% endif %}</div>
+                    <!-- Pts -->
+                    <td class="disc-cell-pts">
+                        <div class="disc-pts">{{ st.points_for_discipline if st else '—' }}</div>
                     </td>
                     {% endfor %}
                     <td class="total-pts">{{ overall.total_points if overall else '—' }}</td>

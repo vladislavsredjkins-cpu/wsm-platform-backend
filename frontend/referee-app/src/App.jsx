@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
 // Referee
+import RefereeCompetitions from './pages/referee/Competitions';
 import RefereeDisciplines from './pages/referee/Disciplines';
 import RefereeResults from './pages/referee/Results';
 
@@ -32,6 +33,7 @@ export default function App() {
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
       {/* Referee routes */}
+      <Route path="/referee" element={<ProtectedRoute><RefereeCompetitions /></ProtectedRoute>} />
       <Route path="/referee/:divisionId/disciplines" element={<ProtectedRoute><RefereeDisciplines /></ProtectedRoute>} />
       <Route path="/referee/:disciplineId/results" element={<ProtectedRoute><RefereeResults /></ProtectedRoute>} />
 
