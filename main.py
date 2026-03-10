@@ -573,3 +573,327 @@ async def teams_list_page(request: Request):
         "request": request,
         "teams": teams,
     })
+
+
+@app.get("/competitions/{competition_id}/page")
+async def competition_page(competition_id: str, request: Request):
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.competition_discipline import CompetitionDiscipline
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from models.discipline_result import DisciplineResult
+    from models.discipline_standing import DisciplineStanding
+    from models.overall_standing import OverallStanding
+    from sqlalchemy import select
+    import uuid
+
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            return templates.TemplateResponse("404.html", {"request": request})
+
+        # Дивизионы
+        divs_result = await db.execute(
+            select(CompetitionDivision).where(CompetitionDivision.competition_id == uuid.UUID(competition_id))
+        )
+        divisions = divs_result.scalars().all()
+
+        divisions_data = []
+        for div in divisions:
+            # Дисциплины
+            discs_result = await db.execute(
+                select(CompetitionDiscipline)
+                .where(CompetitionDiscipline.competition_division_id == div.id)
+                .order_by(CompetitionDiscipline.order_no)
+            )
+            disciplines = discs_result.scalars().all()
+
+            # Участники
+            parts_result = await db.execute(
+                select(Participant).where(Participant.competition_division_id == div.id)
+                .order_by(Participant.lot_number, Participant.bib_no)
+            )
+            participants = parts_result.scalars().all()
+
+            # Атлеты
+            athlete_map = {}
+            for p in participants:
+                ath = await db.get(Athlete, p.athlete_id)
+                if ath:
+                    athlete_map[str(p.id)] = ath
+
+            # Результаты по дисциплинам
+            results_map = {}  # discipline_id -> {participant_id -> result}
+            standings_map = {}  # discipline_id -> {participant_id -> standing}
+            for disc in disciplines:
+                res_result = await db.execute(
+                    select(DisciplineResult).where(DisciplineResult.competition_discipline_id == disc.id)
+                )
+                results_map[str(disc.id)] = {str(r.participant_id): r for r in res_result.scalars().all()}
+
+                st_result = await db.execute(
+                    select(DisciplineStanding).where(DisciplineStanding.competition_discipline_id == disc.id)
+                )
+                standings_map[str(disc.id)] = {str(s.participant_id): s for s in st_result.scalars().all()}
+
+            # Overall standings
+            overall_result = await db.execute(
+                select(OverallStanding).where(OverallStanding.competition_division_id == div.id)
+                .order_by(OverallStanding.overall_place)
+            )
+            overall_standings = {str(o.participant_id): o for o in overall_result.scalars().all()}
+
+            # Порядок старта для каждой дисциплины
+            start_orders = {}
+            for i, disc in enumerate(disciplines):
+                if i == 0:
+                    # Первая - по жеребьёвке
+                    ordered = sorted(participants, key=lambda p: (p.lot_number or 999, p.bib_no or 999))
+                elif disc.is_final:
+                    # Финальная - реверс по очкам
+                    def get_points(p):
+                        o = overall_standings.get(str(p.id))
+                        return float(o.total_points) if o else 0
+                    ordered = sorted(participants, key=get_points)
+                else:
+                    # Остальные - реверс по месту в предыдущей
+                    prev_disc = disciplines[i-1]
+                    def get_prev_place(p):
+                        st = standings_map.get(str(prev_disc.id), {}).get(str(p.id))
+                        return st.place if st and hasattr(st, 'place') else 999
+                    ordered = sorted(participants, key=get_prev_place, reverse=True)
+                start_orders[str(disc.id)] = {str(p.id): idx+1 for idx, p in enumerate(ordered)}
+
+            divisions_data.append({
+                "division": div,
+                "disciplines": disciplines,
+                "participants": participants,
+                "athlete_map": athlete_map,
+                "results_map": results_map,
+                "standings_map": standings_map,
+                "overall_standings": overall_standings,
+                "start_orders": start_orders,
+            })
+
+    return templates.TemplateResponse("competition_page.html", {
+        "request": request,
+        "competition": comp,
+        "divisions_data": divisions_data,
+    })
+
+
+@app.get("/competitions/{competition_id}/page")
+async def competition_page(competition_id: str, request: Request):
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.competition_discipline import CompetitionDiscipline
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from models.discipline_result import DisciplineResult
+    from models.discipline_standing import DisciplineStanding
+    from models.overall_standing import OverallStanding
+    from sqlalchemy import select
+    import uuid
+
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            return templates.TemplateResponse("404.html", {"request": request})
+
+        # Дивизионы
+        divs_result = await db.execute(
+            select(CompetitionDivision).where(CompetitionDivision.competition_id == uuid.UUID(competition_id))
+        )
+        divisions = divs_result.scalars().all()
+
+        divisions_data = []
+        for div in divisions:
+            # Дисциплины
+            discs_result = await db.execute(
+                select(CompetitionDiscipline)
+                .where(CompetitionDiscipline.competition_division_id == div.id)
+                .order_by(CompetitionDiscipline.order_no)
+            )
+            disciplines = discs_result.scalars().all()
+
+            # Участники
+            parts_result = await db.execute(
+                select(Participant).where(Participant.competition_division_id == div.id)
+                .order_by(Participant.lot_number, Participant.bib_no)
+            )
+            participants = parts_result.scalars().all()
+
+            # Атлеты
+            athlete_map = {}
+            for p in participants:
+                ath = await db.get(Athlete, p.athlete_id)
+                if ath:
+                    athlete_map[str(p.id)] = ath
+
+            # Результаты по дисциплинам
+            results_map = {}  # discipline_id -> {participant_id -> result}
+            standings_map = {}  # discipline_id -> {participant_id -> standing}
+            for disc in disciplines:
+                res_result = await db.execute(
+                    select(DisciplineResult).where(DisciplineResult.competition_discipline_id == disc.id)
+                )
+                results_map[str(disc.id)] = {str(r.participant_id): r for r in res_result.scalars().all()}
+
+                st_result = await db.execute(
+                    select(DisciplineStanding).where(DisciplineStanding.competition_discipline_id == disc.id)
+                )
+                standings_map[str(disc.id)] = {str(s.participant_id): s for s in st_result.scalars().all()}
+
+            # Overall standings
+            overall_result = await db.execute(
+                select(OverallStanding).where(OverallStanding.competition_division_id == div.id)
+                .order_by(OverallStanding.overall_place)
+            )
+            overall_standings = {str(o.participant_id): o for o in overall_result.scalars().all()}
+
+            # Порядок старта для каждой дисциплины
+            start_orders = {}
+            for i, disc in enumerate(disciplines):
+                if i == 0:
+                    # Первая - по жеребьёвке
+                    ordered = sorted(participants, key=lambda p: (p.lot_number or 999, p.bib_no or 999))
+                elif disc.is_final:
+                    # Финальная - реверс по очкам
+                    def get_points(p):
+                        o = overall_standings.get(str(p.id))
+                        return float(o.total_points) if o else 0
+                    ordered = sorted(participants, key=get_points)
+                else:
+                    # Остальные - реверс по месту в предыдущей
+                    prev_disc = disciplines[i-1]
+                    def get_prev_place(p):
+                        st = standings_map.get(str(prev_disc.id), {}).get(str(p.id))
+                        return st.place if st and hasattr(st, 'place') else 999
+                    ordered = sorted(participants, key=get_prev_place, reverse=True)
+                start_orders[str(disc.id)] = {str(p.id): idx+1 for idx, p in enumerate(ordered)}
+
+            divisions_data.append({
+                "division": div,
+                "disciplines": disciplines,
+                "participants": participants,
+                "athlete_map": athlete_map,
+                "results_map": results_map,
+                "standings_map": standings_map,
+                "overall_standings": overall_standings,
+                "start_orders": start_orders,
+            })
+
+    return templates.TemplateResponse("competition_page.html", {
+        "request": request,
+        "competition": comp,
+        "divisions_data": divisions_data,
+    })
+
+
+@app.get("/competitions/{competition_id}/page")
+async def competition_page(competition_id: str, request: Request):
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.competition_discipline import CompetitionDiscipline
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from models.discipline_result import DisciplineResult
+    from models.discipline_standing import DisciplineStanding
+    from models.overall_standing import OverallStanding
+    from sqlalchemy import select
+    import uuid
+
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            return templates.TemplateResponse("404.html", {"request": request})
+
+        # Дивизионы
+        divs_result = await db.execute(
+            select(CompetitionDivision).where(CompetitionDivision.competition_id == uuid.UUID(competition_id))
+        )
+        divisions = divs_result.scalars().all()
+
+        divisions_data = []
+        for div in divisions:
+            # Дисциплины
+            discs_result = await db.execute(
+                select(CompetitionDiscipline)
+                .where(CompetitionDiscipline.competition_division_id == div.id)
+                .order_by(CompetitionDiscipline.order_no)
+            )
+            disciplines = discs_result.scalars().all()
+
+            # Участники
+            parts_result = await db.execute(
+                select(Participant).where(Participant.competition_division_id == div.id)
+                .order_by(Participant.lot_number, Participant.bib_no)
+            )
+            participants = parts_result.scalars().all()
+
+            # Атлеты
+            athlete_map = {}
+            for p in participants:
+                ath = await db.get(Athlete, p.athlete_id)
+                if ath:
+                    athlete_map[str(p.id)] = ath
+
+            # Результаты по дисциплинам
+            results_map = {}  # discipline_id -> {participant_id -> result}
+            standings_map = {}  # discipline_id -> {participant_id -> standing}
+            for disc in disciplines:
+                res_result = await db.execute(
+                    select(DisciplineResult).where(DisciplineResult.competition_discipline_id == disc.id)
+                )
+                results_map[str(disc.id)] = {str(r.participant_id): r for r in res_result.scalars().all()}
+
+                st_result = await db.execute(
+                    select(DisciplineStanding).where(DisciplineStanding.competition_discipline_id == disc.id)
+                )
+                standings_map[str(disc.id)] = {str(s.participant_id): s for s in st_result.scalars().all()}
+
+            # Overall standings
+            overall_result = await db.execute(
+                select(OverallStanding).where(OverallStanding.competition_division_id == div.id)
+                .order_by(OverallStanding.overall_place)
+            )
+            overall_standings = {str(o.participant_id): o for o in overall_result.scalars().all()}
+
+            # Порядок старта для каждой дисциплины
+            start_orders = {}
+            for i, disc in enumerate(disciplines):
+                if i == 0:
+                    # Первая - по жеребьёвке
+                    ordered = sorted(participants, key=lambda p: (p.lot_number or 999, p.bib_no or 999))
+                elif disc.is_final:
+                    # Финальная - реверс по очкам
+                    def get_points(p):
+                        o = overall_standings.get(str(p.id))
+                        return float(o.total_points) if o else 0
+                    ordered = sorted(participants, key=get_points)
+                else:
+                    # Остальные - реверс по месту в предыдущей
+                    prev_disc = disciplines[i-1]
+                    def get_prev_place(p):
+                        st = standings_map.get(str(prev_disc.id), {}).get(str(p.id))
+                        return st.place if st and hasattr(st, 'place') else 999
+                    ordered = sorted(participants, key=get_prev_place, reverse=True)
+                start_orders[str(disc.id)] = {str(p.id): idx+1 for idx, p in enumerate(ordered)}
+
+            divisions_data.append({
+                "division": div,
+                "disciplines": disciplines,
+                "participants": participants,
+                "athlete_map": athlete_map,
+                "results_map": results_map,
+                "standings_map": standings_map,
+                "overall_standings": overall_standings,
+                "start_orders": start_orders,
+            })
+
+    return templates.TemplateResponse("competition_page.html", {
+        "request": request,
+        "competition": comp,
+        "divisions_data": divisions_data,
+    })
