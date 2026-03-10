@@ -23,6 +23,10 @@
         .hero-title { font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; }
         .hero-title span { color: #c9a84c; }
         .hero-sub { font-size: 12px; color: #555; letter-spacing: 2px; margin-top: 8px; }
+        .tabs-age { background: #0a0a0a; border-bottom: 1px solid #2a2a2a; padding: 0 40px; display: flex; gap: 4px; }
+        .tab-age { padding: 12px 20px; font-size: 13px; letter-spacing: 2px; color: #444; text-transform: uppercase; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; font-weight: 700; }
+        .tab-age:hover { color: #888; }
+        .tab-age.active { color: #fff; border-bottom-color: #fff; }
         .tabs-level1 { background: #0d0d0d; border-bottom: 1px solid #1e1e1e; padding: 0 40px; display: flex; gap: 4px; }
         .tab-l1 { padding: 16px 28px; font-size: 12px; letter-spacing: 3px; color: #555; text-transform: uppercase; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; transition: all 0.2s; text-decoration: none; font-weight: 700; }
         .tab-l1:hover { color: #fff; }
@@ -88,15 +92,24 @@
     <div class="hero-sub">Rolling 365-day · Top 8 results count · Q coefficient applied</div>
 </div>
 
+<div class="tabs-age">
+    {% for ag_code, ag_label in age_groups %}
+    <a href="/rankings?division={{ active_division }}&age_group={{ ag_code }}" 
+       class="tab-age {% if active_age_group == ag_code %}active{% endif %}">{{ ag_label }}</a>
+    {% endfor %}
+</div>
 <div class="tabs-level1">
-    <a href="/rankings?division={{ groups['MEN'][0][0] if groups['MEN'] else 'MEN_U70' }}" class="tab-l1 {% if active_group == 'MEN' %}active{% endif %}">💪 Men</a>
-    <a href="/rankings?division={{ groups['WOMEN'][0][0] if groups['WOMEN'] else 'WOMEN_U55' }}" class="tab-l1 {% if active_group == 'WOMEN' %}active{% endif %}">🏋️ Women</a>
-    <a href="/rankings?division={{ groups['PARA'][0][0] if groups['PARA'] else 'PARA_MEN_U49' }}" class="tab-l1 {% if active_group == 'PARA' %}active{% endif %}">♿ Para</a>
+    <a href="/rankings?division={{ groups['MEN'][0][0] if groups['MEN'] else 'MEN_U70' }}&age_group={{ active_age_group }}" class="tab-l1 {% if active_group == 'MEN' %}active{% endif %}">💪 Men</a>
+    <a href="/rankings?division={{ groups['WOMEN'][0][0] if groups['WOMEN'] else 'WOMEN_U55' }}&age_group={{ active_age_group }}" class="tab-l1 {% if active_group == 'WOMEN' %}active{% endif %}">🏋️ Women</a>
+    {% if active_age_group == 'SENIOR' %}
+    <a href="/rankings?division={{ groups['PARA_MEN'][0][0] if groups['PARA_MEN'] else 'PARA_MEN_U49' }}&age_group={{ active_age_group }}" class="tab-l1 {% if active_group == 'PARA_MEN' %}active{% endif %}">♿ Para Men</a>
+    <a href="/rankings?division={{ groups['PARA_WOMEN'][0][0] if groups['PARA_WOMEN'] else 'PARA_WOMEN_U41' }}&age_group={{ active_age_group }}" class="tab-l1 {% if active_group == 'PARA_WOMEN' %}active{% endif %}">♿ Para Women</a>
+    {% endif %}
 </div>
 
 <div class="tabs-level2">
     {% for code, name in groups[active_group] %}
-    <a href="/rankings?division={{ code }}" class="tab-l2 {% if active_division == code %}active{% endif %}">{{ name }}</a>
+    <a href="/rankings?division={{ code }}&age_group={{ active_age_group }}" class="tab-l2 {% if active_division == code %}active{% endif %}">{{ name }}</a>
     {% endfor %}
 </div>
 

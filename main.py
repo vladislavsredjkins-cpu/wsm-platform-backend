@@ -504,42 +504,60 @@ async def competitions_list(request: Request):
 
 
 @app.get("/rankings")
-async def rankings_page(request: Request, division: str = "MEN_U80"):
+async def rankings_page(request: Request, division: str = "MEN_U80", age_group: str = "SENIOR"):
     import datetime
     from services.ranking_service import RankingService
     from models.weight_category import WeightCategory
-    from sqlalchemy import select
+    from sqlalchemy import select, and_
     async with SessionLocal() as db:
         svc = RankingService(db)
         ranking = await svc.get_ranking(division, datetime.datetime.utcnow().year)
         result = await db.execute(
-            select(WeightCategory).where(WeightCategory.is_active == True).order_by(WeightCategory.sort_order)
+            select(WeightCategory)
+            .where(and_(WeightCategory.is_active == True, WeightCategory.age_group == age_group))
+            .order_by(WeightCategory.sort_order)
         )
         categories = result.scalars().all()
-
-    groups = {"MEN": [], "WOMEN": [], "PARA": []}
+    groups = {"MEN": [], "WOMEN": [], "PARA_MEN": [], "PARA_WOMEN": []}
     for c in categories:
-        if c.code.startswith("PARA"):
-            groups["PARA"].append((c.code, c.name))
-        elif c.code.startswith("WOMEN"):
+        if c.code.startswith("PARA_WOMEN"):
+            groups["PARA_WOMEN"].append((c.code, c.name))
+        elif c.code.startswith("PARA_MEN"):
+            groups["PARA_MEN"].append((c.code, c.name))
+        elif "WOMEN" in c.code:
             groups["WOMEN"].append((c.code, c.name))
         else:
             groups["MEN"].append((c.code, c.name))
 
-    # Определяем активную группу
-    if division.startswith("PARA"):
-        active_group = "PARA"
-    elif division.startswith("WOMEN"):
+    if division.startswith("PARA_WOMEN"):
+        active_group = "PARA_WOMEN"
+    elif division.startswith("PARA_MEN"):
+        active_group = "PARA_MEN"
+    elif "WOMEN" in division:
         active_group = "WOMEN"
     else:
         active_group = "MEN"
 
+    age_groups = [("SENIOR", "Senior"), ("JUNIOR", "Junior"), ("YOUTH", "Youth"), ("MASTERS", "Masters 40+")]
+
+    # MASTERS и JUNIOR/YOUTH не имеют PARA категорий
+    if age_group in ("MASTERS", "JUNIOR", "YOUTH"):
+        available_groups = ["MEN", "WOMEN"]
+        if active_group not in available_groups:
+            active_group = "MEN"
+    else:
+        available_groups = ["MEN", "WOMEN", "PARA_MEN", "PARA_WOMEN"]
+
+    active_categories = groups[active_group]
     return templates.TemplateResponse("rankings.html", {
         "request": request,
         "ranking": ranking,
         "active_division": division,
         "active_group": active_group,
+        "active_age_group": age_group,
+        "active_categories": active_categories,
         "groups": groups,
+        "age_groups": age_groups,
         "season_year": datetime.datetime.utcnow().year,
     })
 

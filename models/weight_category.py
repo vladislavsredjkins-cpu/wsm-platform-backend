@@ -14,4 +14,5 @@ class WeightCategory(Base):
     weight_max_kg = Column(Numeric(6, 2), nullable=True)
     is_open_upper = Column(Boolean, default=False, nullable=False)
     sort_order = Column(Integer, nullable=False, default=0)
+    age_group = Column(String(30), nullable=False, default="SENIOR", index=True)
     is_active = Column(Boolean, default=True, nullable=False)
