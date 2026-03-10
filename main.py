@@ -40,7 +40,8 @@ app.include_router(asl.router)
 
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/competitions-list")
 
 
 @app.get("/health")
