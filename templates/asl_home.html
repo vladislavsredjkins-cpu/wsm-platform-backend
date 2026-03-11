@@ -38,7 +38,7 @@
         .hero-stat-num { font-size: 32px; font-weight: 900; color: #c9a84c; }
         .hero-stat-label { font-size: 10px; color: #666; letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
         .content { max-width: 1300px; margin: 0 auto; padding: 40px; }
-        .divisions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(580px, 1fr)); gap: 30px; }
+        .divisions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(580px, 100%), 1fr)); gap: 30px; }
         .division-block { background: #111; border: 1px solid #1e1e1e; border-top: 3px solid #c9a84c; }
         .division-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e1e1e; }
         .division-name { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
@@ -266,9 +266,9 @@
                 <span>M</span>
                 <span>W</span>
                 <span>L</span>
-                <span>DW</span>
-                <span>DL</span>
-                <span>DIF</span>
+                <span class="col-dw">DW</span>
+                <span class="col-dl">DL</span>
+                <span class="col-dif">DIF</span>
                 <span>PTS</span>
             </div>
             {% for s in div_standings %}
@@ -294,9 +294,9 @@
                 <div class="mini-val">{{ s.matches_played }}</div>
                 <div class="mini-val">{{ s.wins }}</div>
                 <div class="mini-val">{{ s.losses }}</div>
-                <div class="mini-val" style="color:#7a9a7a;">{{ s.disciplines_won }}</div>
-                <div class="mini-val" style="color:#9a4a4a;">{{ s.disciplines_lost }}</div>
-                <div class="mini-val {% if (s.disciplines_won - s.disciplines_lost) > 0 %}diff-pos{% elif (s.disciplines_won - s.disciplines_lost) < 0 %}diff-neg{% endif %}">
+                <div class="mini-val col-dw" style="color:#7a9a7a;">{{ s.disciplines_won }}</div>
+                <div class="mini-val col-dl" style="color:#9a4a4a;">{{ s.disciplines_lost }}</div>
+                <div class="mini-val col-dif {% if (s.disciplines_won - s.disciplines_lost) > 0 %}diff-pos{% elif (s.disciplines_won - s.disciplines_lost) < 0 %}diff-neg{% endif %}">
                     {% set diff = s.disciplines_won - s.disciplines_lost %}{% if diff > 0 %}+{{ diff }}{% else %}{{ diff }}{% endif %}
                 </div>
                 <div class="mini-pts">{{ s.points }}</div>
