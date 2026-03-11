@@ -23,7 +23,7 @@
         .field.full { grid-column: 1 / -1; }
         label { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #888; text-transform: uppercase; }
         input, select, textarea { padding: 11px 14px; background: #111; border: 1px solid #2a2a2a; border-radius: 3px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s; width: 100%; }
-        input:focus, select:focus, textarea:focus { border-color: #c9a84c; }
+        input:focus, select:focus { border-color: #c9a84c; }
         .msg { padding: 14px 18px; border-radius: 3px; font-size: 13px; margin-bottom: 20px; display: none; }
         .msg.success { background: rgba(76,175,80,0.1); border: 1px solid #4caf50; color: #4caf50; }
         .msg.error { background: rgba(255,82,82,0.1); border: 1px solid #ff5252; color: #ff5252; }
@@ -31,6 +31,18 @@
         .footer span { color: #c9a84c; }
         .login-link { text-align: center; margin-top: 24px; font-size: 13px; color: #555; }
         .login-link a { color: #c9a84c; text-decoration: none; }
+        /* Search widget */
+        .search-widget { position: relative; }
+        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #1a1a1a; border: 1px solid #2a2a2a; border-top: none; z-index: 50; max-height: 200px; overflow-y: auto; display: none; }
+        .search-result-item { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; border-bottom: 1px solid #222; }
+        .search-result-item:hover { background: #222; }
+        .search-result-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #333; }
+        .search-result-country { font-size: 11px; color: #666; margin-left: auto; }
+        .selected-athlete { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #111; border: 1px solid #c9a84c; border-radius: 3px; margin-top: 6px; }
+        .selected-athlete img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #333; }
+        .selected-athlete-name { font-size: 13px; font-weight: 700; flex: 1; }
+        .selected-athlete-clear { cursor: pointer; color: #666; font-size: 16px; }
+        .selected-athlete-clear:hover { color: #ff5252; }
         @media (max-width: 768px) {
             .main-header { padding: 0 16px; }
             .wrap { padding: 20px 16px; }
@@ -53,7 +65,7 @@
 <div class="wrap">
     <div class="page-label">Team Registration</div>
     <div class="page-title">Register a <span style="color:#c9a84c">Team</span></div>
-    <div class="page-sub">Register your team for the Asian Strongman League and other WSM team competitions.</div>
+    <div class="page-sub">Register your team for the Asian Strongman League. Athletes and coach must be registered on WSM platform first.</div>
 
     <div class="msg success" id="msg-success">✓ Team registered successfully! Welcome to WSM.</div>
     <div class="msg error" id="msg-error"></div>
@@ -88,7 +100,7 @@
                 <input type="text" id="country" placeholder="LAT">
             </div>
             <div class="field">
-                <label>Email (public)</label>
+                <label>Contact Email</label>
                 <input type="email" id="team_email" placeholder="contact@team.com">
             </div>
             <div class="field full">
@@ -99,7 +111,6 @@
                     📁 Choose logo...
                 </button>
                 <div id="logo-name" style="font-size:11px;color:#555;margin-top:4px;">No file selected</div>
-                <div style="font-size:10px;color:#444;margin-top:5px;letter-spacing:1px;">JPG, PNG, WEBP · Max 2MB · Recommended: square 400×400px</div>
             </div>
             <div class="field full">
                 <label>Team Photo (with coach)</label>
@@ -109,8 +120,54 @@
                     📁 Choose team photo...
                 </button>
                 <div id="team-photo-name" style="font-size:11px;color:#555;margin-top:4px;">No file selected</div>
-                <div style="font-size:10px;color:#444;margin-top:5px;letter-spacing:1px;">JPG, PNG, WEBP · Max 2MB</div>
             </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <div class="form-section-title">Squad</div>
+        <div class="form-grid single" style="grid-template-columns:1fr;">
+
+            <div class="field full">
+                <label>Athlete 1 *</label>
+                <div class="search-widget">
+                    <input type="text" id="search_a1" placeholder="Search athlete by name..." oninput="searchAthlete('a1')" autocomplete="off">
+                    <div class="search-results" id="results_a1"></div>
+                </div>
+                <div id="selected_a1" style="display:none;"></div>
+                <input type="hidden" id="athlete1_id">
+            </div>
+
+            <div class="field full">
+                <label>Athlete 2 *</label>
+                <div class="search-widget">
+                    <input type="text" id="search_a2" placeholder="Search athlete by name..." oninput="searchAthlete('a2')" autocomplete="off">
+                    <div class="search-results" id="results_a2"></div>
+                </div>
+                <div id="selected_a2" style="display:none;"></div>
+                <input type="hidden" id="athlete2_id">
+            </div>
+
+            <div class="field full">
+                <label>Reserve Athlete</label>
+                <div class="search-widget">
+                    <input type="text" id="search_reserve" placeholder="Search athlete by name..." oninput="searchAthlete('reserve')" autocomplete="off">
+                    <div class="search-results" id="results_reserve"></div>
+                </div>
+                <div id="selected_reserve" style="display:none;"></div>
+                <input type="hidden" id="reserve_id">
+            </div>
+
+            <div class="field full">
+                <label>Head Coach</label>
+                <div class="search-widget">
+                    <input type="text" id="search_coach" placeholder="Search coach by name..." oninput="searchCoach()" autocomplete="off">
+                    <div class="search-results" id="results_coach"></div>
+                </div>
+                <div id="selected_coach" style="display:none;"></div>
+                <input type="hidden" id="coach_id">
+            </div>
+
         </div>
     </div>
 
@@ -120,10 +177,7 @@
         REGISTER TEAM →
     </button>
     <div style="height:40px;"></div>
-
-    <div class="login-link">
-        Already have an account? <a href="https://app.ranking.worldstrongman.org/login">Login →</a>
-    </div>
+    <div class="login-link">Already have an account? <a href="https://app.ranking.worldstrongman.org/login">Login →</a></div>
 </div>
 
 <div class="footer">© 2026 <span>World Strongman</span> International Union · All Rights Reserved</div>
@@ -136,14 +190,84 @@ document.getElementById('team_photo').addEventListener('change', function() {
     document.getElementById('team-photo-name').textContent = this.files[0] ? this.files[0].name : 'No file selected';
 });
 
+let searchTimers = {};
+
+async function searchAthlete(slot) {
+    const q = document.getElementById('search_' + slot).value.trim();
+    if (q.length < 2) { document.getElementById('results_' + slot).style.display = 'none'; return; }
+    clearTimeout(searchTimers[slot]);
+    searchTimers[slot] = setTimeout(async () => {
+        const res = await fetch('/api/athletes/search?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        showResults(slot, data, 'athlete');
+    }, 300);
+}
+
+async function searchCoach() {
+    const q = document.getElementById('search_coach').value.trim();
+    if (q.length < 2) { document.getElementById('results_coach').style.display = 'none'; return; }
+    clearTimeout(searchTimers['coach']);
+    searchTimers['coach'] = setTimeout(async () => {
+        const res = await fetch('/api/coaches/search?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        showResults('coach', data, 'coach');
+    }, 300);
+}
+
+function showResults(slot, data, type) {
+    const box = document.getElementById('results_' + slot);
+    if (!data.length) { box.innerHTML = '<div style="padding:10px 14px;color:#555;font-size:12px;">No results found</div>'; box.style.display = 'block'; return; }
+    box.innerHTML = data.map(p => `
+        <div class="search-result-item" onclick="selectPerson('${slot}', '${p.id}', '${p.name}', '${p.country}', '${p.photo}', '${type}')">
+            <img src="${p.photo || '/static/logo.jpg'}" onerror="this.src='/static/logo.jpg'">
+            <span>${p.name}</span>
+            <span class="search-result-country">${p.country}</span>
+        </div>`).join('');
+    box.style.display = 'block';
+}
+
+function selectPerson(slot, id, name, country, photo, type) {
+    const idField = type === 'coach' ? 'coach_id' : (slot === 'a1' ? 'athlete1_id' : slot === 'a2' ? 'athlete2_id' : 'reserve_id');
+    document.getElementById(idField).value = id;
+    document.getElementById('search_' + slot).style.display = 'none';
+    document.getElementById('results_' + slot).style.display = 'none';
+    const sel = document.getElementById('selected_' + slot);
+    sel.innerHTML = `<div class="selected-athlete">
+        <img src="${photo || '/static/logo.jpg'}" onerror="this.src='/static/logo.jpg'">
+        <span class="selected-athlete-name">${name} <span style="color:#666;font-size:11px;">${country}</span></span>
+        <span class="selected-athlete-clear" onclick="clearPerson('${slot}', '${idField}')">✕</span>
+    </div>`;
+    sel.style.display = 'block';
+}
+
+function clearPerson(slot, idField) {
+    document.getElementById(idField).value = '';
+    document.getElementById('search_' + slot).style.display = 'block';
+    document.getElementById('search_' + slot).value = '';
+    document.getElementById('selected_' + slot).style.display = 'none';
+    document.getElementById('results_' + slot).style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+    ['a1','a2','reserve','coach'].forEach(slot => {
+        const box = document.getElementById('results_' + slot);
+        if (box && !box.contains(e.target) && e.target.id !== 'search_' + slot) {
+            box.style.display = 'none';
+        }
+    });
+});
+
 async function submitForm() {
     const btn = document.getElementById('submit-btn');
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const password2 = document.getElementById('password2').value;
     const name = document.getElementById('name').value.trim();
+    const athlete1_id = document.getElementById('athlete1_id').value;
+    const athlete2_id = document.getElementById('athlete2_id').value;
 
     if (!email || !password || !name) { showError('Please fill in all required fields'); return; }
+    if (!athlete1_id || !athlete2_id) { showError('Please select at least Athlete 1 and Athlete 2'); return; }
     if (password.length < 8) { showError('Password must be at least 8 characters'); return; }
     if (password !== password2) { showError('Passwords do not match'); return; }
 
@@ -158,6 +282,10 @@ async function submitForm() {
                 email, password, name,
                 country: document.getElementById('country').value || null,
                 team_email: document.getElementById('team_email').value || null,
+                athlete1_id: athlete1_id || null,
+                athlete2_id: athlete2_id || null,
+                reserve_id: document.getElementById('reserve_id').value || null,
+                coach_id: document.getElementById('coach_id').value || null,
             })
         });
         const data = await res.json();

@@ -196,6 +196,40 @@ async def athlete_profile(athlete_id: str, request: Request):
         })
 
 
+@app.get("/api/athletes/search")
+async def api_athletes_search(q: str = ""):
+    from sqlalchemy import select, or_
+    from models.athlete import Athlete
+    async with SessionLocal() as db:
+        query = select(Athlete).order_by(Athlete.last_name).limit(20)
+        if q:
+            like = f"%{q}%"
+            query = query.where(or_(
+                Athlete.first_name.ilike(like),
+                Athlete.last_name.ilike(like),
+                Athlete.country.ilike(like)
+            ))
+        result = await db.execute(query)
+        athletes = result.scalars().all()
+    return [{"id": str(a.id), "name": f"{a.first_name} {a.last_name}", "country": a.country or "", "photo": a.photo_url or ""} for a in athletes]
+
+@app.get("/api/coaches/search")
+async def api_coaches_search(q: str = ""):
+    from sqlalchemy import select, or_
+    from models.coach import Coach
+    async with SessionLocal() as db:
+        query = select(Coach).order_by(Coach.last_name).limit(20)
+        if q:
+            like = f"%{q}%"
+            query = query.where(or_(
+                Coach.first_name.ilike(like),
+                Coach.last_name.ilike(like),
+                Coach.country.ilike(like)
+            ))
+        result = await db.execute(query)
+        coaches = result.scalars().all()
+    return [{"id": str(c.id), "name": f"{c.first_name} {c.last_name}", "country": c.country or "", "photo": c.photo_url or ""} for c in coaches]
+
 @app.get("/athletes-list")
 async def athletes_list(request: Request):
     from sqlalchemy import select
@@ -541,6 +575,10 @@ async def favicon():
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
+@app.get("/register/coach")
+async def register_coach_page(request: Request):
+    return templates.TemplateResponse("register_coach.html", {"request": request})
+
 @app.get("/register/athlete")
 async def register_athlete_page(request: Request):
     return templates.TemplateResponse("register_athlete.html", {"request": request})
@@ -552,6 +590,10 @@ async def register_judge_page(request: Request):
 @app.get("/register/team")
 async def register_team_page(request: Request):
     return templates.TemplateResponse("register_team.html", {"request": request})
+
+@app.get("/register/coach")
+async def register_coach_page(request: Request):
+    return templates.TemplateResponse("register_coach.html", {"request": request})
 
 @app.get("/register/athlete")
 async def register_athlete_page(request: Request):
