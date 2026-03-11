@@ -257,16 +257,25 @@ async function submitForm() {
 
         const data = await res.json();
         if (res.ok) {
-            // Логинимся чтобы загрузить фото
+            // Загружаем фото судьи
             try {
-                const loginRes = await fetch('/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const loginData = await loginRes.json();
-                if (loginData.access_token) {
-                    await uploadLogo(data.organizer_id, loginData.access_token);
+                const photoFile = document.getElementById('logo').files[0];
+                if (photoFile && data.judge_id) {
+                    const loginRes = await fetch('/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const loginData = await loginRes.json();
+                    if (loginData.access_token) {
+                        const fd = new FormData();
+                        fd.append('file', photoFile);
+                        await fetch('/judges/' + data.judge_id + '/photo', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + loginData.access_token },
+                            body: fd
+                        });
+                    }
                 }
             } catch(e) {}
             document.getElementById('msg-success').style.display = 'block';

@@ -290,6 +290,21 @@ async function submitForm() {
         });
         const data = await res.json();
         if (res.ok) {
+            // Загружаем лого и фото команды
+            try {
+                const token = data.access_token;
+                const tid = data.team_id;
+                const logoFile = document.getElementById('logo').files[0];
+                const photoFile = document.getElementById('team_photo').files[0];
+                if (logoFile && token) {
+                    const fd = new FormData(); fd.append('file', logoFile);
+                    await fetch('/teams/' + tid + '/logo', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+                }
+                if (photoFile && token) {
+                    const fd = new FormData(); fd.append('file', photoFile);
+                    await fetch('/teams/' + tid + '/team-photo', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+                }
+            } catch(e) {}
             document.getElementById('msg-success').style.display = 'block';
             document.getElementById('msg-error').style.display = 'none';
             btn.textContent = '✓ Registered';
