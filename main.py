@@ -541,6 +541,30 @@ async def favicon():
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
+@app.get("/register/athlete")
+async def register_athlete_page(request: Request):
+    return templates.TemplateResponse("register_athlete.html", {"request": request})
+
+@app.get("/register/judge")
+async def register_judge_page(request: Request):
+    return templates.TemplateResponse("register_judge.html", {"request": request})
+
+@app.get("/register/team")
+async def register_team_page(request: Request):
+    return templates.TemplateResponse("register_team.html", {"request": request})
+
+@app.get("/register/athlete")
+async def register_athlete_page(request: Request):
+    return templates.TemplateResponse("register_athlete.html", {"request": request})
+
+@app.get("/register/judge")
+async def register_judge_page(request: Request):
+    return templates.TemplateResponse("register_judge.html", {"request": request})
+
+@app.get("/register/team")
+async def register_team_page(request: Request):
+    return templates.TemplateResponse("register_team.html", {"request": request})
+
 @app.get("/register/organizer")
 async def register_organizer_page(request: Request):
     return templates.TemplateResponse("register_organizer.html", {"request": request})
