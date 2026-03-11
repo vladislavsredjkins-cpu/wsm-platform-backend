@@ -122,6 +122,20 @@
             .page-title { font-size: 24px; }
             .form-grid { grid-template-columns: 1fr !important; }
         }
+
+        @media (max-width: 768px) {
+            .ranking-table thead th.hide-mobile { display: none; }
+            .ranking-table tbody td.hide-mobile { display: none; }
+            .ranking-table tbody td { padding: 10px 8px; }
+            .rank-num { font-size: 16px; width: 32px; }
+            .athlete-photo, .athlete-photo-ph { width: 32px; height: 32px; font-size: 14px; }
+            .athlete-name { font-size: 12px; }
+            .athlete-country { font-size: 10px; }
+            .pts-cell { font-size: 14px; }
+            .filter-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+            .filter-tab { display: inline-block; }
+            .stat-bar { padding: 12px 0 0; }
+        }
         @media (max-width: 480px) {
             .hero-title { font-size: 20px; letter-spacing: 1px; }
             .header-text-top { font-size: 10px; }
@@ -232,14 +246,15 @@
 
 <div class="wrap">
     {% if rankings %}
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
     <table class="ranking-table">
         <thead>
             <tr>
                 <th style="width:48px;">#</th>
                 <th>Athlete</th>
-                <th class="right">Competitions</th>
-                <th style="text-align:center;">Share</th>
-                <th class="right">Best Result</th>
+                <th class="right hide-mobile">Competitions</th>
+                <th style="text-align:center;" class="hide-mobile">Share</th>
+                <th class="right hide-mobile">Best Result</th>
                 <th class="right">Total Pts</th>
             </tr>
         </thead>
@@ -263,8 +278,8 @@
                     </div>
                 </div>
             </td>
-            <td class="comps-cell">{{ r.results|length }}</td>
-            <td style="text-align:center;">
+            <td class="comps-cell hide-mobile">{{ r.results|length }}</td>
+            <td style="text-align:center;" class="hide-mobile">
                 <button class="btn-share" onclick="event.stopPropagation(); showShare(
                     {{ r.rank }},
                     '{{ ath.first_name ~ " " ~ ath.last_name if ath else "" }}',
@@ -275,7 +290,7 @@
                     {{ selected_year }}
                 )">⬆ SHARE</button>
             </td>
-            <td class="best-cell">
+            <td class="best-cell hide-mobile">
                 {% set best = r.results|selectattr('place')|sort(attribute='place')|first %}
                 {% if best %}{{ best.place }}. place · {{ best.comp_name }}{% endif %}
             </td>
@@ -297,6 +312,7 @@
         {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
     <div class="empty">NO RANKINGS DATA FOR {{ selected_division }} · {{ selected_year }}</div>
     {% endif %}
