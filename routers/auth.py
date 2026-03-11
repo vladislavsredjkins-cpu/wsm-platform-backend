@@ -205,7 +205,7 @@ async def register_athlete(data: RegisterAthleteRequest, db: AsyncSession = Depe
         try: dob = datetime.date.fromisoformat(data.date_of_birth)
         except: pass
     athlete = Athlete(
-        user_id=user.id, first_name=data.first_name, last_name=data.last_name,
+        first_name=data.first_name, last_name=data.last_name,
         country=data.country, gender=data.gender, date_of_birth=dob,
         bodyweight_kg=data.bodyweight_kg, phone=data.phone,
         instagram=data.instagram, email=data.email,
