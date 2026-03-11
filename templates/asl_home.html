@@ -157,6 +157,13 @@
             .team-name-cell { max-width: 80px !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
         }
     </style>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#c9a84c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WSM Rankings">
+    <link rel="apple-touch-icon" href="/static/logo.jpg">
+    <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/static/sw.js")}</script>
 </head>
 <body>
 <header class="main-header">
