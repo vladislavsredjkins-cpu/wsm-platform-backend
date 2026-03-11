@@ -182,10 +182,10 @@
         /* ── BURGER MENU ─────────────────────────────────────── */
         .burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 8px; }
         .burger span { width: 24px; height: 2px; background: #c9a84c; display: block; transition: all 0.3s; }
-        .mobile-nav { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0a0a0a; z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+        .mobile-nav { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0a0a0a; z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 0; overflow-y: auto; }
         .mobile-nav.open { display: flex; }
-        .mobile-nav .nav-item { font-size: 14px; padding: 16px 24px; letter-spacing: 3px; }
-        .mobile-nav-close { position: absolute; top: 20px; right: 20px; font-size: 24px; color: #c9a84c; cursor: pointer; background: none; border: none; }
+        .mobile-nav .nav-item { font-size: 13px; padding: 14px 32px; letter-spacing: 2px; width: 100%; text-align: center; border-bottom: 1px solid #111; }
+        .mobile-nav-close { position: absolute; top: 20px; right: 20px; font-size: 24px; color: #c9a84c; cursor: pointer; background: none; border: none; z-index: 10; }
         @media (max-width: 768px) {
             .burger { display: flex; }
             .main-nav { display: none !important; }
@@ -224,13 +224,15 @@
     </button>
     <div class="mobile-nav" id="mobile-nav">
         <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
-        <a href="/competitions-list" class="nav-item"><span>🏆</span> Competitions</a>
-        <a href="/rankings" class="nav-item"><span>📊</span> Rankings</a>
-        <a href="/athletes-list" class="nav-item"><span>💪</span> Athletes</a>
-        <a href="/judges-list" class="nav-item"><span>⚖️</span> Judges</a>
-        <a href="/organizers-list" class="nav-item"><span>🏛️</span> Organizers</a>
-        <a href="/teams-list" class="nav-item"><span>👥</span> Teams</a>
-        <a href="/register/organizer" class="nav-item" style="color:#c9a84c;border:1px solid #c9a84c;margin-top:16px;">⚡ LOGIN</a>
+        <a href="/competitions-list" class="nav-item">🏆 Competitions</a>
+        <a href="/rankings" class="nav-item">📊 Rankings</a>
+        <a href="/athletes-list" class="nav-item">💪 Athletes</a>
+        <a href="/judges-list" class="nav-item">⚖️ Judges</a>
+        <a href="/organizers-list" class="nav-item">🏛️ Organizers</a>
+        <a href="/teams-list" class="nav-item">👥 Teams</a>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e" class="nav-item">🥊 ASL League</a>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e/final-four" class="nav-item">⚡ Final Four</a>
+        <a href="/register/organizer" class="nav-item" style="color:#c9a84c;margin-top:8px;">🔑 LOGIN</a>
     </div>
     <script>
     function toggleMobileNav() {
