@@ -150,6 +150,17 @@
             .burger { display: flex; }
             .main-nav { display: none !important; }
         }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; padding: 12px !important; }
+            .athlete-card-photo { height: 160px !important; }
+            .athlete-card-name { font-size: 13px !important; }
+            .asl-table, .bracket, .standings-table { overflow-x: auto !important; display: block !important; width: 100% !important; }
+            .final-four-wrap { overflow-x: auto !important; }
+        }
+        @media (max-width: 480px) {
+            .grid { grid-template-columns: 1fr 1fr !important; }
+        }
     </style>
 </head>
 <body>
