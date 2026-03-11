@@ -1,10 +1,8 @@
 name: Deploy to Hetzner
-
 on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -19,5 +17,9 @@ jobs:
             cd /var/www/wsm-platform
             git stash
             git pull origin main
+            cd /var/www/wsm-platform/frontend/referee-app
+            npm run build
+            cp -r dist/* /var/www/wsm-referee-app/
+            cd /var/www/wsm-platform
             systemctl restart wsm-api
             echo "Deployed successfully!"
