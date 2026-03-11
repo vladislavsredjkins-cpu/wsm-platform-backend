@@ -176,3 +176,161 @@ async def register_organizer(data: RegisterOrganizerRequest, db: AsyncSession = 
         "email": user.email,
         "organizer_id": str(org.id),
     }
+
+
+# ── ATHLETE REGISTRATION ──────────────────────────────────────────
+class RegisterAthleteRequest(BaseModel):
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+    country: str | None = None
+    gender: str | None = None
+    date_of_birth: str | None = None
+    bodyweight_kg: float | None = None
+    phone: str | None = None
+    instagram: str | None = None
+
+@router.post("/register/athlete")
+async def register_athlete(data: RegisterAthleteRequest, db: AsyncSession = Depends(get_db)):
+    import datetime
+    result = await db.execute(select(User).where(User.email == data.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(email=data.email, password_hash=hash_password(data.password), role="ATHLETE", is_active=True)
+    db.add(user)
+    await db.flush()
+    dob = None
+    if data.date_of_birth:
+        try: dob = datetime.date.fromisoformat(data.date_of_birth)
+        except: pass
+    athlete = Athlete(
+        user_id=user.id, first_name=data.first_name, last_name=data.last_name,
+        country=data.country, gender=data.gender, date_of_birth=dob,
+        bodyweight_kg=data.bodyweight_kg, phone=data.phone,
+        instagram=data.instagram, email=data.email,
+    )
+    db.add(athlete)
+    await db.flush()
+    user.athlete_id = athlete.id
+    await db.commit()
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    return {"status": "ok", "athlete_id": str(athlete.id), "access_token": token}
+
+
+# ── JUDGE REGISTRATION ────────────────────────────────────────────
+class RegisterJudgeRequest(BaseModel):
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+    country: str | None = None
+    gender: str | None = None
+    date_of_birth: str | None = None
+    phone: str | None = None
+    instagram: str | None = None
+    level: str | None = None
+
+@router.post("/register/judge")
+async def register_judge(data: RegisterJudgeRequest, db: AsyncSession = Depends(get_db)):
+    from models.judge import Judge
+    import datetime
+    result = await db.execute(select(User).where(User.email == data.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(email=data.email, password_hash=hash_password(data.password), role="PENDING", is_active=True)
+    db.add(user)
+    await db.flush()
+    dob = None
+    if data.date_of_birth:
+        try: dob = datetime.date.fromisoformat(data.date_of_birth)
+        except: pass
+    judge = Judge(
+        user_id=user.id, first_name=data.first_name, last_name=data.last_name,
+        country=data.country, gender=data.gender, date_of_birth=dob,
+        phone=data.phone, instagram=data.instagram, email=data.email, level=data.level,
+    )
+    db.add(judge)
+    await db.flush()
+    user.judge_id = judge.id
+    await db.commit()
+    return {"status": "pending", "judge_id": str(judge.id), "message": "Application submitted. Pending WSM Admin review."}
+
+
+# ── COACH REGISTRATION ────────────────────────────────────────────
+class RegisterCoachRequest(BaseModel):
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+    country: str | None = None
+    gender: str | None = None
+    date_of_birth: str | None = None
+    phone: str | None = None
+    instagram: str | None = None
+    level: str | None = None
+
+@router.post("/register/coach")
+async def register_coach(data: RegisterCoachRequest, db: AsyncSession = Depends(get_db)):
+    from models.coach import Coach
+    import datetime
+    result = await db.execute(select(User).where(User.email == data.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(email=data.email, password_hash=hash_password(data.password), role="COACH", is_active=True)
+    db.add(user)
+    await db.flush()
+    dob = None
+    if data.date_of_birth:
+        try: dob = datetime.date.fromisoformat(data.date_of_birth)
+        except: pass
+    coach = Coach(
+        user_id=user.id, first_name=data.first_name, last_name=data.last_name,
+        country=data.country, gender=data.gender, date_of_birth=dob,
+        phone=data.phone, instagram=data.instagram, email=data.email, level=data.level,
+    )
+    db.add(coach)
+    await db.flush()
+    await db.commit()
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    return {"status": "ok", "coach_id": str(coach.id), "access_token": token}
+
+
+# ── TEAM REGISTRATION ─────────────────────────────────────────────
+class RegisterTeamRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    country: str | None = None
+    team_email: str | None = None
+    athlete1_id: str | None = None
+    athlete2_id: str | None = None
+    reserve_id: str | None = None
+    coach_id: str | None = None
+
+@router.post("/register/team")
+async def register_team(data: RegisterTeamRequest, db: AsyncSession = Depends(get_db)):
+    from models.team import Team
+    from models.team_member import TeamMember
+    result = await db.execute(select(User).where(User.email == data.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(email=data.email, password_hash=hash_password(data.password), role="TEAM", is_active=True)
+    db.add(user)
+    await db.flush()
+    team = Team(
+        name=data.name, country=data.country,
+        email=data.team_email or data.email,
+        coach_id=uuid.UUID(data.coach_id) if data.coach_id else None,
+        status="pending",
+    )
+    db.add(team)
+    await db.flush()
+    # Добавляем членов команды
+    roles = [("ATHLETE_1", data.athlete1_id), ("ATHLETE_2", data.athlete2_id), ("RESERVE", data.reserve_id)]
+    for role, aid in roles:
+        if aid:
+            db.add(TeamMember(team_id=team.id, athlete_id=uuid.UUID(aid), role=role))
+    await db.commit()
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    return {"status": "ok", "team_id": str(team.id), "access_token": token}
