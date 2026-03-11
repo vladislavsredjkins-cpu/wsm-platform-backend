@@ -22,19 +22,17 @@ export default function Login() {
   };
 
   const gold = '#c9a84c';
-
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ width: '420px', background: '#111', border: '1px solid #1e1e1e', borderTop: `3px solid ${gold}`, borderRadius: '4px', padding: '48px 40px 32px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <img src="https://worldstrongman.org/wp-content/uploads/2026/02/logo_wsm.png-scaled.png" alt="WSM" style={{ width: '80px', marginBottom: '16px' }} />
-          <div style={{ display: 'inline-block', background: 'rgba(201,168,76,0.1)', color: gold, fontSize: '10px', fontWeight: '700', letterSpacing: '3px', padding: '4px 12px', border: `1px solid rgba(201,168,76,0.3)`, marginBottom: '16px' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif', padding: '16px' }}>
+      <div style={{ width: '100%', maxWidth: '420px', background: '#111', border: '1px solid #1e1e1e', borderTop: `3px solid ${gold}`, borderRadius: '4px', padding: '40px 24px 28px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <img src="https://worldstrongman.org/wp-content/uploads/2026/02/logo_wsm.png-scaled.png" alt="WSM" style={{ width: '72px', marginBottom: '14px', display: 'block', margin: '0 auto 14px' }} />
+          <div style={{ display: 'inline-block', background: 'rgba(201,168,76,0.1)', color: gold, fontSize: '10px', fontWeight: '700', letterSpacing: '3px', padding: '4px 12px', border: `1px solid rgba(201,168,76,0.3)`, marginBottom: '14px' }}>
             REFEREE PORTAL
           </div>
-          <h1 style={{ color: '#fff', fontSize: '26px', fontWeight: '700', margin: '0 0 6px' }}>Sign In</h1>
+          <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: '700', margin: '0 0 6px' }}>Sign In</h1>
           <p style={{ color: '#555', fontSize: '13px', margin: 0 }}>World Strongman Competition System</p>
         </div>
-
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ color: '#888', fontSize: '11px', fontWeight: '600', letterSpacing: '1px' }}>EMAIL</label>
@@ -44,7 +42,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{ padding: '13px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '15px', outline: 'none' }}
+              style={{ padding: '13px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '15px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -55,7 +53,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ padding: '13px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '15px', outline: 'none' }}
+              style={{ padding: '13px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '15px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
             />
           </div>
           {error && (
@@ -66,13 +64,12 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            style={{ marginTop: '8px', padding: '14px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '2px', cursor: 'pointer' }}
+            style={{ marginTop: '8px', padding: '14px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '2px', cursor: 'pointer', width: '100%' }}
           >
             {loading ? 'SIGNING IN...' : 'SIGN IN →'}
           </button>
         </form>
-
-        <div style={{ marginTop: '32px', textAlign: 'center', color: '#333', fontSize: '11px' }}>
+        <div style={{ marginTop: '28px', textAlign: 'center', color: '#333', fontSize: '11px' }}>
           © {new Date().getFullYear()} World Strongman International Union
         </div>
       </div>
