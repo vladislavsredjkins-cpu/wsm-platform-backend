@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}World Strongman{% endblock %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; min-height: 100vh; }
+        .main-header { background: #0a0a0a; border-bottom: 2px solid #c9a84c; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header-logo { display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; }
+        .header-logo img { height: 48px; width: 48px; border-radius: 50%; object-fit: cover; }
+        .header-text-top { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+        .header-text-sub { font-size: 9px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .main-nav { display: flex; align-items: center; gap: 4px; }
+        .nav-item { display: flex; align-items: center; gap: 6px; padding: 18px 14px; font-size: 11px; letter-spacing: 2px; color: #666; text-decoration: none; text-transform: uppercase; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap; }
+        .nav-item:hover { color: #fff; border-bottom-color: #444; }
+        .nav-item.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+        .nav-icon { font-size: 14px; }
+        .nav-divider { width: 1px; height: 20px; background: #2a2a2a; margin: 0 8px; }
+        .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: 60px; }
+        .footer span { color: #c9a84c; }
+        /* MOBILE */
+        @media (max-width: 768px) {
+            .main-header { padding: 0 16px; }
+            .main-nav { display: none !important; }
+            .burger { display: flex !important; }
+            .header-text-top { font-size: 10px; }
+            .header-text-sub { display: none; }
+        }
+        /* BURGER */
+        .burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 8px; }
+        .burger span { width: 24px; height: 2px; background: #c9a84c; display: block; transition: all 0.3s; }
+        .mobile-nav { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0a0a0a; z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 0; overflow-y: auto; }
+        .mobile-nav.open { display: flex; }
+        .mobile-nav .nav-item { font-size: 13px; padding: 14px 32px; letter-spacing: 2px; width: 100%; text-align: center; border-bottom: 1px solid #111; }
+        .mobile-nav-close { position: absolute; top: 20px; right: 20px; font-size: 24px; color: #c9a84c; cursor: pointer; background: none; border: none; z-index: 10; }
+        {% block extra_styles %}{% endblock %}
+    </style>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#c9a84c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="WSM Rankings">
+    <link rel="apple-touch-icon" href="/static/logo.jpg">
+    <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/static/sw.js")}</script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+<header class="main-header">
+    <a href="/" class="header-logo">
+        <img src="/static/logo.jpg" alt="WSM">
+        <div>
+            <div class="header-text-top">World Strongman</div>
+            <div class="header-text-sub">International Union</div>
+        </div>
+    </a>
+    <nav class="main-nav">
+        <a href="/competitions-list" class="nav-item {% block nav_competitions %}{% endblock %}"><span class="nav-icon">🏆</span> Competitions</a>
+        <a href="/rankings" class="nav-item {% block nav_rankings %}{% endblock %}"><span class="nav-icon">📊</span> Rankings</a>
+        <a href="/athletes-list" class="nav-item {% block nav_athletes %}{% endblock %}"><span class="nav-icon">💪</span> Athletes</a>
+        <a href="/judges-list" class="nav-item {% block nav_judges %}{% endblock %}"><span class="nav-icon">⚖️</span> Judges</a>
+        <a href="/organizers-list" class="nav-item {% block nav_organizers %}{% endblock %}"><span class="nav-icon">🏛️</span> Organizers</a>
+        <div class="nav-divider"></div>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e" class="nav-item {% block nav_asl %}{% endblock %}"><span class="nav-icon">🥊</span> ASL League</a>
+        <a href="/teams-list" class="nav-item {% block nav_teams %}{% endblock %}"><span class="nav-icon">👥</span> Teams</a>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e/final-four" class="nav-item {% block nav_finalfour %}{% endblock %}"><span class="nav-icon">⚡</span> Final Four</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:8px;">
+        <a href="https://app.ranking.worldstrongman.org/login"
+           style="padding:8px 18px;border:1px solid #c9a84c;color:#c9a84c;font-size:11px;font-weight:700;letter-spacing:2px;text-decoration:none;text-transform:uppercase;"
+           onmouseover="this.style.background='#c9a84c';this.style.color='#000'"
+           onmouseout="this.style.background='transparent';this.style.color='#c9a84c'">⚡ LOGIN</a>
+        <a href="/register"
+           style="padding:8px 18px;border:1px solid #7a9a7a;color:#7a9a7a;font-size:11px;font-weight:700;letter-spacing:2px;text-decoration:none;text-transform:uppercase;"
+           onmouseover="this.style.background='#7a9a7a';this.style.color='#000'"
+           onmouseout="this.style.background='transparent';this.style.color='#7a9a7a'">📝 JOIN</a>
+    </div>
+    <button class="burger" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="mobile-nav" id="mobile-nav">
+        <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
+        <a href="/competitions-list" class="nav-item">🏆 Competitions</a>
+        <a href="/rankings" class="nav-item">📊 Rankings</a>
+        <a href="/athletes-list" class="nav-item">💪 Athletes</a>
+        <a href="/judges-list" class="nav-item">⚖️ Judges</a>
+        <a href="/organizers-list" class="nav-item">🏛️ Organizers</a>
+        <a href="/teams-list" class="nav-item">👥 Teams</a>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e" class="nav-item">🥊 ASL League</a>
+        <a href="/asl/f6aa000f-f55a-40f2-99ad-9483e898988e/final-four" class="nav-item">⚡ Final Four</a>
+        <a href="https://app.ranking.worldstrongman.org/login" class="nav-item" style="color:#c9a84c;margin-top:8px;">🔑 LOGIN</a>
+        <a href="/register" class="nav-item" style="color:#7a9a7a;margin-top:4px;">📝 JOIN / REGISTER</a>
+    </div>
+    <script>
+    function toggleMobileNav() {
+        document.getElementById('mobile-nav').classList.toggle('open');
+    }
+    </script>
+</header>
+
+{% block content %}{% endblock %}
+
+<div class="footer">© 2026 <span>World Strongman</span> International Union · All Rights Reserved</div>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

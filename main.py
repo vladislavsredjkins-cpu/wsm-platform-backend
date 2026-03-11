@@ -537,6 +537,10 @@ async def favicon():
     return FileResponse("static/logo.jpg")
 
 
+@app.get("/register")
+async def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
 @app.get("/register/organizer")
 async def register_organizer_page(request: Request):
     return templates.TemplateResponse("register_organizer.html", {"request": request})

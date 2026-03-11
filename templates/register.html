@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Join — World Strongman{% endblock %}
+{% block extra_styles %}
+        .register-hero { background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); border-bottom: 1px solid #1e1e1e; padding: 60px 40px; text-align: center; }
+        .register-hero-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 12px; }
+        .register-hero-title { font-size: 42px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 12px; }
+        .register-hero-sub { font-size: 14px; color: #555; letter-spacing: 1px; }
+        .register-grid { max-width: 900px; margin: 60px auto; padding: 0 24px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .role-card { background: #111; border: 1px solid #1e1e1e; border-top: 3px solid #333; padding: 32px 24px; text-align: center; text-decoration: none; color: #fff; transition: all 0.2s; display: block; }
+        .role-card:hover { border-top-color: #c9a84c; transform: translateY(-4px); }
+        .role-card.athlete { border-top-color: #c9a84c; }
+        .role-card.judge { border-top-color: #7a9a9a; }
+        .role-card.organizer { border-top-color: #9a7a4a; }
+        .role-card.team { border-top-color: #7a7a9a; }
+        .role-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+        .role-title { font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+        .role-desc { font-size: 12px; color: #555; line-height: 1.6; }
+        .role-btn { margin-top: 20px; display: inline-block; padding: 8px 20px; border: 1px solid #c9a84c; color: #c9a84c; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+        .login-hint { text-align: center; padding: 0 0 60px; color: #444; font-size: 13px; }
+        .login-hint a { color: #c9a84c; text-decoration: none; }
+        @media (max-width: 768px) {
+            .register-hero { padding: 40px 16px; }
+            .register-hero-title { font-size: 28px; }
+            .register-grid { grid-template-columns: 1fr 1fr; padding: 0 16px 60px; margin: 32px auto; gap: 12px; }
+            .role-card { padding: 20px 12px; }
+            .role-icon { font-size: 36px; }
+        }
+{% endblock %}
+{% block content %}
+<div class="register-hero">
+    <div class="register-hero-label">World Strongman Platform</div>
+    <div class="register-hero-title">JOIN <span style="color:#c9a84c;">WSM</span></div>
+    <div class="register-hero-sub">Choose your role to get started</div>
+</div>
+
+<div class="register-grid">
+    <a href="/register/athlete" class="role-card athlete">
+        <span class="role-icon">💪</span>
+        <div class="role-title">Athlete</div>
+        <div class="role-desc">Register as a competitive strongman athlete. Get your official WSM profile and world ranking.</div>
+        <div class="role-btn">Register →</div>
+    </a>
+    <a href="/register/judge" class="role-card judge">
+        <span class="role-icon">⚖️</span>
+        <div class="role-title">Judge</div>
+        <div class="role-desc">Apply as an official WSM judge. Get certified and assigned to competitions.</div>
+        <div class="role-btn">Apply →</div>
+    </a>
+    <a href="/register/organizer" class="role-card organizer">
+        <span class="role-icon">🏛️</span>
+        <div class="role-title">Organizer</div>
+        <div class="role-desc">Register your federation, club or organization to host WSM sanctioned competitions.</div>
+        <div class="role-btn">Register →</div>
+    </a>
+    <a href="/register/team" class="role-card team">
+        <span class="role-icon">👥</span>
+        <div class="role-title">Team</div>
+        <div class="role-desc">Register a team for the Asian Strongman League and other team competitions.</div>
+        <div class="role-btn">Register →</div>
+    </a>
+</div>
+
+<div class="login-hint">
+    Already have an account? <a href="https://app.ranking.worldstrongman.org/login">Sign in here →</a>
+</div>
+{% endblock %}
