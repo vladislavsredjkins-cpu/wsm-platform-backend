@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from db.database import get_db
@@ -45,6 +45,9 @@ async def create_competition(
     competition = Competition(
         id=uuid.uuid4(),
         name=data.name,
+        competition_type=getattr(data, "competition_type", None),
+        organizer_email=getattr(data, "organizer_email", None),
+        status="DRAFT",
         date_start=data.date_start,
         date_end=data.date_end,
         city=data.city,
@@ -71,3 +74,32 @@ async def get_competition(competition_id: uuid.UUID, db: AsyncSession = Depends(
     if not competition:
         raise HTTPException(status_code=404, detail="Competition not found")
     return competition
+@router.post("/{competition_id}/banner")
+async def upload_banner(competition_id: uuid.UUID, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+    from pathlib import Path
+    import shutil
+    result = await db.execute(select(Competition).where(Competition.id == competition_id))
+    competition = result.scalar_one_or_none()
+    if not competition:
+        raise HTTPException(status_code=404, detail="Not found")
+    banner_dir = Path("uploads/banners")
+    banner_dir.mkdir(parents=True, exist_ok=True)
+    ext = file.filename.split(".")[-1]
+    filename = f"{competition_id}_banner.{ext}"
+    with open(banner_dir / filename, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    competition.banner_url = f"/uploads/banners/{filename}"
+    await db.commit()
+    return {"banner_url": competition.banner_url}
+
+@router.patch("/{competition_id}")
+async def update_competition(competition_id: uuid.UUID, data: dict, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Competition).where(Competition.id == competition_id))
+    competition = result.scalar_one_or_none()
+    if not competition:
+        raise HTTPException(status_code=404, detail="Not found")
+    for key, value in data.items():
+        if hasattr(competition, key):
+            setattr(competition, key, value)
+    await db.commit()
+    return {"status": "ok"}
