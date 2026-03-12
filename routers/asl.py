@@ -66,6 +66,13 @@ async def create_division(data: DivisionCreate, db: AsyncSession = Depends(get_d
     await db.refresh(division)
     return division
 
+@router.get("/divisions/{division_id}/detail")
+async def get_division(division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    division = await db.get(ASLDivision, division_id)
+    if not division:
+        raise HTTPException(status_code=404, detail="Division not found")
+    return division
+
 @router.post("/divisions/{division_id}/teams")
 async def add_team_to_division(division_id: uuid.UUID, data: TeamDivisionAdd,
                                 db: AsyncSession = Depends(get_db),
@@ -121,3 +128,85 @@ async def get_division_matches(division_id: uuid.UUID, db: AsyncSession = Depend
         .order_by(Match.round_number, Match.match_date)
     )
     return result.scalars().all()
+
+class MatchCreate(BaseModel):
+    asl_division_id: uuid.UUID
+    home_team_id: uuid.UUID
+    away_team_id: uuid.UUID
+    match_date: Optional[str] = None
+    round_number: Optional[int] = None
+
+class MatchResult(BaseModel):
+    home_score: int
+    away_score: int
+
+@router.post("/matches")
+async def create_match(data: MatchCreate, db: AsyncSession = Depends(get_db),
+                       current_user=Depends(get_current_user)):
+    match = Match(
+        asl_division_id=data.asl_division_id,
+        home_team_id=data.home_team_id,
+        away_team_id=data.away_team_id,
+        match_date=data.match_date,
+        round_number=data.round_number,
+        status="scheduled"
+    )
+    db.add(match)
+    await db.commit()
+    await db.refresh(match)
+    return match
+
+@router.patch("/matches/{match_id}/result")
+async def set_match_result(match_id: uuid.UUID, data: MatchResult,
+                           db: AsyncSession = Depends(get_db),
+                           current_user=Depends(get_current_user)):
+    match = await db.get(Match, match_id)
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    match.home_score = data.home_score
+    match.away_score = data.away_score
+    match.status = "completed"
+
+    # Обновляем standings
+    async def get_or_create_standing(team_id):
+        result = await db.execute(
+            select(TeamStanding).where(
+                TeamStanding.asl_division_id == match.asl_division_id,
+                TeamStanding.team_id == team_id
+            )
+        )
+        s = result.scalar_one_or_none()
+        if not s:
+            s = TeamStanding(asl_division_id=match.asl_division_id, team_id=team_id)
+            db.add(s)
+        return s
+
+    home_s = await get_or_create_standing(match.home_team_id)
+    away_s = await get_or_create_standing(match.away_team_id)
+
+    home_s.matches_played += 1
+    away_s.matches_played += 1
+    home_s.disciplines_won += data.home_score
+    home_s.disciplines_lost += data.away_score
+    away_s.disciplines_won += data.away_score
+    away_s.disciplines_lost += data.home_score
+
+    if data.home_score > data.away_score:
+        home_s.wins += 1; home_s.points += 3
+        away_s.losses += 1
+    elif data.away_score > data.home_score:
+        away_s.wins += 1; away_s.points += 3
+        home_s.losses += 1
+    else:
+        home_s.points += 1; away_s.points += 1
+
+    await db.commit()
+    return {"status": "ok", "home_score": data.home_score, "away_score": data.away_score}
+
+@router.get("/matches/{match_id}")
+async def get_match(match_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    match = await db.get(Match, match_id)
+    if not match:
+        raise HTTPException(status_code=404, detail="Not found")
+    return match
+

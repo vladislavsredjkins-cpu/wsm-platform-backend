@@ -33,6 +33,7 @@ export default function Layout({ children }) {
             <NavItem label="Dashboard" path="/dashboard" current={location.pathname} navigate={navigate} />
             {isReferee && <NavItem label="Referee" path="/referee" current={location.pathname} navigate={navigate} />}
             {isOrganizer && <NavItem label="Organizer" path="/organizer/competitions" current={location.pathname} navigate={navigate} />}
+            {isOrganizer && <NavItem label="ASL" path="/asl" current={location.pathname} navigate={navigate} />}
             {isAthlete && <NavItem label="My Profile" path="/athlete/profile" current={location.pathname} navigate={navigate} />}
             {isJudge && <NavItem label="My Profile" path="/judge/profile" current={location.pathname} navigate={navigate} />}
             {isCoach && <NavItem label="My Profile" path="/coach/profile" current={location.pathname} navigate={navigate} />}
