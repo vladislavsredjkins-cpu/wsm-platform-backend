@@ -62,8 +62,11 @@ async def create_competition(
 
 
 @router.get("/", response_model=list[CompetitionResponse])
-async def list_competitions(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Competition).order_by(Competition.date_start.desc()))
+async def list_competitions(db: AsyncSession = Depends(get_db), published_only: bool = False):
+    query = select(Competition)
+    if published_only:
+        query = query.where(Competition.status == 'PUBLISHED')
+    result = await db.execute(query.order_by(Competition.date_start.desc()))
     return result.scalars().all()
 
 
@@ -163,3 +166,22 @@ async def delete_competition_sponsor(competition_id: uuid.UUID, sponsor_id: uuid
         await db.delete(sponsor)
         await db.commit()
     return {"status": "ok"}
+
+@router.post("/{competition_id}/sponsors/{sponsor_id}/logo")
+async def upload_sponsor_logo(competition_id: uuid.UUID, sponsor_id: uuid.UUID, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+    from models.competition_sponsor import CompetitionSponsor
+    from pathlib import Path
+    import shutil
+    result = await db.execute(select(CompetitionSponsor).where(CompetitionSponsor.id == sponsor_id))
+    sponsor = result.scalar_one_or_none()
+    if not sponsor:
+        raise HTTPException(status_code=404, detail="Not found")
+    logo_dir = Path("uploads/sponsors")
+    logo_dir.mkdir(parents=True, exist_ok=True)
+    ext = file.filename.split(".")[-1]
+    filename = f"comp_{sponsor_id}.{ext}"
+    with open(logo_dir / filename, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    sponsor.logo_url = f"/uploads/sponsors/{filename}"
+    await db.commit()
+    return {"logo_url": sponsor.logo_url}

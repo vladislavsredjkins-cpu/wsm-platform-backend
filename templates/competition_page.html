@@ -371,11 +371,18 @@
 {% endif %}
 
 <!-- BANNER + SPONSORS BLOCK -->
-<div style="max-width:1100px;margin:40px auto;padding:0 20px;display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;">
+<div style="max-width:1100px;margin:40px auto;padding:0 20px;display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;" class="banner-sponsors-grid">
+<style>
+@media(max-width:768px){
+  .banner-sponsors-grid{grid-template-columns:1fr!important;}
+  .banner-sponsors-grid img.banner-img{height:180px!important;}
+  .sponsors-grid{grid-template-columns:1fr 1fr!important;}
+}
+</style>
   <!-- LEFT: Banner -->
   <div>
     {% if competition.banner_url %}
-    <img src="{{ competition.banner_url }}" style="width:100%;height:320px;object-fit:cover;border-radius:6px;border:1px solid #1e1e1e;" />
+    <img src="{{ competition.banner_url }}" class="banner-img" style="width:100%;height:320px;object-fit:cover;border-radius:6px;border:1px solid #1e1e1e;" />
     {% else %}
     <div style="width:100%;height:320px;background:#0d0d0d;border:2px dashed #1e1e1e;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#333;font-size:13px;letter-spacing:2px;">COMPETITION BANNER</div>
     {% endif %}
@@ -403,21 +410,26 @@
       <div style="color:#c9a84c;font-size:10px;letter-spacing:3px;margin-bottom:12px;">SPONSORS</div>
       <!-- PAID sponsors - большие -->
       {% for s in sponsors if s.tier == 'PAID' %}
+      {% if s.website_url %}
+      <a href="{{ s.website_url }}" target="_blank" style="padding:10px 0;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:12px;text-decoration:none;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      {% else %}
       <div style="padding:10px 0;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:12px;">
+      {% endif %}
         {% if s.logo_url %}<img src="{{ s.logo_url }}" style="width:50px;height:40px;object-fit:contain;" />{% endif %}
-        <div>
-          {% if s.website_url %}<a href="{{ s.website_url }}" target="_blank" style="color:#fff;font-weight:700;font-size:14px;text-decoration:none;">{{ s.name }}</a>
-          {% else %}<span style="color:#fff;font-weight:700;font-size:14px;">{{ s.name }}</span>{% endif %}
-        </div>
-      </div>
+        <span style="color:#fff;font-weight:700;font-size:14px;">{{ s.name }}</span>
+      {% if s.website_url %}</a>{% else %}</div>{% endif %}
       {% endfor %}
       <!-- FREE sponsors - поменьше -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+      <div class="sponsors-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
         {% for s in sponsors if s.tier != 'PAID' %}
+        {% if s.website_url %}
+        <a href="{{ s.website_url }}" target="_blank" style="background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:8px;text-align:center;text-decoration:none;display:block;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#c9a84c'" onmouseout="this.style.borderColor='#1e1e1e'">
+        {% else %}
         <div style="background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:8px;text-align:center;">
-          {% if s.logo_url %}<img src="{{ s.logo_url }}" style="width:100%;height:30px;object-fit:contain;margin-bottom:4px;" />{% endif %}
+        {% endif %}
+          {% if s.logo_url %}<img src="{{ s.logo_url }}" style="width:100%;height:60px;object-fit:contain;margin-bottom:6px;" />{% endif %}
           <div style="color:#888;font-size:10px;">{{ s.name }}</div>
-        </div>
+        {% if s.website_url %}</a>{% else %}</div>{% endif %}
         {% endfor %}
       </div>
     </div>

@@ -27,8 +27,16 @@ export default function CompetitionDetail() {
   // Division form
   const [showDivForm, setShowDivForm] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
+  const [sponsors, setSponsors] = useState([]);
+  const [newSponsor, setNewSponsor] = useState({ name: '', website_url: '', tier: 'FREE' });
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+
+  const togglePublish = async () => {
+    const newStatus = competition.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+    await api.patch(`/competitions/${competitionId}`, { status: newStatus });
+    setCompetition(prev => ({ ...prev, status: newStatus }));
+  };
 
   const saveCompetition = async () => {
     setSaving(true);
@@ -38,6 +46,18 @@ export default function CompetitionDetail() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const addSponsor = async () => {
+    if (!newSponsor.name.trim()) return;
+    const res = await api.post(`/competitions/${competitionId}/sponsors`, newSponsor);
+    setSponsors([...sponsors, res.data]);
+    setNewSponsor({ name: '', website_url: '', tier: 'FREE' });
+  };
+
+  const deleteSponsor = async (sid) => {
+    await api.delete(`/competitions/${competitionId}/sponsors/${sid}`);
+    setSponsors(sponsors.filter(s => s.id !== sid));
   };
 
   const uploadBanner = async (file) => {
@@ -198,6 +218,26 @@ export default function CompetitionDetail() {
         <div style={{ background: 'rgba(201,168,76,0.1)', color: gold, fontSize: '13px', fontWeight: '700', padding: '8px 16px', borderRadius: '3px', border: `1px solid rgba(201,168,76,0.3)` }}>
           Q {competition.coefficient_q}
         </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <a href={`https://ranking.worldstrongman.org/competitions/${competitionId}/protocol`} target="_blank"
+            style={{ padding: '8px 16px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', textDecoration: 'none', cursor: 'pointer' }}>
+            🖨️ PROTOCOL
+          </a>
+          <a href={`https://ranking.worldstrongman.org/competitions/${competitionId}/certificates`} target="_blank"
+            style={{ padding: '8px 16px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', textDecoration: 'none', cursor: 'pointer' }}>
+            📜 CERTIFICATES
+          </a>
+          <button onClick={async () => {
+            if (!confirm('Send certificates to all athletes by email?')) return;
+            const res = await api.post(`/competitions/${competitionId}/send-certificates`);
+            alert(`Sent: ${res.data.sent.length} emails. Errors: ${res.data.errors.length}`);
+          }} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #4caf50', color: '#4caf50', borderRadius: '3px', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
+            📧 EMAIL ALL
+          </button>
+          <button onClick={togglePublish} style={{ padding: '8px 16px', background: competition.status === 'PUBLISHED' ? '#333' : '#4caf50', color: competition.status === 'PUBLISHED' ? '#888' : '#000', border: 'none', borderRadius: '3px', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
+            {competition.status === 'PUBLISHED' ? '🔒 UNPUBLISH' : '🌐 PUBLISH'}
+          </button>
+        </div>
       </div>
 
       {/* Banner upload section */}
@@ -219,6 +259,64 @@ export default function CompetitionDetail() {
           </label>
           <div style={{ color: '#444', fontSize: '11px', marginTop: '8px' }}>Recommended: 1200×400px</div>
         </div>
+      </div>
+
+      {/* Sponsors */}
+      <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '20px', marginBottom: '20px' }}>
+        <div style={{ color: gold, fontSize: '10px', letterSpacing: '3px', marginBottom: '16px' }}>SPONSORS ({sponsors.length}/6)</div>
+        {sponsors.map(s => (
+          <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0', borderBottom: '1px solid #1a1a1a' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              {s.logo_url
+                ? <img src={`https://ranking.worldstrongman.org${s.logo_url}`} style={{ width: '80px', height: '50px', objectFit: 'contain', background: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a' }} />
+                : <div style={{ width: '80px', height: '50px', background: '#1a1a1a', border: '1px dashed #333', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontSize: '20px' }}>🎽</div>
+              }
+              <label style={{ padding: '3px 8px', border: `1px solid ${gold}`, color: gold, fontSize: '9px', fontWeight: '700', cursor: 'pointer', borderRadius: '2px', letterSpacing: '1px' }}>
+                📷 LOGO
+                <input type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: 'none' }}
+                  onChange={async e => {
+                    if (!e.target.files[0]) return;
+                    const fd = new FormData(); fd.append('file', e.target.files[0]);
+                    const res = await api.post(`/competitions/${competitionId}/sponsors/${s.id}/logo`, fd);
+                    setSponsors(sponsors.map(sp => sp.id === s.id ? {...sp, logo_url: res.data.logo_url} : sp));
+                  }} />
+              </label>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ color: s.tier === 'PAID' ? gold : '#888', fontSize: '10px', fontWeight: '700', background: s.tier === 'PAID' ? 'rgba(201,168,76,0.1)' : '#1a1a1a', padding: '2px 6px', borderRadius: '2px' }}>{s.tier}</span>
+                <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>{s.name}</span>
+              </div>
+              {s.website_url && (
+                <a href={s.website_url} target="_blank" style={{ color: '#555', fontSize: '11px', textDecoration: 'none' }}>{s.website_url}</a>
+              )}
+            </div>
+            <button onClick={() => deleteSponsor(s.id)} style={{ background: 'transparent', border: '1px solid #333', color: '#666', padding: '3px 8px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' }}>✕</button>
+          </div>
+        ))}
+        {sponsors.length < 6 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px auto', gap: '10px', alignItems: 'end', marginTop: '16px' }}>
+            <div>
+              <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>NAME</label>
+              <input value={newSponsor.name} onChange={e => setNewSponsor({...newSponsor, name: e.target.value})} placeholder="Sponsor name"
+                style={{ width: '100%', padding: '8px 10px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>WEBSITE</label>
+              <input value={newSponsor.website_url} onChange={e => setNewSponsor({...newSponsor, website_url: e.target.value})} placeholder="https://..."
+                style={{ width: '100%', padding: '8px 10px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '4px' }}>TYPE</label>
+              <select value={newSponsor.tier} onChange={e => setNewSponsor({...newSponsor, tier: e.target.value})}
+                style={{ width: '100%', padding: '8px 10px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '13px', outline: 'none' }}>
+                <option value="PAID">PAID</option>
+                <option value="FREE">FREE</option>
+              </select>
+            </div>
+            <button onClick={addSponsor} style={{ padding: '8px 14px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>+ ADD</button>
+          </div>
+        )}
       </div>
 
       {/* Edit competition info */}

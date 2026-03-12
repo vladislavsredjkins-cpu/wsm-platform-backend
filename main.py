@@ -617,7 +617,7 @@ async def competitions_list(request: Request):
     from sqlalchemy import select
     from models.competition import Competition
     async with SessionLocal() as db:
-        result = await db.execute(select(Competition).order_by(Competition.date_start.desc()))
+        result = await db.execute(select(Competition).where(Competition.status == 'PUBLISHED').order_by(Competition.date_start.desc()))
         competitions = result.scalars().all()
     return templates.TemplateResponse("competitions_list.html", {
         "request": request,
@@ -1890,3 +1890,67 @@ async def rankings_map_data(division: str = "MEN", year: int = 2026):
             }
             for k, v in country_data.items()
         ]
+
+@app.post("/competitions/{competition_id}/send-certificates")
+async def send_certificates(competition_id: str, request: Request):
+    import os, resend
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from models.overall_standing import OverallStanding
+    from sqlalchemy import select
+    import uuid
+
+    resend.api_key = os.environ.get("RESEND_API_KEY")
+    base_url = str(request.base_url).rstrip("/")
+    cert_url = f"https://ranking.worldstrongman.org/competitions/{competition_id}/certificates"
+    sent = []
+    errors = []
+
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            return {"error": "Not found"}
+
+        divs = await db.execute(select(CompetitionDivision).where(CompetitionDivision.competition_id == uuid.UUID(competition_id)))
+        for div in divs.scalars().all():
+            parts = await db.execute(select(Participant).where(Participant.competition_division_id == div.id))
+            for p in parts.scalars().all():
+                ath = await db.get(Athlete, p.athlete_id)
+                if not ath or not ath.email:
+                    continue
+                overall = await db.execute(select(OverallStanding).where(
+                    OverallStanding.competition_division_id == div.id,
+                    OverallStanding.participant_id == p.id
+                ))
+                o = overall.scalar_one_or_none()
+                place = o.overall_place if o else "—"
+                try:
+                    resend.Emails.send({
+                        "from": "WSM Platform <noreply@ranking.worldstrongman.org>",
+                        "to": ath.email,
+                        "subject": f"Your Certificate — {comp.name}",
+                        "html": f"""
+                        <div style="font-family:Arial,sans-serif;background:#0a0a0a;color:#fff;padding:40px;max-width:600px;margin:0 auto;">
+                            <img src="https://ranking.worldstrongman.org/static/logo.jpg" style="width:60px;height:60px;border-radius:50%;margin-bottom:20px;" />
+                            <h1 style="color:#c9a84c;font-size:24px;margin-bottom:8px;">World Strongman</h1>
+                            <p style="color:#888;font-size:13px;margin-bottom:32px;">International Union</p>
+                            <h2 style="color:#fff;font-size:20px;margin-bottom:16px;">Dear {ath.first_name} {ath.last_name},</h2>
+                            <p style="color:#ccc;font-size:15px;line-height:1.6;margin-bottom:24px;">
+                                Congratulations on your participation in <strong style="color:#c9a84c;">{comp.name}</strong>.<br>
+                                You finished <strong style="color:#c9a84c;">#{place}</strong> in the <strong>{div.division_key}</strong> division.
+                            </p>
+                            <a href="{cert_url}" style="display:inline-block;padding:14px 28px;background:#c9a84c;color:#000;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:2px;border-radius:3px;">
+                                VIEW & PRINT CERTIFICATE →
+                            </a>
+                            <p style="color:#333;font-size:11px;margin-top:32px;">© 2026 World Strongman International Union</p>
+                        </div>
+                        """
+                    })
+                    sent.append(ath.email)
+                except Exception as e:
+                    import traceback
+                    errors.append({"email": ath.email, "error": str(e), "trace": traceback.format_exc()})
+
+    return {"sent": sent, "errors": errors, "total": len(sent)}
