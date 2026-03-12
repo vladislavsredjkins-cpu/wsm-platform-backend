@@ -745,10 +745,29 @@ async def competition_page(competition_id: str, request: Request):
                 "start_orders": start_orders,
             })
 
+        # Organizer
+        organizer = None
+        if comp.organizer_id:
+            from models.organizer import Organizer
+            organizer = await db.get(Organizer, comp.organizer_id)
+
+        # Competition sponsors (model may not exist yet)
+        sponsors = []
+        try:
+            from models.competition_sponsor import CompetitionSponsor
+            sponsors_result = await db.execute(
+                select(CompetitionSponsor).where(CompetitionSponsor.competition_id == uuid.UUID(competition_id))
+            )
+            sponsors = sponsors_result.scalars().all()
+        except Exception:
+            pass
+
     return templates.TemplateResponse("competition_page.html", {
         "request": request,
         "competition": comp,
         "divisions_data": divisions_data,
+        "organizer": organizer,
+        "sponsors": sponsors,
     })
 
 

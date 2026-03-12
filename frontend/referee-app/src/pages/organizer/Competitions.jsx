@@ -29,6 +29,8 @@ export default function Competitions() {
     date_end: '',
     city: '',
     country: '',
+    competition_type: 'WORLD_CHAMPIONSHIP',
+    organizer_email: '',
   });
 
   const load = () => {
@@ -51,6 +53,8 @@ export default function Competitions() {
         date_end: form.date_end || null,
         city: form.city || null,
         country: form.country || null,
+        competition_type: form.competition_type || null,
+        organizer_email: form.organizer_email || null,
       });
       setShowForm(false);
       setForm({ name: '', coefficient_q: 1, date_start: '', date_end: '', city: '', country: '' });
@@ -107,6 +111,10 @@ export default function Competitions() {
             <div>
               <label style={labelStyle}>End Date</label>
               <input style={inputStyle} type="date" value={form.date_end} onChange={e => setForm(f => ({ ...f, date_end: e.target.value }))} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelStyle}>Organizer Email (visible on public page)</label>
+              <input style={inputStyle} type="email" placeholder="contact@wsm.com" value={form.organizer_email} onChange={e => setForm(f => ({ ...f, organizer_email: e.target.value }))} />
             </div>
           </div>
           <button onClick={handleSubmit} disabled={saving} style={{ marginTop: '20px', padding: '12px 32px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>

@@ -103,3 +103,63 @@ async def update_competition(competition_id: uuid.UUID, data: dict, db: AsyncSes
             setattr(competition, key, value)
     await db.commit()
     return {"status": "ok"}
+
+@router.get("/{competition_id}/sponsors")
+async def list_competition_sponsors(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.competition_sponsor import CompetitionSponsor
+    result = await db.execute(select(CompetitionSponsor).where(CompetitionSponsor.competition_id == competition_id))
+    return result.scalars().all()
+
+@router.post("/{competition_id}/sponsors")
+async def add_competition_sponsor(competition_id: uuid.UUID, data: dict, db: AsyncSession = Depends(get_db)):
+    from models.competition_sponsor import CompetitionSponsor
+    sponsor = CompetitionSponsor(
+        competition_id=competition_id,
+        name=data.get('name'),
+        website_url=data.get('website_url'),
+        tier=data.get('tier', 'FREE')
+    )
+    db.add(sponsor)
+    await db.commit()
+    await db.refresh(sponsor)
+    return sponsor
+
+@router.delete("/{competition_id}/sponsors/{sponsor_id}")
+async def delete_competition_sponsor(competition_id: uuid.UUID, sponsor_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.competition_sponsor import CompetitionSponsor
+    result = await db.execute(select(CompetitionSponsor).where(CompetitionSponsor.id == sponsor_id))
+    sponsor = result.scalar_one_or_none()
+    if sponsor:
+        await db.delete(sponsor)
+        await db.commit()
+    return {"status": "ok"}
+
+@router.get("/{competition_id}/sponsors")
+async def list_competition_sponsors(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.competition_sponsor import CompetitionSponsor
+    result = await db.execute(select(CompetitionSponsor).where(CompetitionSponsor.competition_id == competition_id))
+    return result.scalars().all()
+
+@router.post("/{competition_id}/sponsors")
+async def add_competition_sponsor(competition_id: uuid.UUID, data: dict, db: AsyncSession = Depends(get_db)):
+    from models.competition_sponsor import CompetitionSponsor
+    sponsor = CompetitionSponsor(
+        competition_id=competition_id,
+        name=data.get('name'),
+        website_url=data.get('website_url'),
+        tier=data.get('tier', 'FREE')
+    )
+    db.add(sponsor)
+    await db.commit()
+    await db.refresh(sponsor)
+    return sponsor
+
+@router.delete("/{competition_id}/sponsors/{sponsor_id}")
+async def delete_competition_sponsor(competition_id: uuid.UUID, sponsor_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.competition_sponsor import CompetitionSponsor
+    result = await db.execute(select(CompetitionSponsor).where(CompetitionSponsor.id == sponsor_id))
+    sponsor = result.scalar_one_or_none()
+    if sponsor:
+        await db.delete(sponsor)
+        await db.commit()
+    return {"status": "ok"}

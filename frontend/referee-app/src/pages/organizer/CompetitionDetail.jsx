@@ -26,6 +26,31 @@ export default function CompetitionDetail() {
 
   // Division form
   const [showDivForm, setShowDivForm] = useState(false);
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const saveCompetition = async () => {
+    setSaving(true);
+    try {
+      await api.patch(`/competitions/${competitionId}`, editForm);
+      setCompetition(prev => ({ ...prev, ...editForm }));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const uploadBanner = async (file) => {
+    setBannerUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await api.post(`/competitions/${competitionId}/banner`, fd);
+      setCompetition(prev => ({ ...prev, banner_url: res.data.banner_url }));
+    } finally {
+      setBannerUploading(false);
+    }
+  };
   const [divForm, setDivForm] = useState({ division_key: '', format: 'CLASSIC' });
   const [savingDiv, setSavingDiv] = useState(false);
 
@@ -46,10 +71,10 @@ export default function CompetitionDetail() {
 
   useEffect(() => {
     Promise.all([
-      api.get(`/competitions/${competitionId}`),
+      api.get(`/competitions/${competitionId}`).then(r => { setCompetition(r.data); setEditForm({ name: r.data.name, city: r.data.city||'', country: r.data.country||'', organizer_email: r.data.organizer_email||'', date_start: r.data.date_start||'', date_end: r.data.date_end||'' }); return r; }),
       loadDivisions(),
     ]).then(([compRes]) => {
-      setCompetition(compRes.data);
+      // competition already set in Promise.all above
     }).finally(() => setLoading(false));
   }, [competitionId]);
 
@@ -173,6 +198,45 @@ export default function CompetitionDetail() {
         <div style={{ background: 'rgba(201,168,76,0.1)', color: gold, fontSize: '13px', fontWeight: '700', padding: '8px 16px', borderRadius: '3px', border: `1px solid rgba(201,168,76,0.3)` }}>
           Q {competition.coefficient_q}
         </div>
+      </div>
+
+      {/* Banner upload section */}
+      <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '20px', marginBottom: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+        {competition.banner_url ? (
+          <img src={`https://ranking.worldstrongman.org${competition.banner_url}`}
+            style={{ width: '300px', height: '120px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #2a2a2a' }} />
+        ) : (
+          <div style={{ width: '300px', height: '120px', background: '#0a0a0a', border: '2px dashed #2a2a2a', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontSize: '13px' }}>
+            No banner uploaded
+          </div>
+        )}
+        <div>
+          <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px' }}>COMPETITION BANNER</div>
+          <label style={{ display: 'inline-block', padding: '8px 16px', background: gold, color: '#000', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>
+            {bannerUploading ? 'UPLOADING...' : '📷 UPLOAD BANNER'}
+            <input type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: 'none' }}
+              onChange={e => e.target.files[0] && uploadBanner(e.target.files[0])} />
+          </label>
+          <div style={{ color: '#444', fontSize: '11px', marginTop: '8px' }}>Recommended: 1200×400px</div>
+        </div>
+      </div>
+
+      {/* Edit competition info */}
+      <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '20px', marginBottom: '20px' }}>
+        <div style={{ color: gold, fontSize: '10px', letterSpacing: '3px', marginBottom: '16px' }}>COMPETITION INFO</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          {[{id:'name',label:'Name',full:true},{id:'city',label:'City'},{id:'country',label:'Country'},{id:'date_start',label:'Start Date',type:'date'},{id:'date_end',label:'End Date',type:'date'},{id:'organizer_email',label:'Organizer Email',full:true}].map(f => (
+            <div key={f.id} style={{ gridColumn: f.full ? '1/-1' : 'auto' }}>
+              <label style={{ display: 'block', color: '#888', fontSize: '10px', fontWeight: '700', letterSpacing: '1px', marginBottom: '6px' }}>{f.label}</label>
+              <input type={f.type||'text'} value={editForm[f.id]||''} onChange={e => setEditForm({...editForm, [f.id]: e.target.value})}
+                style={{ width: '100%', padding: '10px 12px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+          ))}
+        </div>
+        <button onClick={saveCompetition} disabled={saving}
+          style={{ marginTop: '16px', padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>
+          {saving ? 'SAVING...' : 'SAVE CHANGES →'}
+        </button>
       </div>
 
       {/* Tabs */}
