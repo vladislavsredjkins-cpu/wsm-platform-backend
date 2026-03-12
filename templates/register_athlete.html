@@ -172,6 +172,37 @@
         </div>
     </div>
 
+    <div class="form-section">
+        <div class="form-section-title">Sponsors (optional)</div>
+        <div style="font-size:12px;color:#555;margin-bottom:16px;">Add up to 3 sponsors to your public profile.</div>
+        <div class="form-grid" style="grid-template-columns:1fr;">
+            <div class="field full">
+                <label>Sponsor 1 — Name</label>
+                <input type="text" id="sponsor1_name" placeholder="e.g. RedBull">
+            </div>
+            <div class="field full">
+                <label>Sponsor 1 — Website</label>
+                <input type="text" id="sponsor1_url" placeholder="https://redbull.com">
+            </div>
+            <div class="field full">
+                <label>Sponsor 2 — Name</label>
+                <input type="text" id="sponsor2_name" placeholder="">
+            </div>
+            <div class="field full">
+                <label>Sponsor 2 — Website</label>
+                <input type="text" id="sponsor2_url" placeholder="https://...">
+            </div>
+            <div class="field full">
+                <label>Sponsor 3 — Name</label>
+                <input type="text" id="sponsor3_name" placeholder="">
+            </div>
+            <div class="field full">
+                <label>Sponsor 3 — Website</label>
+                <input type="text" id="sponsor3_url" placeholder="https://...">
+            </div>
+        </div>
+    </div>
+
     <div style="height:32px;"></div><button id="submit-btn" onclick="submitForm()" style="display:block;width:100%;padding:16px;background:#c9a84c;color:#000;border:none;border-radius:3px;font-size:13px;font-weight:900;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">SUBMIT REGISTRATION →</button><div style="height:40px;"></div>
 
     <div class="login-link">
@@ -261,6 +292,21 @@ async function submitForm() {
                         method: 'POST',
                         headers: { 'Authorization': 'Bearer ' + data.access_token },
                         body: fd
+                    });
+                }
+            } catch(e) {}
+            // Сохраняем спонсоров
+            try {
+                const sponsors = [
+                    { name: document.getElementById('sponsor1_name').value, url: document.getElementById('sponsor1_url').value },
+                    { name: document.getElementById('sponsor2_name').value, url: document.getElementById('sponsor2_url').value },
+                    { name: document.getElementById('sponsor3_name').value, url: document.getElementById('sponsor3_url').value },
+                ].filter(s => s.name.trim());
+                for (const s of sponsors) {
+                    await fetch('/athletes/' + data.athlete_id + '/sponsors', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + data.access_token },
+                        body: JSON.stringify({ name: s.name, website_url: s.url || null, tier: 'free' })
                     });
                 }
             } catch(e) {}
