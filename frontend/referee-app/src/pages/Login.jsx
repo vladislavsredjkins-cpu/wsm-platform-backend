@@ -28,10 +28,10 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <img src="https://worldstrongman.org/wp-content/uploads/2026/02/logo_wsm.png-scaled.png" alt="WSM" style={{ width: '72px', display: 'block', margin: '0 auto 14px' }} />
           <div style={{ display: 'inline-block', background: 'rgba(201,168,76,0.1)', color: gold, fontSize: '10px', fontWeight: '700', letterSpacing: '3px', padding: '4px 12px', border: '1px solid rgba(201,168,76,0.3)', marginBottom: '14px' }}>
-            REFEREE PORTAL
+            WSM PORTAL
           </div>
           <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: '700', margin: '0 0 6px' }}>Sign In</h1>
-          <p style={{ color: '#555', fontSize: '13px', margin: 0 }}>World Strongman Competition System</p>
+          <p style={{ color: '#555', fontSize: '13px', margin: 0 }}>World Strongman Platform</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
