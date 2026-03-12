@@ -14,6 +14,8 @@ export default function AthleteProfile() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [form, setForm] = useState({});
+  const [sponsors, setSponsors] = useState([]);
+  const [newSponsor, setNewSponsor] = useState({ name: '', website_url: '' });
 
   useEffect(() => {
     if (!user?.athlete_id) return;
@@ -34,6 +36,9 @@ export default function AthleteProfile() {
         });
       })
       .finally(() => setLoading(false));
+    axios.get(`${API}/athletes/${user.athlete_id}/sponsors`)
+      .then(res => setSponsors(res.data))
+      .catch(() => {});
   }, [user]);
 
   const save = async () => {
@@ -56,6 +61,25 @@ export default function AthleteProfile() {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
     });
     window.location.reload();
+  };
+
+  const addSponsor = async () => {
+    if (!newSponsor.name.trim()) return;
+    const token = localStorage.getItem('token');
+    const res = await axios.post(`${API}/athletes/${user.athlete_id}/sponsors`,
+      { ...newSponsor, tier: 'free' },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setSponsors([...sponsors, res.data]);
+    setNewSponsor({ name: '', website_url: '' });
+  };
+
+  const deleteSponsor = async (sid) => {
+    const token = localStorage.getItem('token');
+    await axios.delete(`${API}/athletes/${user.athlete_id}/sponsors/${sid}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setSponsors(sponsors.filter(s => s.id !== sid));
   };
 
   if (loading) return <Layout><p style={{color:'#555'}}>Loading...</p></Layout>;
@@ -116,6 +140,36 @@ export default function AthleteProfile() {
               style={{padding:'10px 12px',background:'#0a0a0a',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'14px',outline:'none',resize:'vertical',width:'100%',boxSizing:'border-box'}} />
           </div>
         </div>
+      </div>
+
+      <div style={{background:'#111',border:'1px solid #1e1e1e',borderRadius:'4px',padding:'24px',marginBottom:'20px'}}>
+        <div style={{color:gold,fontSize:'10px',letterSpacing:'3px',marginBottom:'16px',paddingBottom:'8px',borderBottom:'1px solid #1e1e1e'}}>SPONSORS ({sponsors.length}/3)</div>
+        {sponsors.map(s => (
+          <div key={s.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 0',borderBottom:'1px solid #1a1a1a'}}>
+            {s.logo_url ? <img src={`${API}${s.logo_url}`} style={{width:'40px',height:'40px',objectFit:'contain',background:'#1a1a1a',borderRadius:'3px'}} />
+              : <div style={{width:'40px',height:'40px',background:'#1a1a1a',borderRadius:'3px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>🎽</div>}
+            <div style={{flex:1}}>
+              <div style={{color:'#fff',fontWeight:'600',fontSize:'13px'}}>{s.name}</div>
+              {s.website_url && <a href={s.website_url} target="_blank" style={{color:'#555',fontSize:'11px'}}>{s.website_url}</a>}
+            </div>
+            <button onClick={()=>deleteSponsor(s.id)} style={{background:'transparent',border:'1px solid #333',color:'#666',padding:'4px 10px',borderRadius:'3px',cursor:'pointer',fontSize:'11px'}}>✕ Remove</button>
+          </div>
+        ))}
+        {sponsors.length < 3 && (
+          <div style={{marginTop:'16px',display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'10px',alignItems:'end'}}>
+            <div>
+              <label style={{color:'#888',fontSize:'10px',fontWeight:'700',letterSpacing:'1px',textTransform:'uppercase',display:'block',marginBottom:'6px'}}>Sponsor Name</label>
+              <input value={newSponsor.name} onChange={e=>setNewSponsor({...newSponsor,name:e.target.value})} placeholder="e.g. RedBull"
+                style={{padding:'10px 12px',background:'#0a0a0a',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'13px',outline:'none',width:'100%',boxSizing:'border-box'}} />
+            </div>
+            <div>
+              <label style={{color:'#888',fontSize:'10px',fontWeight:'700',letterSpacing:'1px',textTransform:'uppercase',display:'block',marginBottom:'6px'}}>Website</label>
+              <input value={newSponsor.website_url} onChange={e=>setNewSponsor({...newSponsor,website_url:e.target.value})} placeholder="https://..."
+                style={{padding:'10px 12px',background:'#0a0a0a',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'13px',outline:'none',width:'100%',boxSizing:'border-box'}} />
+            </div>
+            <button onClick={addSponsor} style={{padding:'10px 16px',background:gold,color:'#000',border:'none',borderRadius:'3px',fontSize:'12px',fontWeight:'700',cursor:'pointer',whiteSpace:'nowrap'}}>+ ADD</button>
+          </div>
+        )}
       </div>
 
       {msg && <div style={{background:'rgba(76,175,80,0.1)',border:'1px solid #4caf50',color:'#4caf50',padding:'12px 16px',borderRadius:'3px',marginBottom:'16px'}}>{msg}</div>}
