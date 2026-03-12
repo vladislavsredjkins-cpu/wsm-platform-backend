@@ -16,6 +16,10 @@ export default function Layout({ children }) {
   const role = user?.role || '';
   const isOrganizer = role === 'WSM_ADMIN' || role === 'ORGANIZER';
   const isReferee = role === 'REFEREE' || role === 'WSM_ADMIN';
+  const isAthlete = role === 'ATHLETE';
+  const isJudge = role === 'JUDGE';
+  const isCoach = role === 'COACH';
+  const isTeam = role === 'TEAM';
 
   return (
     <div style={{ background: '#0a0a0a', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
@@ -29,6 +33,10 @@ export default function Layout({ children }) {
             <NavItem label="Dashboard" path="/dashboard" current={location.pathname} navigate={navigate} />
             {isReferee && <NavItem label="Referee" path="/referee" current={location.pathname} navigate={navigate} />}
             {isOrganizer && <NavItem label="Organizer" path="/organizer/competitions" current={location.pathname} navigate={navigate} />}
+            {isAthlete && <NavItem label="My Profile" path="/athlete/profile" current={location.pathname} navigate={navigate} />}
+            {isJudge && <NavItem label="My Profile" path="/judge/profile" current={location.pathname} navigate={navigate} />}
+            {isCoach && <NavItem label="My Profile" path="/coach/profile" current={location.pathname} navigate={navigate} />}
+            {isTeam && <NavItem label="My Team" path="/team/profile" current={location.pathname} navigate={navigate} />}
           </nav>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

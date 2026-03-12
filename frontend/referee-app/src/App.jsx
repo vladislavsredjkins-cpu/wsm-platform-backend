@@ -8,6 +8,8 @@ import RefereeCompetitions from './pages/referee/Competitions';
 import RefereeDisciplines from './pages/referee/Disciplines';
 import RefereeResults from './pages/referee/Results';
 
+// Athlete
+import AthleteProfile from './pages/athlete/Profile';
 // Organizer
 import OrganizerCompetitions from './pages/organizer/Competitions';
 import OrganizerCompetitionDetail from './pages/organizer/CompetitionDetail';
@@ -38,6 +40,7 @@ export default function App() {
       <Route path="/referee/:disciplineId/results" element={<ProtectedRoute><RefereeResults /></ProtectedRoute>} />
 
       {/* Organizer routes */}
+      <Route path="/athlete/profile" element={<ProtectedRoute><AthleteProfile /></ProtectedRoute>} />
       <Route path="/organizer/competitions" element={<ProtectedRoute><OrganizerCompetitions /></ProtectedRoute>} />
       <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><OrganizerCompetitionDetail /></ProtectedRoute>} />
 
