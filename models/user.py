@@ -17,3 +17,5 @@ class User(Base):
     athlete_id = Column(UUID(as_uuid=True), ForeignKey("athletes.id"), nullable=True)
     judge_id = Column(UUID(as_uuid=True), ForeignKey("judges.id"), nullable=True)
     organizer_id = Column(UUID(as_uuid=True), ForeignKey("organizers.id"), nullable=True)
+    coach_id = Column(UUID(as_uuid=True), ForeignKey("coaches.id"), nullable=True)
+    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)

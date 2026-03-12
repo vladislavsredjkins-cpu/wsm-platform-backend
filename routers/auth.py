@@ -65,6 +65,7 @@ async def me(current_user: User = Depends(get_current_user)):
         "athlete_id": str(current_user.athlete_id) if current_user.athlete_id else None,
         "judge_id": str(current_user.judge_id) if current_user.judge_id else None,
         "organizer_id": str(current_user.organizer_id) if current_user.organizer_id else None,
+        "team_id": str(current_user.team_id) if hasattr(current_user, 'team_id') and current_user.team_id else None,
         "is_active": current_user.is_active,
     }
 
@@ -291,6 +292,7 @@ async def register_coach(data: RegisterCoachRequest, db: AsyncSession = Depends(
     )
     db.add(coach)
     await db.flush()
+    user.coach_id = coach.id
     await db.commit()
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"status": "ok", "coach_id": str(coach.id), "access_token": token}
@@ -331,6 +333,7 @@ async def register_team(data: RegisterTeamRequest, db: AsyncSession = Depends(ge
     for role, aid in roles:
         if aid:
             db.add(TeamMember(team_id=team.id, athlete_id=uuid.UUID(aid), role=role))
+    user.team_id = team.id
     await db.commit()
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"status": "ok", "team_id": str(team.id), "access_token": token}
