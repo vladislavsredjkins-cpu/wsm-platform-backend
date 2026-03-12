@@ -10,6 +10,8 @@ import RefereeResults from './pages/referee/Results';
 
 // Athlete
 import AthleteProfile from './pages/athlete/Profile';
+import JudgeProfile from './pages/judge/Profile';
+import CoachProfile from './pages/coach/Profile';
 // Organizer
 import OrganizerCompetitions from './pages/organizer/Competitions';
 import OrganizerCompetitionDetail from './pages/organizer/CompetitionDetail';
@@ -41,6 +43,8 @@ export default function App() {
 
       {/* Organizer routes */}
       <Route path="/athlete/profile" element={<ProtectedRoute><AthleteProfile /></ProtectedRoute>} />
+      <Route path="/judge/profile" element={<ProtectedRoute><JudgeProfile /></ProtectedRoute>} />
+      <Route path="/coach/profile" element={<ProtectedRoute><CoachProfile /></ProtectedRoute>} />
       <Route path="/organizer/competitions" element={<ProtectedRoute><OrganizerCompetitions /></ProtectedRoute>} />
       <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><OrganizerCompetitionDetail /></ProtectedRoute>} />
 
