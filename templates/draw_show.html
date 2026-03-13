@@ -233,10 +233,10 @@
 <!-- Division selector -->
 <div id="div-selector" style="text-align:center;margin:16px 0;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
   {% for dd in divisions_data %}
-  <button onclick="selectDivision('{{ dd.division.id }}', '{{ dd.division.name }}')"
+  <button onclick="selectDivision('{{ dd.division.id }}', '{{ dd.division.division_key }}')"
     style="padding:10px 24px;background:#111;border:1px solid #333;color:#888;font-size:12px;letter-spacing:3px;cursor:pointer;border-radius:3px;text-transform:uppercase;"
     id="divbtn-{{ dd.division.id }}">
-    {{ dd.division.name }}
+    {{ dd.division.division_key }}
   </button>
   {% endfor %}
 </div>
@@ -338,11 +338,12 @@ async function startDraw() {
   await countdown(3);
 
   // Call API for draw
-  const res = await fetch(`/competitions/${competitionId}/divisions/${currentDivisionId}/draw`, {
+  const res = await fetch(`/competitions/${competitionId}/divisions/${currentDivisionId}/draw/auto?discipline_order=1`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'}
   });
-  const lots = await res.json();
+  const data = await res.json();
+  const lots = data.order || data;
 
   // Merge with athlete data
   const athleteMap = {};

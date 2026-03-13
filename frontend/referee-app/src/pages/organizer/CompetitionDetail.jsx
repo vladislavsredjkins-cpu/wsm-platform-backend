@@ -8,7 +8,7 @@ import DrawTab from '../../components/DrawTab';
 const gold = '#c9a84c';
 const inputStyle = { width: '100%', padding: '10px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#fff', borderRadius: '3px', fontSize: '13px', outline: 'none' };
 const labelStyle = { display: 'block', color: '#555', fontSize: '10px', letterSpacing: '2px', marginBottom: '6px' };
-const TABS = ['Divisions', 'Athletes', 'Disciplines', 'Judges', 'Draw', 'Start Order', 'Protocol', 'Registrations'];
+const TABS = ['Divisions', 'Athletes', 'Disciplines', 'Judges', 'Start Order', 'Protocol', 'Registrations'];
 
 export default function CompetitionDetail() {
   const { competitionId } = useParams();

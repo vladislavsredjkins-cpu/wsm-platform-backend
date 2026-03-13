@@ -7,7 +7,6 @@ export default function DrawTab({ competitionId, divisions }) {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [disciplineOrder, setDisciplineOrder] = useState(1);
   const [dragIdx, setDragIdx] = useState(null);
 
   useEffect(() => {
@@ -30,10 +29,10 @@ export default function DrawTab({ competitionId, divisions }) {
     }
   };
 
-  const autoDraw = async () => {
+  const doDraw = async () => {
     setLoading(true);
     try {
-      const res = await api.post(`/competitions/${competitionId}/divisions/${selectedDiv.id}/draw/auto?discipline_order=${disciplineOrder}`);
+      await api.post(`/competitions/${competitionId}/divisions/${selectedDiv.id}/draw/auto?discipline_order=1`);
       await loadDraw();
     } finally {
       setLoading(false);
@@ -65,7 +64,7 @@ export default function DrawTab({ competitionId, divisions }) {
   return (
     <div>
       {/* Division selector */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #1e1e1e', paddingBottom: '0' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #1e1e1e' }}>
         {divisions.map(d => (
           <button key={d.id} onClick={() => setSelectedDiv(d)} style={{
             padding: '8px 16px', background: 'none', border: 'none',
@@ -78,17 +77,12 @@ export default function DrawTab({ competitionId, divisions }) {
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ color: '#888', fontSize: '11px', letterSpacing: '1px' }}>DISCIPLINE #</span>
-          <input type="number" min="1" value={disciplineOrder} onChange={e => setDisciplineOrder(parseInt(e.target.value))}
-            style={{ width: '60px', padding: '8px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '13px', outline: 'none', textAlign: 'center' }} />
-        </div>
-        <button onClick={autoDraw} style={{ padding: '9px 20px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
-          🎲 AUTO DRAW
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+        <button onClick={doDraw} style={{ padding: '9px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+          🎲 DRAW
         </button>
-        <button onClick={saveDraw} style={{ padding: '9px 20px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
-          {saved ? '✓ SAVED' : '💾 SAVE ORDER'}
+        <button onClick={saveDraw} style={{ padding: '9px 24px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+          {saved ? '✓ SAVED' : '💾 SAVE'}
         </button>
         <span style={{ color: '#444', fontSize: '11px' }}>Drag rows to reorder manually</span>
       </div>
