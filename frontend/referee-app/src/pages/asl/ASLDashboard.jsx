@@ -15,7 +15,7 @@ export default function ASLDashboard() {
   const [form, setForm] = useState({ name: '', season: '2026' });
 
   useEffect(() => {
-    api.get('/asl/leagues').then(r => {
+    api.get('/api/asl/leagues').then(r => {
       setLeagues(r.data);
       if (r.data.length > 0) selectLeague(r.data[0]);
     }).finally(() => setLoading(false));
@@ -23,11 +23,11 @@ export default function ASLDashboard() {
 
   const selectLeague = (league) => {
     setSelectedLeague(league);
-    api.get(`/asl/divisions?league_id=${league.id}`).then(r => setDivisions(r.data));
+    api.get(`/api/asl/divisions?league_id=${league.id}`).then(r => setDivisions(r.data));
   };
 
   const createLeague = async () => {
-    const res = await api.post('/asl/leagues', form);
+    const res = await api.post('/api/asl/leagues', form);
     setLeagues([...leagues, res.data]);
     selectLeague(res.data);
     setShowForm(false);

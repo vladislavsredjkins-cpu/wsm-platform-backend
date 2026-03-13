@@ -81,6 +81,33 @@ async def list_judges(db: AsyncSession = Depends(get_db)):
     return out
 
 
+
+
+@router.get("/search")
+async def search_judges(q: str = "", db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select, or_
+    from models.judge import Judge
+    result = await db.execute(
+        select(Judge).where(
+            or_(
+                Judge.first_name.ilike(f"%{q}%"),
+                Judge.last_name.ilike(f"%{q}%"),
+                Judge.email.ilike(f"%{q}%"),
+            )
+        ).limit(10)
+    )
+    judges = result.scalars().all()
+    return [
+        {
+            "id": str(j.id),
+            "first_name": j.first_name,
+            "last_name": j.last_name,
+            "country": j.country,
+            "license_number": j.level,
+        }
+        for j in judges
+    ]
+
 @router.get("/{judge_id}", response_model=JudgeResponse)
 async def get_judge(judge_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     judge = await db.get(Judge, judge_id)

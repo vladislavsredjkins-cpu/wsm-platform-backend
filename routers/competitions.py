@@ -31,6 +31,10 @@ class CompetitionResponse(BaseModel):
     city: Optional[str]
     country: Optional[str]
     coefficient_q: float
+    banner_url: Optional[str] = None
+    status: Optional[str] = None
+    organizer_email: Optional[str] = None
+    competition_type: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -92,7 +96,10 @@ async def upload_banner(competition_id: uuid.UUID, file: UploadFile = File(...),
     with open(banner_dir / filename, "wb") as f:
         shutil.copyfileobj(file.file, f)
     competition.banner_url = f"/uploads/banners/{filename}"
+    db.add(competition)
+    await db.flush()
     await db.commit()
+    await db.refresh(competition)
     return {"banner_url": competition.banner_url}
 
 @router.patch("/{competition_id}")
@@ -185,3 +192,239 @@ async def upload_sponsor_logo(competition_id: uuid.UUID, sponsor_id: uuid.UUID, 
     sponsor.logo_url = f"/uploads/sponsors/{filename}"
     await db.commit()
     return {"logo_url": sponsor.logo_url}
+
+
+# ── JUDGE ASSIGNMENTS ─────────────────────────────────────────
+@router.get("/{competition_id}/judges")
+async def get_competition_judges(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.judge_competition import JudgeCompetition
+    from models.judge import Judge
+    from sqlalchemy import select
+    result = await db.execute(
+        select(JudgeCompetition, Judge)
+        .join(Judge, JudgeCompetition.judge_id == Judge.id)
+        .where(JudgeCompetition.competition_id == competition_id)
+    )
+    rows = result.all()
+    return [
+        {
+            "id": str(jc.id),
+            "judge_id": str(jc.judge_id),
+            "role": jc.role,
+            "first_name": j.first_name,
+            "last_name": j.last_name,
+            "country": j.country,
+            "license_number": j.level,
+        }
+        for jc, j in rows
+    ]
+
+@router.post("/{competition_id}/judges")
+async def assign_judge(competition_id: uuid.UUID, data: dict, db: AsyncSession = Depends(get_db)):
+    from models.judge_competition import JudgeCompetition
+    from sqlalchemy import select
+    # проверяем дубликат
+    existing = await db.execute(
+        select(JudgeCompetition).where(
+            JudgeCompetition.competition_id == competition_id,
+            JudgeCompetition.judge_id == uuid.UUID(data["judge_id"])
+        )
+    )
+    if existing.scalar():
+        raise HTTPException(400, "Judge already assigned")
+    jc = JudgeCompetition(
+        competition_id=competition_id,
+        judge_id=uuid.UUID(data["judge_id"]),
+        role=data.get("role", "Judge")
+    )
+    db.add(jc)
+    await db.commit()
+    await db.refresh(jc)
+    return {"id": str(jc.id), "judge_id": str(jc.judge_id), "role": jc.role}
+
+@router.delete("/{competition_id}/judges/{assignment_id}")
+async def remove_judge(competition_id: uuid.UUID, assignment_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.judge_competition import JudgeCompetition
+    jc = await db.get(JudgeCompetition, assignment_id)
+    if not jc or jc.competition_id != competition_id:
+        raise HTTPException(404)
+    await db.delete(jc)
+    await db.commit()
+    return {"ok": True}
+
+# ── DRAW / LOTTERY ─────────────────────────────────────────────
+@router.post("/{competition_id}/divisions/{division_id}/draw")
+async def auto_draw(competition_id: uuid.UUID, division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Авто-жеребьёвка: случайный порядок для дисциплины 1"""
+    from models.participant import Participant
+    from sqlalchemy import select
+    import random
+
+    result = await db.execute(
+        select(Participant).where(Participant.competition_division_id == division_id)
+    )
+    participants = result.scalars().all()
+    if not participants:
+        raise HTTPException(404, "No participants in this division")
+
+    # Перемешиваем случайно
+    indices = list(range(1, len(participants) + 1))
+    random.shuffle(indices)
+
+    for p, lot in zip(participants, indices):
+        p.lot_number = lot
+        db.add(p)
+
+    await db.flush()
+    await db.commit()
+
+    return [{"participant_id": str(p.id), "lot_number": p.lot_number} for p in sorted(participants, key=lambda x: x.lot_number)]
+
+@router.post("/{competition_id}/divisions/{division_id}/draw/reverse")
+async def reverse_draw(competition_id: uuid.UUID, division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Реверсная жеребьёвка для дисциплины 2+: кто хуже — стартует первым"""
+    from models.participant import Participant
+    from models.overall_standing import OverallStanding
+    from sqlalchemy import select
+
+    result = await db.execute(
+        select(Participant).where(Participant.competition_division_id == division_id)
+    )
+    participants = result.scalars().all()
+    if not participants:
+        raise HTTPException(404, "No participants")
+
+    # Берём текущие standings
+    standings_result = await db.execute(
+        select(OverallStanding).where(OverallStanding.competition_division_id == division_id)
+    )
+    standings = {s.participant_id: s.place for s in standings_result.scalars().all()}
+
+    # Сортируем: у кого place больше (хуже) — lot меньше (стартует первым)
+    sorted_participants = sorted(
+        participants,
+        key=lambda p: -(standings.get(p.id, 999))
+    )
+
+    for lot, p in enumerate(sorted_participants, 1):
+        p.lot_number = lot
+        db.add(p)
+
+    await db.flush()
+    await db.commit()
+
+    return [{"participant_id": str(p.id), "lot_number": p.lot_number} for p in sorted(participants, key=lambda x: x.lot_number)]
+
+@router.patch("/{competition_id}/divisions/{division_id}/draw")
+async def update_lot(competition_id: uuid.UUID, division_id: uuid.UUID, data: dict, db: AsyncSession = Depends(get_db)):
+    """Ручная правка lot номеров"""
+    from models.participant import Participant
+    # data = {"lots": [{"participant_id": "...", "lot_number": 1}, ...]}
+    for item in data.get("lots", []):
+        p = await db.get(Participant, uuid.UUID(item["participant_id"]))
+        if p and p.competition_division_id == division_id:
+            p.lot_number = item["lot_number"]
+            db.add(p)
+    await db.flush()
+    await db.commit()
+    return {"ok": True}
+
+@router.get("/{competition_id}/divisions/{division_id}/participants")
+async def get_division_participants(competition_id: uuid.UUID, division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from sqlalchemy import select
+    result = await db.execute(
+        select(Participant, Athlete)
+        .join(Athlete, Participant.athlete_id == Athlete.id)
+        .where(Participant.competition_division_id == division_id)
+        .order_by(Participant.lot_number.nullslast(), Participant.bib_no)
+    )
+    return [
+        {
+            "participant_id": str(p.id),
+            "athlete_id": str(a.id),
+            "first_name": a.first_name,
+            "last_name": a.last_name,
+            "country": a.country,
+            "bib_no": p.bib_no,
+            "lot_number": p.lot_number,
+        }
+        for p, a in result.all()
+    ]
+
+# ── LIVE START ORDER API ────────────────────────────────────────
+@router.get("/{competition_id}/live-data")
+async def get_live_data(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Данные для live-screen и warmup-screen"""
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    from models.participant import Participant
+    from models.athlete import Athlete
+    from models.competition_discipline import CompetitionDiscipline as Discipline
+    from models.discipline_result import DisciplineResult  # noqa
+    from sqlalchemy import select
+
+    comp = await db.get(Competition, competition_id)
+    if not comp:
+        raise HTTPException(404)
+
+    divs_result = await db.execute(
+        select(CompetitionDivision).where(CompetitionDivision.competition_id == competition_id)
+    )
+    divisions = divs_result.scalars().all()
+
+    result = []
+    for div in divisions:
+        # Атлеты
+        parts_result = await db.execute(
+            select(Participant, Athlete)
+            .join(Athlete, Participant.athlete_id == Athlete.id)
+            .where(Participant.competition_division_id == div.id)
+            .order_by(Participant.lot_number.nullslast(), Participant.bib_no)
+        )
+        participants = [
+            {"participant_id": str(p.id), "first_name": a.first_name, "last_name": a.last_name,
+             "country": a.country, "bib_no": p.bib_no, "lot_number": p.lot_number}
+            for p, a in parts_result.all()
+        ]
+
+        # Дисциплины
+        discs_result = await db.execute(
+            select(Discipline).where(Discipline.competition_division_id == div.id).order_by(Discipline.order_no.nullslast())
+        )
+        disciplines = discs_result.scalars().all()
+
+        discs_data = []
+        for disc in disciplines:
+            # Результаты
+            res_result = await db.execute(
+                select(DisciplineResult).where(DisciplineResult.competition_discipline_id == disc.id)
+            )
+            results = {str(r.participant_id): str(r.primary_value or "") for r in res_result.scalars().all()}
+
+            # Стартовый порядок для этой дисциплины
+            ordered = sorted(participants, key=lambda p: (p["lot_number"] or 999, p["bib_no"] or 999))
+            start_order = {p["participant_id"]: idx+1 for idx, p in enumerate(ordered)}
+
+            discs_data.append({
+                "id": str(disc.id),
+                "name": disc.discipline_name,
+                "order_index": disc.order_no,
+                "start_order": start_order,
+                "results": results,
+            })
+
+        result.append({
+            "division_id": str(div.id),
+            "division_name": str(div.division_key),
+            "participants": participants,
+            "disciplines": discs_data,
+        })
+
+    return {
+        "competition_id": str(competition_id),
+        "competition_name": comp.name,
+        "status": comp.status,
+        "divisions": result,
+    }

@@ -4,6 +4,16 @@ import Layout from '../../components/Layout';
 import api from '../../api';
 
 const gold = '#c9a84c';
+const STANDARD_DISCIPLINES = [
+  { name: 'Stone Flip',             unit: 'reps', result_type: 'higher_wins' },
+  { name: 'Dumbbell Lift',          unit: 'reps', result_type: 'higher_wins' },
+  { name: 'Axle Deadlift',          unit: 'reps', result_type: 'higher_wins' },
+  { name: 'Log Lift',               unit: 'reps', result_type: 'higher_wins' },
+  { name: 'Husafell Sandbag Carry', unit: 'sec',  result_type: 'lower_wins'  },
+  { name: 'Super Yoke',             unit: 'sec',  result_type: 'lower_wins'  },
+  { name: "Farmer's Walk",          unit: 'sec',  result_type: 'lower_wins'  },
+  { name: 'Tire Flips',             unit: 'sec',  result_type: 'lower_wins'  },
+];
 
 export default function ASLDivision() {
   const { divisionId } = useParams();
@@ -15,41 +25,60 @@ export default function ASLDivision() {
   const [allTeams, setAllTeams] = useState([]);
   const [tab, setTab] = useState('Standings');
   const [showMatchForm, setShowMatchForm] = useState(false);
-  const [matchForm, setMatchForm] = useState({ home_team_id: '', away_team_id: '', match_date: '', round_number: 1 });
+  const [matchForm, setMatchForm] = useState({ home_team_id: '', away_team_id: '', match_date: '', round_number: 1, judge_id: '', judge2_id: '' });
   const [showAddTeam, setShowAddTeam] = useState(false);
+  const [judges, setJudges] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');
+  const [selectedDisciplines, setSelectedDisciplines] = useState([]);
   const [editResult, setEditResult] = useState(null);
   const [resultForm, setResultForm] = useState({ home_score: 0, away_score: 0 });
 
   useEffect(() => {
-    api.get(`/asl/divisions/${divisionId}/detail`).then(r => setDivision(r.data));
+    api.get(`/api/asl/divisions/${divisionId}/detail`).then(r => setDivision(r.data));
     Promise.all([
-      api.get(`/asl/divisions/${divisionId}/teams`).then(r => setTeams(r.data)),
-      api.get(`/asl/divisions/${divisionId}/standings`).then(r => setStandings(r.data)),
-      api.get(`/asl/divisions/${divisionId}/matches`).then(r => setMatches(r.data)),
+      api.get(`/api/asl/divisions/${divisionId}/teams`).then(r => setTeams(r.data)),
+      api.get(`/api/asl/divisions/${divisionId}/standings`).then(r => setStandings(r.data)),
+      api.get(`/api/asl/divisions/${divisionId}/matches`).then(r => setMatches(r.data)),
       api.get('/teams/').then(r => setAllTeams(r.data)),
+      api.get('/judges/').then(r => setJudges(r.data)).catch(() => {}),
     ]);
   }, [divisionId]);
 
   const addTeam = async () => {
-    await api.post(`/asl/divisions/${divisionId}/teams`, { team_id: selectedTeamId });
-    const res = await api.get(`/asl/divisions/${divisionId}/teams`);
+    await api.post(`/api/asl/divisions/${divisionId}/teams`, { team_id: selectedTeamId });
+    const res = await api.get(`/api/asl/divisions/${divisionId}/teams`);
     setTeams(res.data);
     setShowAddTeam(false);
   };
 
   const createMatch = async () => {
-    await api.post('/asl/matches', { ...matchForm, asl_division_id: divisionId, round_number: parseInt(matchForm.round_number) });
-    const res = await api.get(`/asl/divisions/${divisionId}/matches`);
+    if (selectedDisciplines.length !== 5) {
+      alert('Please select exactly 5 disciplines');
+      return;
+    }
+    const res1 = await api.post('/api/asl/matches', { ...matchForm, asl_division_id: divisionId, round_number: parseInt(matchForm.round_number) });
+    const matchId = res1.data.id;
+    for (const d of selectedDisciplines) {
+      await api.post(`/api/asl/matches/${matchId}/disciplines`, { discipline_name: d.name, result_type: d.result_type, unit: d.unit, home_result: 0, away_result: 0 });
+    }
+    const res = await api.get(`/api/asl/divisions/${divisionId}/matches`);
     setMatches(res.data);
     setShowMatchForm(false);
+    setSelectedDisciplines([]);
+  };
+
+  const deleteMatch = async (matchId) => {
+    if (!confirm('Delete this match?')) return;
+    await api.delete(`/api/asl/matches/${matchId}`);
+    const res = await api.get(`/api/asl/divisions/${divisionId}/matches`);
+    setMatches(res.data);
   };
 
   const saveResult = async () => {
-    await api.patch(`/asl/matches/${editResult}/result`, resultForm);
+    await api.patch(`/api/asl/matches/${editResult}/result`, resultForm);
     const [m, s] = await Promise.all([
-      api.get(`/asl/divisions/${divisionId}/matches`),
-      api.get(`/asl/divisions/${divisionId}/standings`),
+      api.get(`/api/asl/divisions/${divisionId}/matches`),
+      api.get(`/api/asl/divisions/${divisionId}/standings`),
     ]);
     setMatches(m.data);
     setStandings(s.data);
@@ -142,8 +171,53 @@ export default function ASLDivision() {
                   <input type="number" value={matchForm.round_number} onChange={e => setMatchForm({...matchForm, round_number: e.target.value})}
                     style={{ width: '100%', padding: '10px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
+                <div>
+                  <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '6px' }}>JUDGE 1 (Home)</label>
+                  <select value={matchForm.judge_id} onChange={e => setMatchForm({...matchForm, judge_id: e.target.value})}
+                    style={{ width: '100%', padding: '10px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '13px', outline: 'none' }}>
+                    <option value="">No judge</option>
+                    {judges.map(j => <option key={j.id} value={j.id}>{j.first_name} {j.last_name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '6px' }}>JUDGE 2 (Away)</label>
+                  <select value={matchForm.judge2_id} onChange={e => setMatchForm({...matchForm, judge2_id: e.target.value})}
+                    style={{ width: '100%', padding: '10px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '13px', outline: 'none' }}>
+                    <option value="">No judge</option>
+                    {judges.map(j => <option key={j.id} value={j.id}>{j.first_name} {j.last_name}</option>)}
+                  </select>
+                </div>
               </div>
-              <button onClick={createMatch} style={{ padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+              <div style={{ marginTop: '16px', borderTop: '1px solid #2a2a2a', paddingTop: '16px' }}>
+                <label style={{ display: 'block', color: '#888', fontSize: '10px', marginBottom: '10px' }}>
+                  SELECT 5 DISCIPLINES ({selectedDisciplines.length}/5)
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+                  {STANDARD_DISCIPLINES.map(d => {
+                    const checked = selectedDisciplines.some(s => s.name === d.name);
+                    return (
+                      <div key={d.name} onClick={() => {
+                        if (checked) {
+                          setSelectedDisciplines(selectedDisciplines.filter(s => s.name !== d.name));
+                        } else if (selectedDisciplines.length < 5) {
+                          setSelectedDisciplines([...selectedDisciplines, d]);
+                        }
+                      }} style={{
+                        padding: '8px 12px', borderRadius: '3px', cursor: 'pointer',
+                        border: `1px solid ${checked ? gold : '#2a2a2a'}`,
+                        background: checked ? 'rgba(201,168,76,0.1)' : '#0a0a0a',
+                        color: checked ? gold : '#666',
+                        fontSize: '12px', fontWeight: checked ? '700' : '400',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                      }}>
+                        <span>{d.name}</span>
+                        <span style={{ fontSize: '10px', color: '#444' }}>{d.unit}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <button onClick={createMatch} style={{ padding: '10px 24px', background: selectedDisciplines.length === 5 ? gold : '#333', color: selectedDisciplines.length === 5 ? '#000' : '#666', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: selectedDisciplines.length === 5 ? 'pointer' : 'not-allowed' }}>
                 CREATE MATCH →
               </button>
             </div>
@@ -170,6 +244,14 @@ export default function ASLDivision() {
                     <button onClick={() => { setEditResult(m.id); setResultForm({ home_score: m.home_score || 0, away_score: m.away_score || 0 }); }}
                       style={{ padding: '4px 10px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>
                       RESULT
+                    </button>
+                    <button onClick={() => navigate(`/asl/matches/${m.id}`)}
+                      style={{ padding: '4px 10px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>
+                      PROTOCOL
+                    </button>
+                    <button onClick={() => deleteMatch(m.id)}
+                      style={{ padding: '4px 10px', background: 'transparent', border: '1px solid #ff5252', color: '#ff5252', borderRadius: '3px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>
+                      ✕
                     </button>
                   </div>
                 </div>

@@ -13,4 +13,6 @@ class MatchDisciplineResult(Base):
     away_result = Column(Numeric(8, 2), nullable=True)
     # home / away / draw
     winner = Column(String(10), nullable=True)
+    result_type = Column(String(20), default='higher_wins')  # higher_wins / lower_wins
+    unit = Column(String(10), nullable=True)  # kg, sec, reps, m
     match = relationship("Match", back_populates="discipline_results")

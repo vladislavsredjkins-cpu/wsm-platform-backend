@@ -1,7 +1,7 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from pydantic import BaseModel
 from typing import Optional
 from db.database import get_db
@@ -13,7 +13,7 @@ from models.match import Match
 from models.team_standing import TeamStanding
 from auth.dependencies import get_current_user
 
-router = APIRouter(prefix="/asl", tags=["asl"])
+router = APIRouter(prefix="/api/asl", tags=["asl"])
 
 class LeagueCreate(BaseModel):
     name: str
@@ -135,6 +135,8 @@ class MatchCreate(BaseModel):
     away_team_id: uuid.UUID
     match_date: Optional[str] = None
     round_number: Optional[int] = None
+    judge_id: Optional[uuid.UUID] = None
+    judge2_id: Optional[uuid.UUID] = None
 
 class MatchResult(BaseModel):
     home_score: int
@@ -143,12 +145,21 @@ class MatchResult(BaseModel):
 @router.post("/matches")
 async def create_match(data: MatchCreate, db: AsyncSession = Depends(get_db),
                        current_user=Depends(get_current_user)):
+    from datetime import date
+    match_date = None
+    if data.match_date:
+        try:
+            match_date = date.fromisoformat(data.match_date)
+        except:
+            match_date = None
     match = Match(
         asl_division_id=data.asl_division_id,
         home_team_id=data.home_team_id,
         away_team_id=data.away_team_id,
-        match_date=data.match_date,
+        match_date=match_date,
         round_number=data.round_number,
+        judge_id=data.judge_id,
+        judge2_id=data.judge2_id,
         status="scheduled"
     )
     db.add(match)
@@ -203,6 +214,50 @@ async def set_match_result(match_id: uuid.UUID, data: MatchResult,
     await db.commit()
     return {"status": "ok", "home_score": data.home_score, "away_score": data.away_score}
 
+@router.delete("/matches/{match_id}")
+async def delete_match(match_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                       current_user=Depends(get_current_user)):
+    from models.match_discipline_result import MatchDisciplineResult
+    await db.execute(
+        delete(MatchDisciplineResult).where(MatchDisciplineResult.match_id == match_id)
+    )
+    match = await db.get(Match, match_id)
+    if match:
+        await db.delete(match)
+    await db.commit()
+    return {"ok": True}
+
+@router.get("/matches/my")
+async def get_my_matches(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    from models.judge import Judge
+    from sqlalchemy import or_
+    jr = await db.execute(select(Judge).where(Judge.user_id == current_user.id))
+    judge = jr.scalar_one_or_none()
+    if not judge:
+        return []
+    res = await db.execute(
+        select(Match).where(or_(Match.judge_id == judge.id, Match.judge2_id == judge.id))
+    )
+    matches = res.scalars().all()
+    # Добавляем поле my_side чтобы фронтенд знал какую колонку показывать
+    result = []
+    for m in matches:
+        d = {
+            "id": str(m.id),
+            "asl_division_id": str(m.asl_division_id) if m.asl_division_id else None,
+            "home_team_id": str(m.home_team_id),
+            "away_team_id": str(m.away_team_id),
+            "home_score": m.home_score,
+            "away_score": m.away_score,
+            "status": m.status,
+            "round_number": m.round_number,
+            "judge_id": str(m.judge_id) if m.judge_id else None,
+            "judge2_id": str(m.judge2_id) if m.judge2_id else None,
+            "my_side": "home" if m.judge_id == judge.id else "away",
+        }
+        result.append(d)
+    return result
+
 @router.get("/matches/{match_id}")
 async def get_match(match_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     match = await db.get(Match, match_id)
@@ -210,3 +265,69 @@ async def get_match(match_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Not found")
     return match
 
+
+class DisciplineResultCreate(BaseModel):
+    discipline_name: str
+    home_result: float
+    away_result: float
+    result_type: str = 'higher_wins'  # higher_wins / lower_wins
+    unit: str = 'kg'
+
+@router.get("/matches/{match_id}/disciplines")
+async def get_match_disciplines(match_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.match_discipline_result import MatchDisciplineResult
+    result = await db.execute(
+        select(MatchDisciplineResult).where(MatchDisciplineResult.match_id == match_id)
+    )
+    return result.scalars().all()
+
+@router.post("/matches/{match_id}/disciplines")
+async def set_discipline_result(match_id: uuid.UUID, data: DisciplineResultCreate,
+                                db: AsyncSession = Depends(get_db),
+                                current_user=Depends(get_current_user)):
+    from models.match_discipline_result import MatchDisciplineResult
+    # Удаляем старый если есть
+    existing = await db.execute(
+        select(MatchDisciplineResult).where(
+            MatchDisciplineResult.match_id == match_id,
+            MatchDisciplineResult.discipline_name == data.discipline_name
+        )
+    )
+    old = existing.scalar_one_or_none()
+    if old:
+        await db.delete(old)
+
+    # Определяем победителя
+    if data.result_type == 'lower_wins':
+        winner = 'home' if data.home_result < data.away_result else ('away' if data.away_result < data.home_result else 'draw')
+    else:
+        winner = 'home' if data.home_result > data.away_result else ('away' if data.away_result > data.home_result else 'draw')
+
+    dr = MatchDisciplineResult(
+        match_id=match_id,
+        discipline_name=data.discipline_name,
+        home_result=data.home_result,
+        away_result=data.away_result,
+        result_type=data.result_type,
+        unit=data.unit,
+        winner=winner
+    )
+    db.add(dr)
+
+    # Пересчитываем счёт матча
+    match = await db.get(Match, match_id)
+    all_results = await db.execute(
+        select(MatchDisciplineResult).where(MatchDisciplineResult.match_id == match_id)
+    )
+    results_list = all_results.scalars().all()
+    results_list = [r for r in results_list if r.discipline_name != data.discipline_name] + [dr]
+
+    home_score = sum(1 for r in results_list if r.winner == 'home')
+    away_score = sum(1 for r in results_list if r.winner == 'away')
+    match.home_score = home_score
+    match.away_score = away_score
+    if len(results_list) >= 5:
+        match.status = 'completed'
+
+    await db.commit()
+    return {"winner": winner, "home_score": home_score, "away_score": away_score}

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASL Organizer Guide — WSM Platform</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a0a; color:#fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.header { background:#0a0a0a; border-bottom:2px solid #c9a84c; padding:0 40px; display:flex; align-items:center; justify-content:space-between; height:60px; position:sticky; top:0; z-index:100; }
+.lang-btn { padding:6px 14px; background:transparent; border:1px solid #333; color:#666; border-radius:3px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:1px; transition:all 0.2s; }
+.lang-btn.active { border-color:#c9a84c; color:#c9a84c; }
+.print-btn { padding:6px 14px; background:#c9a84c; border:none; color:#000; border-radius:3px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:1px; }
+.container { max-width:860px; margin:0 auto; padding:40px 20px 80px; }
+.page-title { font-size:28px; font-weight:900; letter-spacing:3px; margin-bottom:6px; }
+.page-sub { color:#555; font-size:13px; letter-spacing:2px; margin-bottom:32px; }
+.legend { display:flex; gap:24px; margin-bottom:32px; flex-wrap:wrap; }
+.legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+.legend-dot { width:10px; height:10px; border-radius:50%; }
+.phase-title { font-size:10px; letter-spacing:4px; color:#333; margin:32px 0 16px; text-transform:uppercase; }
+.step { display:flex; gap:20px; margin-bottom:8px; position:relative; }
+.step:not(:last-child)::after { content:''; position:absolute; left:22px; top:52px; width:2px; height:calc(100% - 28px + 8px); background:#1a1a1a; }
+.step-num { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; flex-shrink:0; margin-top:4px; }
+.step-num.setup { background:rgba(83,74,183,0.15); color:#7f77dd; border:1px solid #534ab7; }
+.step-num.season { background:rgba(15,110,86,0.15); color:#1d9e75; border:1px solid #0f6e56; }
+.step-num.match { background:rgba(186,117,23,0.15); color:#ef9f27; border:1px solid #854f0b; }
+.step-body { background:#111; border:1px solid #1e1e1e; border-radius:6px; padding:16px 20px; flex:1; }
+.step-body.setup { border-left:3px solid #534ab7; }
+.step-body.season { border-left:3px solid #0f6e56; }
+.step-body.match { border-left:3px solid #854f0b; }
+.step-title { font-size:15px; font-weight:700; letter-spacing:1px; margin-bottom:4px; }
+.step-desc { color:#666; font-size:13px; line-height:1.7; }
+.step-tag { display:inline-block; padding:2px 8px; border-radius:2px; font-size:10px; font-weight:700; letter-spacing:1px; margin-top:8px; }
+.step-tag.setup { background:rgba(83,74,183,0.1); color:#7f77dd; }
+.step-tag.season { background:rgba(15,110,86,0.1); color:#1d9e75; }
+.step-tag.match { background:rgba(186,117,23,0.1); color:#ef9f27; }
+@media print {
+  body { background:#fff; color:#000; }
+  .header { display:none; }
+  .step-body { background:#f9f9f9 !important; border-color:#ddd !important; }
+  .step-desc { color:#444 !important; }
+}
+@media (max-width:600px) {
+  .header { padding:0 16px; }
+  .container { padding:24px 16px 60px; }
+  .page-title { font-size:20px; }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+    <img src="/static/logo.jpg" style="height:36px;width:36px;border-radius:50%;object-fit:cover;" alt="WSM">
+    <div><div style="color:#c9a84c;font-weight:900;font-size:12px;letter-spacing:3px;">WORLD STRONGMAN</div><div style="color:#888;font-size:9px;letter-spacing:2px;">INTERNATIONAL UNION</div></div>
+  </a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="https://app.ranking.worldstrongman.org/asl" style="color:#555;font-size:11px;letter-spacing:2px;text-decoration:none;border:1px solid #222;padding:6px 14px;border-radius:3px;">← ASL CABINET</a>
+    <div style="display:flex;gap:8px;">
+      <button class="lang-btn active" onclick="setLang('en')" id="btn-en">EN</button>
+      <button class="lang-btn" onclick="setLang('ru')" id="btn-ru">RU</button>
+      <button class="lang-btn" onclick="setLang('es')" id="btn-es">ES</button>
+      <button class="lang-btn" onclick="setLang('fr')" id="btn-fr">FR</button>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨️ PDF</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="page-title" id="t-title">ASL ORGANIZER GUIDE</div>
+  <div class="page-sub" id="t-sub">Strongman Super League — step-by-step from setup to results</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#534ab7"></div><span id="l-setup">League setup</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0f6e56"></div><span id="l-season">Season preparation</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#854f0b"></div><span id="l-match">Match day</span></div>
+  </div>
+
+  <div class="phase-title" id="ph-1">— League Setup —</div>
+
+  <div class="step">
+    <div class="step-num setup">1</div>
+    <div class="step-body setup">
+      <div class="step-title" id="s1-title">Access your league</div>
+      <div class="step-desc" id="s1-desc">The league is created by the WSM administrator. You receive access to the league as an organizer. Open ASL in the cabinet to see your league and its divisions.</div>
+      <span class="step-tag setup">ASL in navigation menu</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num setup">2</div>
+    <div class="step-body setup">
+      <div class="step-title" id="s2-title">Create divisions</div>
+      <div class="step-desc" id="s2-desc">Inside the league create divisions — weight categories or regional groups. Each division has its own standings table, team roster and match schedule.</div>
+      <span class="step-tag setup">League → + Add Division</span>
+    </div>
+  </div>
+
+  <div class="phase-title" id="ph-2">— Season Preparation —</div>
+
+  <div class="step">
+    <div class="step-num season">3</div>
+    <div class="step-body season">
+      <div class="step-title" id="s3-title">Add teams to division</div>
+      <div class="step-desc" id="s3-desc">Select teams from the global WSM database and add them to the division. The Teams tab shows all participating teams with logos and countries.</div>
+      <span class="step-tag season">Division → Teams tab → + Add Team</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num season">4</div>
+    <div class="step-body season">
+      <div class="step-title" id="s4-title">Schedule matches</div>
+      <div class="step-desc" id="s4-desc">Create matches: select home and away teams, set the date and round number. Assign two judges — Judge 1 for the home athlete, Judge 2 for the away athlete. Select disciplines from the 8 standard WSM disciplines.</div>
+      <span class="step-tag season">Division → Matches tab → + New Match</span>
+    </div>
+  </div>
+
+  <div class="phase-title" id="ph-3">— Match Day —</div>
+
+  <div class="step">
+    <div class="step-num match">5</div>
+    <div class="step-body match">
+      <div class="step-title" id="s5-title">Open match protocol</div>
+      <div class="step-desc" id="s5-desc">Click PROTOCOL on the match card — opens the discipline-by-discipline result entry screen. Judges enter results for their side. The match score updates automatically after each discipline.</div>
+      <span class="step-tag match">Match card → PROTOCOL button</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num match">6</div>
+    <div class="step-body match">
+      <div class="step-title" id="s6-title">Confirm match score</div>
+      <div class="step-desc" id="s6-desc">After all disciplines are entered — confirm the final score via the RESULT button. Score format: disciplines won by each team (e.g. 3:2). Win = 3 pts · Draw = 1 pt · Loss = 0 pts. Standings update automatically.</div>
+      <span class="step-tag match">Match card → RESULT button</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num match">7</div>
+    <div class="step-body match">
+      <div class="step-title" id="s7-title">Check standings</div>
+      <div class="step-desc" id="s7-desc">The Standings tab shows the full league table: matches played, wins, losses, disciplines won/lost, and points. Top 2 teams advance to playoffs. The public league page updates automatically.</div>
+      <span class="step-tag match">Division → Standings tab</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const T = {
+  en: {
+    't-title':'ASL ORGANIZER GUIDE','t-sub':'Strongman Super League — step-by-step from setup to results',
+    'l-setup':'League setup','l-season':'Season preparation','l-match':'Match day',
+    'ph-1':'— League Setup —','ph-2':'— Season Preparation —','ph-3':'— Match Day —',
+    's1-title':'Access your league','s1-desc':'The league is created by the WSM administrator. You receive access as an organizer. Open ASL in the cabinet to see your league and its divisions.',
+    's2-title':'Create divisions','s2-desc':'Inside the league create divisions — weight categories or regional groups. Each division has its own standings, team roster and match schedule.',
+    's3-title':'Add teams to division','s3-desc':'Select teams from the global WSM database and add them to the division. The Teams tab shows all participating teams with logos and countries.',
+    's4-title':'Schedule matches','s4-desc':'Create matches: select home and away teams, set date and round number. Assign two judges — Judge 1 for home, Judge 2 for away. Select disciplines from the 8 standard WSM disciplines.',
+    's5-title':'Open match protocol','s5-desc':'Click PROTOCOL on the match card — opens discipline-by-discipline result entry. Judges enter results for their side. Score updates automatically after each discipline.',
+    's6-title':'Confirm match score','s6-desc':'After all disciplines — confirm the final score via RESULT button. Format: disciplines won by each team (e.g. 3:2). Win = 3 pts · Draw = 1 pt · Loss = 0 pts. Standings update automatically.',
+    's7-title':'Check standings','s7-desc':'Standings tab shows the full league table: matches played, wins, losses, disciplines won/lost, points. Top 2 advance to playoffs. Public page updates automatically.'
+  },
+  ru: {
+    't-title':'РУКОВОДСТВО ОРГАНИЗАТОРА ASL','t-sub':'Strongman Super League — пошаговая инструкция от создания до результатов',
+    'l-setup':'Настройка лиги','l-season':'Подготовка сезона','l-match':'День матча',
+    'ph-1':'— Настройка лиги —','ph-2':'— Подготовка сезона —','ph-3':'— День матча —',
+    's1-title':'Доступ к лиге','s1-desc':'Лига создаётся администратором WSM. Вы получаете доступ как организатор. Откройте ASL в кабинете чтобы увидеть вашу лигу и дивизионы.',
+    's2-title':'Создать дивизионы','s2-desc':'Внутри лиги создайте дивизионы — весовые категории или региональные группы. У каждого своя таблица, состав команд и расписание матчей.',
+    's3-title':'Добавить команды в дивизион','s3-desc':'Выберите команды из глобальной базы WSM и добавьте в дивизион. Вкладка Teams показывает все команды с логотипами и странами.',
+    's4-title':'Составить расписание матчей','s4-desc':'Создайте матчи: выберите домашнюю и гостевую команды, дату и номер раунда. Назначьте двух судей — Судья 1 для домашнего, Судья 2 для гостевого. Выберите дисциплины из 8 стандартных WSM.',
+    's5-title':'Открыть протокол матча','s5-desc':'Нажмите PROTOCOL в карточке матча — открывается ввод по дисциплинам. Судьи вводят результаты своей стороны. Счёт обновляется автоматически после каждой дисциплины.',
+    's6-title':'Подтвердить счёт матча','s6-desc':'После всех дисциплин — подтвердите счёт через RESULT. Формат: выигранные дисциплины каждой команды (напр. 3:2). Победа = 3 очка · Ничья = 1 · Поражение = 0. Standings обновляется автоматически.',
+    's7-title':'Проверить таблицу','s7-desc':'Вкладка Standings показывает полную таблицу: матчи, победы, поражения, дисциплины, очки. Топ-2 выходят в плей-офф. Публичная страница обновляется автоматически.'
+  },
+  es: {
+    't-title':'GUÍA DEL ORGANIZADOR ASL','t-sub':'Strongman Super League — paso a paso desde la configuración hasta los resultados',
+    'l-setup':'Configuración de liga','l-season':'Preparación de temporada','l-match':'Día de partido',
+    'ph-1':'— Configuración de liga —','ph-2':'— Preparación de temporada —','ph-3':'— Día de partido —',
+    's1-title':'Acceder a su liga','s1-desc':'La liga es creada por el administrador WSM. Usted recibe acceso como organizador. Abra ASL en el cabinet para ver su liga y divisiones.',
+    's2-title':'Crear divisiones','s2-desc':'Dentro de la liga cree divisiones — categorías de peso o grupos regionales. Cada una tiene su propia tabla, equipos y calendario.',
+    's3-title':'Agregar equipos a la división','s3-desc':'Seleccione equipos de la base de datos global WSM y agréguelos. La pestaña Teams muestra todos los equipos con logos y países.',
+    's4-title':'Programar partidos','s4-desc':'Cree partidos: seleccione equipos local y visitante, fecha y ronda. Asigne dos jueces — Juez 1 para local, Juez 2 para visitante. Seleccione disciplinas de las 8 estándar WSM.',
+    's5-title':'Abrir protocolo de partido','s5-desc':'Haga clic en PROTOCOL — abre la entrada disciplina por disciplina. Los jueces ingresan resultados de su lado. El marcador se actualiza automáticamente.',
+    's6-title':'Confirmar marcador','s6-desc':'Después de todas las disciplinas — confirme con RESULT. Formato: disciplinas ganadas (ej. 3:2). Victoria = 3 pts · Empate = 1 pt · Derrota = 0 pts.',
+    's7-title':'Verificar clasificación','s7-desc':'Standings muestra la tabla completa: partidos, victorias, derrotas, disciplinas, puntos. Los 2 mejores avanzan a playoffs.'
+  },
+  fr: {
+    't-title':'GUIDE DE L\'ORGANISATEUR ASL','t-sub':'Strongman Super League — étape par étape de la configuration aux résultats',
+    'l-setup':'Configuration de la ligue','l-season':'Préparation de la saison','l-match':'Jour de match',
+    'ph-1':'— Configuration de la ligue —','ph-2':'— Préparation de la saison —','ph-3':'— Jour de match —',
+    's1-title':'Accéder à votre ligue','s1-desc':'La ligue est créée par l\'administrateur WSM. Vous recevez l\'accès en tant qu\'organisateur. Ouvrez ASL dans le cabinet pour voir votre ligue et ses divisions.',
+    's2-title':'Créer des divisions','s2-desc':'Dans la ligue créez des divisions — catégories de poids ou groupes régionaux. Chacune a son propre classement, équipes et calendrier.',
+    's3-title':'Ajouter des équipes','s3-desc':'Sélectionnez des équipes dans la base de données WSM et ajoutez-les. L\'onglet Teams affiche toutes les équipes avec logos et pays.',
+    's4-title':'Planifier les matchs','s4-desc':'Créez des matchs: sélectionnez équipes domicile/extérieur, date et ronde. Assignez deux juges — Juge 1 pour domicile, Juge 2 pour extérieur. Choisissez parmi les 8 disciplines standard WSM.',
+    's5-title':'Ouvrir le protocole','s5-desc':'Cliquez sur PROTOCOL — ouvre la saisie discipline par discipline. Les juges saisissent les résultats de leur côté. Le score se met à jour automatiquement.',
+    's6-title':'Confirmer le score','s6-desc':'Après toutes les disciplines — confirmez avec RESULT. Format: disciplines gagnées (ex. 3:2). Victoire = 3 pts · Nul = 1 pt · Défaite = 0 pts.',
+    's7-title':'Vérifier le classement','s7-desc':'Standings affiche le tableau complet: matchs, victoires, défaites, disciplines, points. Les 2 meilleurs avancent en playoffs.'
+  }
+};
+function setLang(lang) {
+  ['en','ru','es','fr'].forEach(l => document.getElementById('btn-'+l).classList.toggle('active', l===lang));
+  for (const [id, val] of Object.entries(T[lang])) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = val;
+  }
+}
+</script>
+</body>
+</html>

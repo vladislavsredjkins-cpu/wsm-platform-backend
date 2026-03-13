@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organizer Guide — WSM Platform</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a0a; color:#fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.header { background:#0a0a0a; border-bottom:2px solid #c9a84c; padding:0 40px; display:flex; align-items:center; justify-content:space-between; height:60px; position:sticky; top:0; z-index:100; }
+.logo { color:#c9a84c; font-weight:900; font-size:16px; letter-spacing:3px; text-decoration:none; }
+.lang-btn { padding:6px 14px; background:transparent; border:1px solid #333; color:#666; border-radius:3px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:1px; transition:all 0.2s; }
+.lang-btn.active { border-color:#c9a84c; color:#c9a84c; }
+.print-btn { padding:6px 14px; background:#c9a84c; border:none; color:#000; border-radius:3px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:1px; }
+.container { max-width:860px; margin:0 auto; padding:40px 20px 80px; }
+.page-title { font-size:28px; font-weight:900; letter-spacing:3px; margin-bottom:6px; }
+.page-sub { color:#555; font-size:13px; letter-spacing:2px; margin-bottom:32px; }
+.legend { display:flex; gap:24px; margin-bottom:32px; flex-wrap:wrap; }
+.legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+.legend-dot { width:10px; height:10px; border-radius:50%; }
+.legend-dot.setup { background:#534ab7; }
+.legend-dot.register { background:#0f6e56; }
+.legend-dot.day { background:#854f0b; }
+.phase-title { font-size:10px; letter-spacing:4px; color:#333; margin:32px 0 16px; text-transform:uppercase; }
+.step { display:flex; gap:20px; margin-bottom:8px; position:relative; }
+.step:not(:last-child)::after { content:''; position:absolute; left:22px; top:52px; width:2px; height:calc(100% - 28px + 8px); background:#1a1a1a; }
+.step-num { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; flex-shrink:0; margin-top:4px; }
+.step-num.setup { background:rgba(83,74,183,0.15); color:#7f77dd; border:1px solid #534ab7; }
+.step-num.register { background:rgba(15,110,86,0.15); color:#1d9e75; border:1px solid #0f6e56; }
+.step-num.day { background:rgba(186,117,23,0.15); color:#ef9f27; border:1px solid #854f0b; }
+.step-body { background:#111; border:1px solid #1e1e1e; border-radius:6px; padding:16px 20px; flex:1; }
+.step-body.setup { border-left:3px solid #534ab7; }
+.step-body.register { border-left:3px solid #0f6e56; }
+.step-body.day { border-left:3px solid #854f0b; }
+.step-title { font-size:15px; font-weight:700; letter-spacing:1px; margin-bottom:4px; }
+.step-desc { color:#666; font-size:13px; line-height:1.7; }
+.step-tag { display:inline-block; padding:2px 8px; border-radius:2px; font-size:10px; font-weight:700; letter-spacing:1px; margin-top:8px; }
+.step-tag.setup { background:rgba(83,74,183,0.1); color:#7f77dd; }
+.step-tag.register { background:rgba(15,110,86,0.1); color:#1d9e75; }
+.step-tag.day { background:rgba(186,117,23,0.1); color:#ef9f27; }
+@media print {
+  body { background:#fff; color:#000; }
+  .header { display:none; }
+  .step-body { background:#f9f9f9 !important; border-color:#ddd !important; }
+  .step-desc { color:#444 !important; }
+  .phase-title { color:#888 !important; }
+  .legend-item { color:#444 !important; }
+  .page-sub { color:#888 !important; }
+}
+@media (max-width:600px) {
+  .header { padding:0 16px; }
+  .container { padding:24px 16px 60px; }
+  .page-title { font-size:20px; }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;"><img src="/static/logo.jpg" style="height:36px;width:36px;border-radius:50%;object-fit:cover;" alt="WSM"><div><div style="color:#c9a84c;font-weight:900;font-size:12px;letter-spacing:3px;">WORLD STRONGMAN</div><div style="color:#888;font-size:9px;letter-spacing:2px;">INTERNATIONAL UNION</div></div></a>
+  <a href="https://app.ranking.worldstrongman.org/organizer/competitions" style="color:#555;font-size:11px;letter-spacing:2px;text-decoration:none;border:1px solid #222;padding:6px 14px;border-radius:3px;">← CABINET</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <div style="display:flex;gap:8px;">
+      <button class="lang-btn active" onclick="setLang('en')" id="btn-en">EN</button>
+      <button class="lang-btn" onclick="setLang('ru')" id="btn-ru">RU</button>
+      <button class="lang-btn" onclick="setLang('es')" id="btn-es">ES</button>
+      <button class="lang-btn" onclick="setLang('fr')" id="btn-fr">FR</button>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨️ PDF</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="page-title" id="t-title">ORGANIZER GUIDE</div>
+  <div class="page-sub" id="t-sub">Step-by-step from setup to results</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot setup"></div><span id="l-setup">Setup phase</span></div>
+    <div class="legend-item"><div class="legend-dot register"></div><span id="l-register">Registration & publishing</span></div>
+    <div class="legend-item"><div class="legend-dot day"></div><span id="l-day">Competition day</span></div>
+  </div>
+
+  <div class="phase-title" id="ph-1">— Setup —</div>
+
+  <div class="step">
+    <div class="step-num setup">1</div>
+    <div class="step-body setup">
+      <div class="step-title" id="s1-title">Create competition</div>
+      <div class="step-desc" id="s1-desc">Fill in name, date, city, country and Q coefficient. Created with DRAFT status — not visible to the public yet.</div>
+      <span class="step-tag setup">My Competitions → + New</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num setup">2</div>
+    <div class="step-body setup">
+      <div class="step-title" id="s2-title">Add divisions</div>
+      <div class="step-desc" id="s2-desc">Create weight/age categories: Men Open, Women Open, Masters 40+, U23, -105kg etc. Each division has its own start list and results.</div>
+      <span class="step-tag setup">Divisions tab</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num setup">3</div>
+    <div class="step-body setup">
+      <div class="step-title" id="s3-title">Add disciplines</div>
+      <div class="step-desc" id="s3-desc">Add all events: Log Lift, Atlas Stones, Deadlift, etc. Set the order number for each. The last discipline can be marked as Final — start order uses reverse standings.</div>
+      <span class="step-tag setup">Disciplines tab</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num setup">4</div>
+    <div class="step-body setup">
+      <div class="step-title" id="s4-title">Add judges</div>
+      <div class="step-desc" id="s4-desc">Search and assign judges: Head Judge, Judge, Technical Delegate, Referee. They appear in the Official Panel on the public page.</div>
+      <span class="step-tag setup">Judges tab</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num setup">5</div>
+    <div class="step-body setup">
+      <div class="step-title" id="s5-title">Upload banner & sponsors</div>
+      <div class="step-desc" id="s5-desc">Upload competition banner (recommended 1200×400px). Add sponsors with logos and links — displayed on the public page.</div>
+      <span class="step-tag setup">Bottom of cabinet page</span>
+    </div>
+  </div>
+
+  <div class="phase-title" id="ph-2">— Registration & Publishing —</div>
+
+  <div class="step">
+    <div class="step-num register">6</div>
+    <div class="step-body register">
+      <div class="step-title" id="s6-title">Register athletes</div>
+      <div class="step-desc" id="s6-desc"><strong style="color:#fff">Option A:</strong> add manually via athlete search — assign BIB and bodyweight.<br><strong style="color:#fff">Option B:</strong> athlete applies via public page → appears as PENDING → Accept to add to start list.</div>
+      <span class="step-tag register">Athletes tab / Registrations tab</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num register">7</div>
+    <div class="step-body register">
+      <div class="step-title" id="s7-title">Publish competition</div>
+      <div class="step-desc" id="s7-desc">Press PUBLISH — the public page goes live. The REGISTER NOW button appears for athletes. Can be unpublished at any time.</div>
+      <span class="step-tag register">🌐 PUBLISH button in header</span>
+    </div>
+  </div>
+
+  <div class="phase-title" id="ph-3">— Competition Day —</div>
+
+  <div class="step">
+    <div class="step-num day">8</div>
+    <div class="step-body day">
+      <div class="step-title" id="s8-title">Draw</div>
+      <div class="step-desc" id="s8-desc">Open 🎲 DRAW on a projector. Press the button — athletes get lot numbers with animation. Discipline 1 start order = by lot number. Disciplines 2+ = automatic reverse by standings.</div>
+      <span class="step-tag day">🎲 DRAW button in header</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num day">9</div>
+    <div class="step-body day">
+      <div class="step-title" id="s9-title">Open live screens</div>
+      <div class="step-desc" id="s9-desc"><strong style="color:#fff">📺 LIVE SCREEN</strong> — add as browser source in OBS. Shows current athlete, discipline and standings.<br><strong style="color:#fff">🏋️ WARMUP SCREEN</strong> — display in warmup room showing who prepares next.</div>
+      <span class="step-tag day">📺 LIVE / 🏋️ WARMUP buttons</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num day">10</div>
+    <div class="step-body day">
+      <div class="step-title" id="s10-title">Enter results</div>
+      <div class="step-desc" id="s10-desc">Referee enters results via Referee App for each athlete per discipline. Standings and next discipline start order update automatically.</div>
+      <span class="step-tag day">Referee App</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num day">11</div>
+    <div class="step-body day">
+      <div class="step-title" id="s11-title">Protocol & certificates</div>
+      <div class="step-desc" id="s11-desc">Check Protocol tab for final results. Print official protocol via 🖨️ PROTOCOL. Send certificates via 📧 EMAIL ALL or print via 📜 CERTIFICATES.</div>
+      <span class="step-tag day">Protocol tab / Header buttons</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const T = {
+  en: {
+    't-title':'ORGANIZER GUIDE','t-sub':'Step-by-step from setup to results',
+    'l-setup':'Setup phase','l-register':'Registration & publishing','l-day':'Competition day',
+    'ph-1':'— Setup —','ph-2':'— Registration & Publishing —','ph-3':'— Competition Day —',
+    's1-title':'Create competition','s1-desc':'Fill in name, date, city, country and Q coefficient. Created with DRAFT status — not visible to the public yet.',
+    's2-title':'Add divisions','s2-desc':'Create weight/age categories: Men Open, Women Open, Masters 40+, U23, -105kg etc. Each division has its own start list and results.',
+    's3-title':'Add disciplines','s3-desc':'Add all events: Log Lift, Atlas Stones, Deadlift, etc. Set the order number for each. The last discipline can be marked as Final — start order uses reverse standings.',
+    's4-title':'Add judges','s4-desc':'Search and assign judges: Head Judge, Judge, Technical Delegate, Referee. They appear in the Official Panel on the public page.',
+    's5-title':'Upload banner & sponsors','s5-desc':'Upload competition banner (recommended 1200×400px). Add sponsors with logos and links — displayed on the public page.',
+    's6-title':'Register athletes','s6-desc':'<strong style="color:#fff">Option A:</strong> add manually via athlete search — assign BIB and bodyweight.<br><strong style="color:#fff">Option B:</strong> athlete applies via public page → appears as PENDING → Accept to add to start list.',
+    's7-title':'Publish competition','s7-desc':'Press PUBLISH — the public page goes live. The REGISTER NOW button appears for athletes. Can be unpublished at any time.',
+    's8-title':'Draw','s8-desc':'Open 🎲 DRAW on a projector. Press the button — athletes get lot numbers with animation. Discipline 1 start order = by lot number. Disciplines 2+ = automatic reverse by standings.',
+    's9-title':'Open live screens','s9-desc':'<strong style="color:#fff">📺 LIVE SCREEN</strong> — add as browser source in OBS. Shows current athlete, discipline and standings.<br><strong style="color:#fff">🏋️ WARMUP SCREEN</strong> — display in warmup room showing who prepares next.',
+    's10-title':'Enter results','s10-desc':'Referee enters results via Referee App for each athlete per discipline. Standings and next discipline start order update automatically.',
+    's11-title':'Protocol & certificates','s11-desc':'Check Protocol tab for final results. Print official protocol via 🖨️ PROTOCOL. Send certificates via 📧 EMAIL ALL or print via 📜 CERTIFICATES.'
+  },
+  ru: {
+    't-title':'РУКОВОДСТВО ОРГАНИЗАТОРА','t-sub':'Пошаговая инструкция от создания до результатов',
+    'l-setup':'Настройка','l-register':'Регистрация и публикация','l-day':'День соревнования',
+    'ph-1':'— Настройка —','ph-2':'— Регистрация и публикация —','ph-3':'— День соревнования —',
+    's1-title':'Создать соревнование','s1-desc':'Заполните название, дату, город, страну и коэффициент Q. Создаётся со статусом DRAFT — публике не видно.',
+    's2-title':'Добавить дивизионы','s2-desc':'Создайте весовые/возрастные категории: Men Open, Women Open, Masters 40+, U23, -105kg и т.д. У каждого дивизиона свой старт-лист и результаты.',
+    's3-title':'Добавить дисциплины','s3-desc':'Добавьте все снаряды: Log Lift, Atlas Stones, Deadlift и т.д. Установите порядковый номер каждой. Последняя может быть отмечена как Финальная — порядок старта реверсируется по местам.',
+    's4-title':'Добавить судей','s4-desc':'Найдите и назначьте судей: Главный судья, Судья, Тех. делегат, Рефери. Отображаются в блоке Official Panel на публичной странице.',
+    's5-title':'Баннер и спонсоры','s5-desc':'Загрузите баннер соревнования (рекомендуется 1200×400px). Добавьте спонсоров с логотипами и ссылками — видны на публичной странице.',
+    's6-title':'Зарегистрировать атлетов','s6-desc':'<strong style="color:#000">Вариант А:</strong> добавьте вручную через поиск по базе — укажите BIB и вес тела.<br><strong style="color:#000">Вариант Б:</strong> атлет подаёт заявку через публичную страницу → появляется со статусом PENDING → Accept для добавления в старт-лист.',
+    's7-title':'Опубликовать соревнование','s7-desc':'Нажмите PUBLISH — публичная страница становится доступна всем. Кнопка REGISTER NOW появляется для атлетов. Можно снять с публикации в любой момент.',
+    's8-title':'Жеребьёвка','s8-desc':'Откройте 🎲 DRAW на проекторе. Нажмите кнопку — атлеты получают лот-номера с анимацией. Дисциплина 1: порядок по лот-номерам. Дисциплины 2+: автоматический реверс по текущим местам.',
+    's9-title':'Открыть живые экраны','s9-desc':'<strong style="color:#000">📺 LIVE SCREEN</strong> — browser source в OBS для зрителей. Показывает текущего атлета, дисциплину и standings.<br><strong style="color:#000">🏋️ WARMUP SCREEN</strong> — экран в разминочном зале.',
+    's10-title':'Вводить результаты','s10-desc':'Рефери вводит результаты через Referee App для каждого атлета в каждой дисциплине. Standings и порядок старта следующей дисциплины обновляются автоматически.',
+    's11-title':'Протокол и сертификаты','s11-desc':'Проверьте вкладку Protocol для финальных результатов. Распечатайте протокол через 🖨️ PROTOCOL. Отправьте сертификаты через 📧 EMAIL ALL или распечатайте через 📜 CERTIFICATES.'
+  }
+,
+  es: {
+    't-title':'GUÍA DEL ORGANIZADOR','t-sub':'Paso a paso desde la configuración hasta los resultados',
+    'l-setup':'Configuración','l-register':'Registro y publicación','l-day':'Día de competición',
+    'ph-1':'— Configuración —','ph-2':'— Registro y publicación —','ph-3':'— Día de competición —',
+    's1-title':'Crear competición','s1-desc':'Complete nombre, fecha, ciudad, país y coeficiente Q. Se crea con estado DRAFT — no visible para el público.',
+    's2-title':'Agregar divisiones','s2-desc':'Cree categorías de peso/edad: Men Open, Women Open, Masters 40+, U23, -105kg etc. Cada división tiene su propia lista de salida y resultados.',
+    's3-title':'Agregar disciplinas','s3-desc':'Agregue todos los eventos: Log Lift, Atlas Stones, Deadlift, etc. Establezca el número de orden. La última puede marcarse como Final — el orden de salida usa clasificación inversa.',
+    's4-title':'Agregar jueces','s4-desc':'Busque y asigne jueces: Juez Principal, Juez, Delegado Técnico, Árbitro. Aparecen en el Panel Oficial de la página pública.',
+    's5-title':'Banner y patrocinadores','s5-desc':'Suba el banner de la competición (recomendado 1200×400px). Agregue patrocinadores con logos y enlaces — visibles en la página pública.',
+    's6-title':'Registrar atletas','s6-desc':'<strong style="color:#fff">Opción A:</strong> agregar manualmente mediante búsqueda — asigne BIB y peso corporal.<br><strong style="color:#fff">Opción B:</strong> el atleta solicita vía página pública → aparece como PENDING → Aceptar para añadir a la lista.',
+    's7-title':'Publicar competición','s7-desc':'Presione PUBLISH — la página pública se activa. El botón REGISTER NOW aparece para los atletas. Puede despublicarse en cualquier momento.',
+    's8-title':'Sorteo','s8-desc':'Abra 🎲 DRAW en un proyector. Presione el botón — los atletas reciben números de lote con animación. Disciplina 1: orden por número de lote. Disciplinas 2+: reversa automática por clasificación.',
+    's9-title':'Abrir pantallas en vivo','s9-desc':'<strong style="color:#fff">📺 LIVE SCREEN</strong> — fuente de navegador en OBS para el público. Muestra el atleta actual, disciplina y clasificación.<br><strong style="color:#fff">🏋️ WARMUP SCREEN</strong> — pantalla en sala de calentamiento.',
+    's10-title':'Introducir resultados','s10-desc':'El árbitro introduce resultados en la Referee App para cada atleta por disciplina. La clasificación y el orden de salida de la siguiente disciplina se actualizan automáticamente.',
+    's11-title':'Protocolo y certificados','s11-desc':'Revise la pestaña Protocol para resultados finales. Imprima el protocolo oficial con 🖨️ PROTOCOL. Envíe certificados con 📧 EMAIL ALL o imprima con 📜 CERTIFICATES.'
+  },
+  fr: {
+    't-title':'GUIDE DE L\'ORGANISATEUR','t-sub':'Étape par étape de la configuration aux résultats',
+    'l-setup':'Configuration','l-register':'Inscription et publication','l-day':'Jour de compétition',
+    'ph-1':'— Configuration —','ph-2':'— Inscription et publication —','ph-3':'— Jour de compétition —',
+    's1-title':'Créer une compétition','s1-desc':'Remplissez le nom, la date, la ville, le pays et le coefficient Q. Créée avec le statut DRAFT — non visible par le public.',
+    's2-title':'Ajouter des divisions','s2-desc':'Créez des catégories de poids/âge : Men Open, Women Open, Masters 40+, U23, -105kg etc. Chaque division a sa propre liste de départ et ses résultats.',
+    's3-title':'Ajouter des disciplines','s3-desc':'Ajoutez tous les événements : Log Lift, Atlas Stones, Deadlift, etc. Définissez le numéro d\'ordre. La dernière peut être marquée Finale — l\'ordre de départ utilise le classement inversé.',
+    's4-title':'Ajouter des juges','s4-desc':'Recherchez et assignez des juges : Juge Principal, Juge, Délégué Technique, Arbitre. Ils apparaissent dans le Panneau Officiel de la page publique.',
+    's5-title':'Bannière et sponsors','s5-desc':'Téléchargez la bannière de la compétition (recommandé 1200×400px). Ajoutez des sponsors avec logos et liens — visibles sur la page publique.',
+    's6-title':'Inscrire des athlètes','s6-desc':'<strong style="color:#fff">Option A :</strong> ajoutez manuellement via la recherche — attribuez BIB et poids corporel.<br><strong style="color:#fff">Option B :</strong> l\'athlète postule via la page publique → apparaît comme PENDING → Accepter pour ajouter à la liste.',
+    's7-title':'Publier la compétition','s7-desc':'Appuyez sur PUBLISH — la page publique est en ligne. Le bouton REGISTER NOW apparaît pour les athlètes. Peut être dépublié à tout moment.',
+    's8-title':'Tirage au sort','s8-desc':'Ouvrez 🎲 DRAW sur un projecteur. Appuyez sur le bouton — les athlètes reçoivent des numéros de lot avec animation. Discipline 1 : ordre par numéro de lot. Disciplines 2+ : inversion automatique par classement.',
+    's9-title':'Ouvrir les écrans en direct','s9-desc':'<strong style="color:#fff">📺 LIVE SCREEN</strong> — source navigateur dans OBS pour le public. Affiche l\'athlète actuel, la discipline et le classement.<br><strong style="color:#fff">🏋️ WARMUP SCREEN</strong> — écran en salle d\'échauffement.',
+    's10-title':'Saisir les résultats','s10-desc':'L\'arbitre saisit les résultats via la Referee App pour chaque athlète par discipline. Le classement et l\'ordre de départ de la prochaine discipline se mettent à jour automatiquement.',
+    's11-title':'Protocole et certificats','s11-desc':'Vérifiez l\'onglet Protocol pour les résultats finaux. Imprimez le protocole officiel via 🖨️ PROTOCOL. Envoyez les certificats via 📧 EMAIL ALL ou imprimez via 📜 CERTIFICATES.'
+  }
+};
+function setLang(lang) {
+  document.getElementById('btn-en').classList.toggle('active', lang==='en');
+  document.getElementById('btn-ru').classList.toggle('active', lang==='ru');
+  document.getElementById('btn-es').classList.toggle('active', lang==='es');
+  document.getElementById('btn-fr').classList.toggle('active', lang==='fr');
+  for (const [id, val] of Object.entries(T[lang])) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = val;
+  }
+}
+</script>
+</body>
+</html>

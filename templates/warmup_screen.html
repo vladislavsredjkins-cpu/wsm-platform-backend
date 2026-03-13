@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WARM-UP — {{ competition.name }}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; font-family:'Arial Black',Arial,sans-serif; color:#fff; min-height:100vh; }
+
+.header {
+  text-align:center; padding:24px; border-bottom:2px solid #1a1a1a;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.comp-name { font-size:24px; font-weight:900; letter-spacing:5px; color:#c9a84c; }
+.clock { font-size:36px; font-weight:900; letter-spacing:4px; color:#fff; }
+.disc-name { font-size:14px; letter-spacing:4px; color:#555; }
+
+.cards { padding:30px 40px; display:flex; flex-direction:column; gap:16px; }
+
+.athlete-card {
+  border-radius:6px; padding:28px 36px;
+  display:grid; grid-template-columns:100px 1fr auto;
+  align-items:center; gap:24px;
+  transition: all 0.3s;
+}
+.athlete-card.on-stage {
+  background:linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05));
+  border:2px solid #c9a84c;
+}
+.athlete-card.on-deck {
+  background:#0d0d0d; border:1px solid #2a2a2a;
+}
+.athlete-card.in-hole {
+  background:#080808; border:1px solid #111; opacity:0.7;
+}
+.athlete-card.done {
+  background:#050505; border:1px solid #0a0a0a; opacity:0.3;
+}
+
+.start-num { font-size:72px; font-weight:900; line-height:1; }
+.on-stage .start-num { color:#c9a84c; }
+.on-deck .start-num { color:#444; }
+.in-hole .start-num { color:#222; }
+.done .start-num { color:#111; }
+
+.athlete-info .name { font-size:36px; font-weight:900; letter-spacing:3px; text-transform:uppercase; }
+.athlete-info .country { font-size:16px; letter-spacing:4px; color:#666; margin-top:6px; }
+.on-stage .athlete-info .name { color:#fff; }
+.done .athlete-info .name { color:#222; text-decoration:line-through; }
+
+.status-badge {
+  font-size:13px; letter-spacing:3px; font-weight:900;
+  padding:8px 16px; border-radius:3px; text-transform:uppercase; white-space:nowrap;
+}
+.badge-stage { background:#c9a84c; color:#000; }
+.badge-deck { background:transparent; border:1px solid #333; color:#555; }
+.badge-hole { background:transparent; border:1px solid #1a1a1a; color:#333; }
+.badge-done { background:transparent; color:#111; }
+
+.controls {
+  position:fixed; bottom:0; left:0; right:0;
+  display:flex; gap:0; border-top:1px solid #1a1a1a;
+}
+.ctrl-btn {
+  flex:1; padding:20px; border:none; font-size:14px; font-weight:900;
+  letter-spacing:3px; cursor:pointer; text-transform:uppercase;
+}
+.ctrl-prev { background:#111; color:#555; }
+.ctrl-next { background:#c9a84c; color:#000; font-size:18px; }
+
+.div-bar { display:flex; gap:0; border-bottom:1px solid #111; }
+.div-btn { flex:1; padding:14px; text-align:center; font-size:11px; letter-spacing:3px; color:#444; cursor:pointer; border-bottom:2px solid transparent; }
+.div-btn.active { color:#c9a84c; border-bottom-color:#c9a84c; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="comp-name">{{ competition.name }}</div>
+    <div class="disc-name" id="disc-label">—</div>
+  </div>
+  <div class="clock" id="clock">00:00</div>
+</div>
+
+<div class="div-bar" id="div-bar"></div>
+<div class="cards" id="cards" style="padding-bottom:80px;"></div>
+
+<div class="controls">
+  <button class="ctrl-btn ctrl-prev" onclick="prevAthlete()">◀ PREV</button>
+  <button class="ctrl-btn ctrl-next" onclick="nextAthlete()">NEXT ATHLETE ▶</button>
+</div>
+
+<script>
+const competitionId = '{{ competition.id }}';
+let data = null;
+let currentDivIdx = 0;
+let currentDiscIdx = 0;
+let currentStartPos = 1;
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.getHours().toString().padStart(2,'0') + ':' +
+    now.getMinutes().toString().padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+async function loadData() {
+  const res = await fetch(`/competitions/${competitionId}/live-data`);
+  data = await res.json();
+  renderDivBar();
+  render();
+}
+
+function renderDivBar() {
+  document.getElementById('div-bar').innerHTML = data.divisions.map((d,i) =>
+    `<div class="div-btn ${i===currentDivIdx?'active':''}" onclick="switchDiv(${i})">${d.division_name}</div>`
+  ).join('');
+}
+
+function switchDiv(idx) {
+  currentDivIdx = idx; currentDiscIdx = 0; currentStartPos = 1;
+  renderDivBar(); render();
+}
+
+function render() {
+  const div = data.divisions[currentDivIdx];
+  if (!div || !div.disciplines.length) return;
+  const disc = div.disciplines[currentDiscIdx];
+
+  document.getElementById('disc-label').textContent = disc ? disc.name : '—';
+
+  const ordered = [...div.participants].sort((a,b) => {
+    const ao = disc ? (disc.start_order[a.participant_id] || 999) : 999;
+    const bo = disc ? (disc.start_order[b.participant_id] || 999) : 999;
+    return ao - bo;
+  });
+
+  document.getElementById('cards').innerHTML = ordered.map((p, idx) => {
+    const pos = idx + 1;
+    let cardClass, badgeClass, badgeText;
+    if (pos < currentStartPos) {
+      cardClass = 'done'; badgeClass = 'badge-done'; badgeText = '✓ DONE';
+    } else if (pos === currentStartPos) {
+      cardClass = 'on-stage'; badgeClass = 'badge-stage'; badgeText = '⚡ ON STAGE';
+    } else if (pos === currentStartPos + 1) {
+      cardClass = 'on-deck'; badgeClass = 'badge-deck'; badgeText = '● ON DECK';
+    } else if (pos === currentStartPos + 2) {
+      cardClass = 'in-hole'; badgeClass = 'badge-hole'; badgeText = '○ IN HOLE';
+    } else {
+      cardClass = 'in-hole'; badgeClass = 'badge-hole'; badgeText = `— ${pos}`;
+    }
+
+    return `<div class="athlete-card ${cardClass}">
+      <div class="start-num">${pos}</div>
+      <div class="athlete-info">
+        <div class="name">${countryFlag(p.country)} ${p.first_name} ${p.last_name}</div>
+        <div class="country">${p.country||''} · BIB #${p.bib_no||'—'}</div>
+      </div>
+      <div class="status-badge ${badgeClass}">${badgeText}</div>
+    </div>`;
+  }).join('');
+}
+
+function nextAthlete() {
+  const div = data.divisions[currentDivIdx];
+  if (currentStartPos < div.participants.length) { currentStartPos++; render(); }
+}
+function prevAthlete() {
+  if (currentStartPos > 1) { currentStartPos--; render(); }
+}
+
+function countryFlag(code) {
+  if (!code || code.length < 2) return '';
+  const iso2 = {LAT:'LV',RUS:'RU',USA:'US',GBR:'GB',FIN:'FI',NOR:'NO',SWE:'SE',EST:'EE',LTU:'LT',UKR:'UA',KAZ:'KZ',BLR:'BY',POL:'PL',GER:'DE',FRA:'FR',ITA:'IT',ESP:'ES',AUS:'AU',CAN:'CA',BRA:'BR',UAE:'AE'};
+  const c = iso2[code] || code.slice(0,2);
+  return c.toUpperCase().replace(/./g, ch => String.fromCodePoint(0x1F1E6-65+ch.charCodeAt(0)));
+}
+
+loadData();
+setInterval(loadData, 15000);
+</script>
+</body>
+</html>

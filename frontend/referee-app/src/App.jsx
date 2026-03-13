@@ -14,7 +14,9 @@ import JudgeProfile from './pages/judge/Profile';
 import CoachProfile from './pages/coach/Profile';
 import TeamProfile from './pages/team/Profile';
 import ASLDashboard from './pages/asl/ASLDashboard';
+import ASLJudgeDashboard from './pages/asl/ASLJudgeDashboard';
 import ASLDivision from './pages/asl/ASLDivision';
+import ASLMatch from './pages/asl/ASLMatch';
 // Organizer
 import OrganizerCompetitions from './pages/organizer/Competitions';
 import OrganizerCompetitionDetail from './pages/organizer/CompetitionDetail';
@@ -49,10 +51,10 @@ export default function App() {
       <Route path="/judge/profile" element={<ProtectedRoute><JudgeProfile /></ProtectedRoute>} />
       <Route path="/coach/profile" element={<ProtectedRoute><CoachProfile /></ProtectedRoute>} />
       <Route path="/team/profile" element={<ProtectedRoute><TeamProfile /></ProtectedRoute>} />
-      <Route path="/asl" element={<ProtectedRoute><ASLDashboard /></ProtectedRoute>} />
+      <Route path="/asl/judge" element={<ProtectedRoute><ASLJudgeDashboard /></ProtectedRoute>} />
       <Route path="/asl/divisions/:divisionId" element={<ProtectedRoute><ASLDivision /></ProtectedRoute>} />
+      <Route path="/asl/matches/:matchId" element={<ProtectedRoute><ASLMatch /></ProtectedRoute>} />
       <Route path="/asl" element={<ProtectedRoute><ASLDashboard /></ProtectedRoute>} />
-      <Route path="/asl/divisions/:divisionId" element={<ProtectedRoute><ASLDivision /></ProtectedRoute>} />
       <Route path="/organizer/competitions" element={<ProtectedRoute><OrganizerCompetitions /></ProtectedRoute>} />
       <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><OrganizerCompetitionDetail /></ProtectedRoute>} />
 

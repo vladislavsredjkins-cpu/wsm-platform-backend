@@ -17,4 +17,6 @@ class Match(Base):
     away_score = Column(Integer, default=0)
     status = Column(String(20), default="scheduled")  # scheduled / completed / cancelled
     round_number = Column(Integer, nullable=True)  # 1-6 (double round robin)
+    judge_id = Column(UUID(as_uuid=True), nullable=True)
+    judge2_id = Column(UUID(as_uuid=True), nullable=True)
     discipline_results = relationship("MatchDisciplineResult", back_populates="match")

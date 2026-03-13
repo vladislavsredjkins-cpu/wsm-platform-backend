@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import sqlalchemy as sa
 from db.database import SessionLocal
@@ -444,6 +444,14 @@ async def asl_division_page(division_id: str, request: Request):
     })
 
 
+@app.get("/asl/help")
+async def asl_help(request: Request):
+    return templates.TemplateResponse("asl_help.html", {"request": request})
+
+@app.get("/asl/match-help")
+async def asl_match_help(request: Request):
+    return templates.TemplateResponse("asl_match_help.html", {"request": request})
+
 @app.get("/asl/{league_id}")
 async def asl_home(league_id: str, request: Request):
     from sqlalchemy import select
@@ -762,12 +770,30 @@ async def competition_page(competition_id: str, request: Request):
         except Exception:
             pass
 
+    # Competition judges
+    judges = []
+    try:
+        from models.judge_competition import JudgeCompetition
+        from models.judge import Judge
+        judges_result = await db.execute(
+            select(JudgeCompetition, Judge)
+            .join(Judge, JudgeCompetition.judge_id == Judge.id)
+            .where(JudgeCompetition.competition_id == uuid.UUID(competition_id))
+        )
+        judges = [
+            {"role": jc.role, "first_name": j.first_name, "last_name": j.last_name, "country": j.country}
+            for jc, j in judges_result.all()
+        ]
+    except Exception:
+        pass
+
     return templates.TemplateResponse("competition_page.html", {
         "request": request,
         "competition": comp,
         "divisions_data": divisions_data,
         "organizer": organizer,
         "sponsors": sponsors,
+        "judges": judges,
     })
 
 
@@ -1954,3 +1980,336 @@ async def send_certificates(competition_id: str, request: Request):
                     errors.append({"email": ath.email, "error": str(e), "trace": traceback.format_exc()})
 
     return {"sent": sent, "errors": errors, "total": len(sent)}
+
+# ── DRAW SHOW PAGE ─────────────────────────────────────────────
+@app.get("/competitions/{competition_id}/draw")
+async def draw_show(competition_id: str, request: Request):
+    import uuid
+    async with SessionLocal() as db:
+        from models.competition import Competition
+        from models.competition_division import CompetitionDivision
+        from models.participant import Participant
+        from models.athlete import Athlete
+
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            return RedirectResponse("/competitions-list")
+
+        divs_result = await db.execute(
+            select(CompetitionDivision).where(CompetitionDivision.competition_id == uuid.UUID(competition_id))
+        )
+        divisions = divs_result.scalars().all()
+
+        divisions_data = []
+        for d in divisions:
+            parts_result = await db.execute(
+                select(Participant, Athlete)
+                .join(Athlete, Participant.athlete_id == Athlete.id)
+                .where(Participant.competition_division_id == d.id)
+            )
+            participants = [
+                {
+                    "participant_id": str(p.id),
+                    "athlete_id": str(a.id),
+                    "first_name": a.first_name,
+                    "last_name": a.last_name,
+                    "country": a.country,
+                    "bib_no": p.bib_no,
+                    "lot_number": p.lot_number,
+                }
+                for p, a in parts_result.all()
+            ]
+            divisions_data.append({"division": d, "participants": participants})
+
+        public_url = f"https://ranking.worldstrongman.org/competitions/{competition_id}/page"
+        return templates.TemplateResponse("draw_show.html", {
+            "request": request,
+            "competition": comp,
+            "divisions_data": divisions_data,
+            "public_url": public_url,
+        })
+
+# ── DRAW API ────────────────────────────────────────────────────
+@app.post("/competitions/{competition_id}/divisions/{division_id}/draw/auto")
+async def draw_auto(competition_id: str, division_id: str, discipline_order: int = 1):
+    import uuid, random
+    from models.participant import Participant
+    from models.discipline_result import DisciplineResult
+    from models.competition_discipline import CompetitionDiscipline
+    async with SessionLocal() as db:
+        parts_result = await db.execute(
+            select(Participant).where(Participant.competition_division_id == uuid.UUID(division_id))
+        )
+        participants = parts_result.scalars().all()
+        if discipline_order == 1:
+            random.shuffle(participants)
+            for i, p in enumerate(participants, 1):
+                p.lot_number = i
+        else:
+            # получаем все дисциплины дивизиона
+            discs_result = await db.execute(
+                select(CompetitionDiscipline)
+                .where(CompetitionDiscipline.competition_division_id == uuid.UUID(division_id))
+                .order_by(CompetitionDiscipline.order_no)
+            )
+            discs = discs_result.scalars().all()
+            is_last = discipline_order == len(discs)
+            if is_last:
+                # последняя дисциплина — реверс по общим очкам
+                from models.overall_standing import OverallStanding
+                standings_result = await db.execute(
+                    select(OverallStanding)
+                    .where(OverallStanding.competition_division_id == uuid.UUID(division_id))
+                )
+                standings = {str(s.participant_id): s.total_points for s in standings_result.scalars().all()}
+                participants.sort(key=lambda p: standings.get(str(p.id), 0), reverse=True)
+                for i, p in enumerate(participants, 1):
+                    p.lot_number = i
+            elif len(discs) >= discipline_order - 1:
+                # дисциплина 2+ — реверс по результатам предыдущей дисциплины
+                prev_disc = discs[discipline_order - 2]
+                results_result = await db.execute(
+                    select(DisciplineResult).where(DisciplineResult.competition_discipline_id == prev_disc.id)
+                )
+                results = {str(r.participant_id): r.standing_place for r in results_result.scalars().all()}
+                participants.sort(key=lambda p: results.get(str(p.id), 999), reverse=True)
+                for i, p in enumerate(participants, 1):
+                    p.lot_number = i
+        await db.commit()
+        return {"ok": True, "order": [{"participant_id": str(p.id), "lot_number": p.lot_number} for p in participants]}
+
+@app.patch("/competitions/{competition_id}/divisions/{division_id}/draw")
+async def draw_save(competition_id: str, division_id: str, request: Request):
+    import uuid
+    from models.participant import Participant
+    body = await request.json()
+    order = body if isinstance(body, list) else body.get("order", [])
+    async with SessionLocal() as db:
+        for item in order:
+            p = await db.get(Participant, uuid.UUID(item["participant_id"]))
+            if p:
+                p.lot_number = item["lot_number"]
+        await db.commit()
+        return {"ok": True}
+
+@app.get("/competitions/{competition_id}/divisions/{division_id}/draw")
+async def draw_get(competition_id: str, division_id: str):
+    import uuid
+    from models.participant import Participant
+    from models.athlete import Athlete
+    async with SessionLocal() as db:
+        parts_result = await db.execute(
+            select(Participant, Athlete)
+            .join(Athlete, Participant.athlete_id == Athlete.id)
+            .where(Participant.competition_division_id == uuid.UUID(division_id))
+            .order_by(Participant.lot_number, Participant.bib_no)
+        )
+        return [
+            {
+                "participant_id": str(p.id),
+                "first_name": a.first_name,
+                "last_name": a.last_name,
+                "country": a.country,
+                "lot_number": p.lot_number,
+                "bib_no": p.bib_no,
+            }
+            for p, a in parts_result.all()
+        ]
+
+# ── LIVE SCREEN ─────────────────────────────────────────────────
+@app.get("/competitions/{competition_id}/live-screen")
+async def live_screen(competition_id: str, request: Request):
+    import uuid
+    from db.database import SessionLocal
+    from models.competition import Competition
+    from models.competition_division import CompetitionDivision
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            return RedirectResponse("/competitions-list")
+        divs_result = await db.execute(
+            select(CompetitionDivision).where(CompetitionDivision.competition_id == uuid.UUID(competition_id))
+        )
+        divisions_data = [{"division": d} for d in divs_result.scalars().all()]
+        return templates.TemplateResponse("live_screen.html", {
+            "request": request,
+            "competition": comp,
+            "divisions_data": divisions_data,
+        })
+
+# ── WARMUP SCREEN ───────────────────────────────────────────────
+@app.get("/competitions/{competition_id}/warmup-screen")
+async def warmup_screen(competition_id: str, request: Request):
+    import uuid
+    from db.database import SessionLocal
+    from models.competition import Competition
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            return RedirectResponse("/competitions-list")
+        return templates.TemplateResponse("warmup_screen.html", {
+            "request": request,
+            "competition": comp,
+        })
+
+# ============ COMPETITION REGISTRATIONS ============
+
+@app.get("/competitions/{competition_id}/registrations")
+async def get_registrations(competition_id: str):
+    import uuid
+    from models.competition_registration import CompetitionRegistration
+    from sqlalchemy import select
+    async with SessionLocal() as db:
+        res = await db.execute(
+            select(CompetitionRegistration)
+            .where(CompetitionRegistration.competition_id == uuid.UUID(competition_id))
+            .order_by(CompetitionRegistration.created_at.desc())
+        )
+        regs = res.scalars().all()
+        return [{
+            "id": str(r.id),
+            "athlete_id": str(r.athlete_id) if r.athlete_id else None,
+            "division_key": r.division_key,
+            "first_name": r.first_name,
+            "last_name": r.last_name,
+            "country": r.country,
+            "email": r.email,
+            "phone": r.phone,
+            "notes": r.notes,
+            "status": r.status,
+            "reject_reason": r.reject_reason,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        } for r in regs]
+
+@app.post("/competitions/{competition_id}/registrations/check-email")
+async def check_athlete_email(competition_id: str, data: dict):
+    from models.athlete import Athlete
+    from sqlalchemy import select
+    email = data.get("email", "").strip().lower()
+    if not email:
+        return {"found": False}
+    async with SessionLocal() as db:
+        res = await db.execute(select(Athlete).where(Athlete.email == email))
+        athlete = res.scalar_one_or_none()
+        if athlete:
+            return {"found": True, "athlete": {"id": str(athlete.id), "first_name": athlete.first_name, "last_name": athlete.last_name, "country": athlete.country, "email": athlete.email}}
+        return {"found": False}
+
+@app.post("/competitions/{competition_id}/register")
+async def submit_registration(competition_id: str, data: dict):
+    import uuid
+    from datetime import datetime
+    from models.competition_registration import CompetitionRegistration
+    from models.athlete import Athlete
+    from sqlalchemy import select
+    async with SessionLocal() as db:
+        athlete_id = None
+        if data.get("athlete_id"):
+            athlete_id = uuid.UUID(data["athlete_id"])
+        elif data.get("email"):
+            res = await db.execute(select(Athlete).where(Athlete.email == data["email"].strip().lower()))
+            existing = res.scalar_one_or_none()
+            if existing:
+                athlete_id = existing.id
+            else:
+                new_athlete = Athlete(
+                    first_name=data.get("first_name", ""),
+                    last_name=data.get("last_name", ""),
+                    country=data.get("country"),
+                    email=data["email"].strip().lower(),
+                    phone=data.get("phone"),
+                )
+                db.add(new_athlete)
+                await db.flush()
+                athlete_id = new_athlete.id
+        reg = CompetitionRegistration(
+            competition_id=uuid.UUID(competition_id),
+            athlete_id=athlete_id,
+            division_key=data.get("division_key"),
+            first_name=data.get("first_name", ""),
+            last_name=data.get("last_name", ""),
+            country=data.get("country"),
+            email=data.get("email"),
+            phone=data.get("phone"),
+            notes=data.get("notes"),
+            status="PENDING",
+            created_at=datetime.utcnow(),
+        )
+        db.add(reg)
+        await db.commit()
+        return {"id": str(reg.id), "status": "PENDING"}
+
+@app.patch("/competitions/{competition_id}/registrations/{reg_id}")
+async def update_registration(competition_id: str, reg_id: str, data: dict):
+    import uuid
+    from models.competition_registration import CompetitionRegistration
+    from models.participant import Participant
+    from models.competition_division import CompetitionDivision
+    from sqlalchemy import select
+    async with SessionLocal() as db:
+        res = await db.execute(select(CompetitionRegistration).where(CompetitionRegistration.id == uuid.UUID(reg_id)))
+        reg = res.scalar_one_or_none()
+        if not reg:
+            raise HTTPException(404, "Not found")
+        status = data.get("status")
+        reg.status = status
+        if data.get("reject_reason"):
+            reg.reject_reason = data["reject_reason"]
+        if status == "ACCEPTED" and reg.athlete_id:
+            div_res = await db.execute(
+                select(CompetitionDivision).where(
+                    CompetitionDivision.competition_id == uuid.UUID(competition_id),
+                    CompetitionDivision.division_key == reg.division_key
+                )
+            )
+            div = div_res.scalar_one_or_none()
+            if div:
+                participant = Participant(
+                    competition_division_id=div.id,
+                    athlete_id=reg.athlete_id,
+                )
+                db.add(participant)
+        db.add(reg)
+        await db.commit()
+
+        # Send email notification
+        if reg.email:
+            try:
+                import resend
+                comp_res = await db.execute(select(Competition).where(Competition.id == uuid.UUID(competition_id)))
+                comp = comp_res.scalar_one_or_none()
+                comp_name = comp.name if comp else "Competition"
+                if status == "ACCEPTED":
+                    subject = f"✅ Application Accepted — {comp_name}"
+                    html = f"""<div style="font-family:sans-serif;max-width:500px;margin:0 auto;background:#0a0a0a;color:#fff;padding:32px;border-radius:8px;">
+                        <div style="color:#c9a84c;font-size:12px;letter-spacing:3px;margin-bottom:16px;">WORLD STRONGMAN</div>
+                        <h2 style="margin:0 0 16px;">Your application has been accepted!</h2>
+                        <p style="color:#888;">You are officially registered for <strong style="color:#fff;">{comp_name}</strong>.</p>
+                        <p style="color:#888;">Division: <strong style="color:#c9a84c;">{reg.division_key or '—'}</strong></p>
+                        <p style="color:#555;font-size:12px;margin-top:24px;">World Strongman Platform</p>
+                    </div>"""
+                else:
+                    subject = f"❌ Application Update — {comp_name}"
+                    reason = reg.reject_reason or "No reason provided"
+                    html = f"""<div style="font-family:sans-serif;max-width:500px;margin:0 auto;background:#0a0a0a;color:#fff;padding:32px;border-radius:8px;">
+                        <div style="color:#c9a84c;font-size:12px;letter-spacing:3px;margin-bottom:16px;">WORLD STRONGMAN</div>
+                        <h2 style="margin:0 0 16px;">Application Status Update</h2>
+                        <p style="color:#888;">Your application for <strong style="color:#fff;">{comp_name}</strong> was not accepted.</p>
+                        <p style="color:#888;">Reason: <strong style="color:#fff;">{reason}</strong></p>
+                        <p style="color:#555;font-size:12px;margin-top:24px;">World Strongman Platform</p>
+                    </div>"""
+                resend.Emails.send({
+                    "from": "WSM Platform <noreply@ranking.worldstrongman.org>",
+                    "to": reg.email,
+                    "subject": subject,
+                    "html": html,
+                })
+            except Exception as e:
+                print(f"Email error: {e}")
+
+        return {"id": str(reg.id), "status": reg.status}
+
+@app.get("/organizer/help")
+async def organizer_help(request: Request):
+    return templates.TemplateResponse("organizer_help.html", {"request": request})
+

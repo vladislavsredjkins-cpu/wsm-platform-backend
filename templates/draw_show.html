@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRAW — {{ competition.name }}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    font-family: 'Arial Black', Arial, sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .header {
+    text-align: center;
+    padding: 30px 0 10px;
+  }
+  .header .comp-name {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    color: #c9a84c;
+    text-transform: uppercase;
+  }
+  .header .division-name {
+    font-size: 22px;
+    letter-spacing: 6px;
+    color: #888;
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  /* STAGE: READY */
+  #stage-ready {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 70vh;
+    gap: 40px;
+  }
+  .draw-btn {
+    padding: 28px 80px;
+    background: #c9a84c;
+    color: #000;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: transform 0.1s;
+    animation: pulse 2s infinite;
+  }
+  .draw-btn:hover { transform: scale(1.05); }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.4); }
+    50% { box-shadow: 0 0 0 20px rgba(201,168,76,0); }
+  }
+  .athletes-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    max-width: 1200px;
+    padding: 0 40px;
+  }
+  .athlete-chip {
+    background: #111;
+    border: 1px solid #222;
+    padding: 10px 20px;
+    border-radius: 3px;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: #aaa;
+  }
+
+  /* STAGE: SHUFFLE */
+  #stage-shuffle {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 70vh;
+  }
+  .shuffle-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    max-width: 1200px;
+    padding: 0 40px;
+  }
+  .shuffle-card {
+    width: 180px;
+    height: 110px;
+    background: #111;
+    border: 2px solid #c9a84c;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    animation: shake 0.3s infinite alternate;
+    transition: all 0.3s;
+  }
+  .shuffle-card .flag { font-size: 28px; margin-bottom: 6px; }
+  @keyframes shake {
+    0% { transform: translateX(-3px) rotate(-1deg); }
+    100% { transform: translateX(3px) rotate(1deg); }
+  }
+  .countdown {
+    font-size: 120px;
+    font-weight: 900;
+    color: #c9a84c;
+    animation: countPulse 1s ease-in-out;
+  }
+  @keyframes countPulse {
+    0% { transform: scale(1.5); opacity: 0; }
+    50% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.8); opacity: 0; }
+  }
+
+  /* STAGE: REVEAL */
+  #stage-reveal {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 40px;
+  }
+  .result-title {
+    font-size: 14px;
+    letter-spacing: 6px;
+    color: #c9a84c;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+  }
+  .result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 900px;
+  }
+  .result-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 120px;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #111;
+    opacity: 0;
+    transform: translateX(-60px);
+    transition: all 0.5s ease;
+  }
+  .result-row.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  .result-row:nth-child(1) { background: rgba(201,168,76,0.08); }
+  .lot-num {
+    font-size: 48px;
+    font-weight: 900;
+    color: #c9a84c;
+    line-height: 1;
+  }
+  .athlete-info .name {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .athlete-info .country {
+    font-size: 13px;
+    color: #666;
+    letter-spacing: 3px;
+    margin-top: 4px;
+  }
+  .bib { font-size: 20px; color: #444; letter-spacing: 2px; text-align: right; }
+
+  /* QR */
+  .qr-block {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 1s;
+  }
+  .qr-block.visible { opacity: 1; }
+  .qr-block img { width: 120px; height: 120px; }
+  .qr-block p { font-size: 10px; letter-spacing: 2px; color: #444; margin-top: 6px; }
+
+  /* STARS */
+  .stars {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: #c9a84c;
+    border-radius: 50%;
+    animation: twinkle 3s infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 0.6; }
+  }
+
+  #stage-ready, #stage-shuffle, #stage-reveal { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+
+<!-- Stars background -->
+<div class="stars" id="stars"></div>
+
+<div class="header">
+  <div class="comp-name">{{ competition.name }}</div>
+  <div class="division-name" id="division-title">SELECT DIVISION</div>
+</div>
+
+<!-- Division selector -->
+<div id="div-selector" style="text-align:center;margin:16px 0;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+  {% for dd in divisions_data %}
+  <button onclick="selectDivision('{{ dd.division.id }}', '{{ dd.division.name }}')"
+    style="padding:10px 24px;background:#111;border:1px solid #333;color:#888;font-size:12px;letter-spacing:3px;cursor:pointer;border-radius:3px;text-transform:uppercase;"
+    id="divbtn-{{ dd.division.id }}">
+    {{ dd.division.name }}
+  </button>
+  {% endfor %}
+</div>
+
+<!-- STAGE 1: READY -->
+<div id="stage-ready">
+  <div class="athletes-preview" id="athletes-preview">
+    <div style="color:#333;letter-spacing:3px;font-size:14px;">SELECT DIVISION TO BEGIN</div>
+  </div>
+  <button class="draw-btn" id="draw-btn" onclick="startDraw()" disabled style="opacity:0.3;">
+    ⚡ START DRAW
+  </button>
+</div>
+
+<!-- STAGE 2: SHUFFLE -->
+<div id="stage-shuffle">
+  <div class="countdown" id="countdown" style="display:none;"></div>
+  <div class="shuffle-cards" id="shuffle-cards"></div>
+</div>
+
+<!-- STAGE 3: REVEAL -->
+<div id="stage-reveal">
+  <div class="result-title">STARTING ORDER</div>
+  <div class="result-list" id="result-list"></div>
+</div>
+
+<!-- QR Code -->
+<div class="qr-block" id="qr-block">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&color=c9a84c&bgcolor=000000&data={{ public_url }}" />
+  <p>SCAN FOR START ORDER</p>
+</div>
+
+<script>
+const competitionId = '{{ competition.id }}';
+let currentDivisionId = null;
+let currentAthletes = [];
+
+// Generate stars
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.left = Math.random() * 100 + '%';
+  s.style.top = Math.random() * 100 + '%';
+  s.style.animationDelay = Math.random() * 3 + 's';
+  s.style.opacity = Math.random() * 0.5;
+  starsEl.appendChild(s);
+}
+
+async function selectDivision(divId, divName) {
+  currentDivisionId = divId;
+  document.getElementById('division-title').textContent = divName;
+
+  // Highlight button
+  document.querySelectorAll('[id^=divbtn-]').forEach(b => {
+    b.style.borderColor = '#333'; b.style.color = '#888';
+  });
+  const btn = document.getElementById('divbtn-' + divId);
+  btn.style.borderColor = '#c9a84c'; btn.style.color = '#c9a84c';
+
+  // Load athletes
+  const res = await fetch(`/competitions/${competitionId}/divisions/${divId}/participants`);
+  const data = await res.json();
+  currentAthletes = data;
+
+  const preview = document.getElementById('athletes-preview');
+  preview.innerHTML = data.map(a =>
+    `<div class="athlete-chip">${a.first_name} ${a.last_name} <span style="color:#555">${a.country||''}</span></div>`
+  ).join('');
+
+  const drawBtn = document.getElementById('draw-btn');
+  drawBtn.disabled = false;
+  drawBtn.style.opacity = '1';
+
+  // Reset to stage 1
+  showStage('ready');
+}
+
+function showStage(stage) {
+  document.getElementById('stage-ready').style.display = stage === 'ready' ? 'flex' : 'none';
+  document.getElementById('stage-shuffle').style.display = stage === 'shuffle' ? 'flex' : 'none';
+  document.getElementById('stage-reveal').style.display = stage === 'reveal' ? 'flex' : 'none';
+}
+
+async function startDraw() {
+  if (!currentDivisionId) return;
+  showStage('shuffle');
+
+  // Show shuffling cards
+  const cards = document.getElementById('shuffle-cards');
+  cards.innerHTML = currentAthletes.map(a =>
+    `<div class="shuffle-card">
+      <div class="flag">${countryFlag(a.country)}</div>
+      <div>${a.first_name} ${a.last_name}</div>
+    </div>`
+  ).join('');
+
+  // Countdown 3-2-1
+  await countdown(3);
+
+  // Call API for draw
+  const res = await fetch(`/competitions/${competitionId}/divisions/${currentDivisionId}/draw`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'}
+  });
+  const lots = await res.json();
+
+  // Merge with athlete data
+  const athleteMap = {};
+  currentAthletes.forEach(a => athleteMap[a.participant_id] = a);
+
+  // Show results one by one
+  showStage('reveal');
+  const list = document.getElementById('result-list');
+  list.innerHTML = lots.map(l => {
+    const a = athleteMap[l.participant_id] || {};
+    return `<div class="result-row" id="row-${l.lot_number}">
+      <div class="lot-num">${l.lot_number}</div>
+      <div class="athlete-info">
+        <div class="name">${countryFlag(a.country)} ${a.first_name||''} ${a.last_name||''}</div>
+        <div class="country">${a.country||''}</div>
+      </div>
+      <div class="bib">#${a.bib_no||'—'}</div>
+    </div>`;
+  }).join('');
+
+  // Animate rows one by one
+  for (let i = 1; i <= lots.length; i++) {
+    await sleep(400);
+    const row = document.getElementById('row-' + i);
+    if (row) row.classList.add('visible');
+  }
+
+  // Show QR
+  await sleep(800);
+  document.getElementById('qr-block').classList.add('visible');
+}
+
+async function countdown(from) {
+  const el = document.getElementById('countdown');
+  el.style.display = 'block';
+  document.getElementById('shuffle-cards').style.display = 'none';
+
+  for (let i = from; i >= 1; i--) {
+    el.textContent = i;
+    el.style.animation = 'none';
+    el.offsetHeight; // reflow
+    el.style.animation = 'countPulse 1s ease-in-out';
+    await sleep(900);
+  }
+
+  el.textContent = '⚡';
+  el.style.animation = 'none';
+  el.offsetHeight;
+  el.style.animation = 'countPulse 0.5s ease-in-out';
+  await sleep(600);
+  el.style.display = 'none';
+}
+
+function countryFlag(code) {
+  if (!code || code.length !== 3) return '🏳️';
+  const iso2 = { LAT:'LV', RUS:'RU', USA:'US', GBR:'GB', FIN:'FI', NOR:'NO', SWE:'SE', EST:'EE', LTU:'LT', UKR:'UA', KAZ:'KZ', BLR:'BY', POL:'PL', GER:'DE', FRA:'FR', ITA:'IT', ESP:'ES', AUS:'AU', CAN:'CA', BRA:'BR', UAE:'AE' };
+  const c = iso2[code] || code.slice(0,2);
+  return c.toUpperCase().replace(/./g, ch => String.fromCodePoint(0x1F1E6 - 65 + ch.charCodeAt(0))) ;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
