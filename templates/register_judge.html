@@ -235,8 +235,38 @@ async function submitForm() {
     }
 
     btn.disabled = true;
-    btn.textContent = 'Submitting...';
-
+    btn.textContent = 'Processing payment...';
+    try {
+      const checkoutRes = await fetch('/payments/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_type: 'judge_annual',
+          success_url: window.location.origin + '/register/judge/complete?session_id={CHECKOUT_SESSION_ID}',
+          cancel_url: window.location.origin + window.location.pathname,
+          metadata: { email, first_name: typeof first_name !== 'undefined' ? first_name : '', role: 'judge' }
+        })
+      });
+      const checkoutData = await checkoutRes.json();
+      if (checkoutRes.ok) {
+        sessionStorage.setItem('wsm_pending_reg', JSON.stringify({formSubmitted: true}));
+        window.location.href = checkoutData.checkout_url;
+        return;
+      } else {
+        showError(checkoutData.detail || 'Payment setup failed');
+        btn.disabled = false;
+        btn.textContent = 'Submit Registration →';
+        return;
+      }
+    } catch(e) {
+      showError('Payment error. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Submit Registration →';
+      return;
+    }
+    // fallback
+    try {
+        const res = await fetch('/auth/register/judge', {
     try {
         const res = await fetch('/auth/register/judge', {
             method: 'POST',

@@ -808,6 +808,18 @@ Disallow: /organizer
 Sitemap: https://ranking.worldstrongman.org/sitemap.xml"""
     return PlainTextResponse(content)
 
+@app.get("/register/organizer/complete")
+async def register_organizer_complete(request: Request):
+    return templates.TemplateResponse("register_organizer_complete.html", {"request": request})
+
+@app.get("/register/judge/complete")
+async def register_judge_complete(request: Request):
+    return templates.TemplateResponse("register_judge_complete.html", {"request": request})
+
+@app.get("/register/team/complete")
+async def register_team_complete(request: Request):
+    return templates.TemplateResponse("register_team_complete.html", {"request": request})
+
 @app.get("/register/athlete/complete")
 async def register_athlete_complete(request: Request):
     return templates.TemplateResponse("register_athlete_complete.html", {"request": request})
