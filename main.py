@@ -5,7 +5,417 @@ from db.database import SessionLocal
 
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from routers import competitions, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams, matches, asl
+from routers import competitions, payments, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams, matches, asl
+
+
+WSM_COUNTRIES = {
+    "AFG": {"name": "Afghanistan", "iso": "af"},
+    "ALB": {"name": "Albania", "iso": "al"},
+    "ALG": {"name": "Algeria", "iso": "dz"},
+    "AND": {"name": "Andorra", "iso": "ad"},
+    "ANG": {"name": "Angola", "iso": "ao"},
+    "ANT": {"name": "Antigua & Barbuda", "iso": "ag"},
+    "ARG": {"name": "Argentina", "iso": "ar"},
+    "ARM": {"name": "Armenia", "iso": "am"},
+    "ARU": {"name": "Aruba", "iso": "aw"},
+    "AUS": {"name": "Australia", "iso": "au"},
+    "AUT": {"name": "Austria", "iso": "at"},
+    "AZE": {"name": "Azerbaijan", "iso": "az"},
+    "BAH": {"name": "Bahamas", "iso": "bs"},
+    "BHR": {"name": "Bahrain", "iso": "bh"},
+    "BAN": {"name": "Bangladesh", "iso": "bd"},
+    "BAR": {"name": "Barbados", "iso": "bb"},
+    "BLR": {"name": "Belarus", "iso": "by"},
+    "BEL": {"name": "Belgium", "iso": "be"},
+    "BIZ": {"name": "Belize", "iso": "bz"},
+    "BEN": {"name": "Benin", "iso": "bj"},
+    "BHU": {"name": "Bhutan", "iso": "bt"},
+    "BOL": {"name": "Bolivia", "iso": "bo"},
+    "BIH": {"name": "Bosnia & Herzegovina", "iso": "ba"},
+    "BOT": {"name": "Botswana", "iso": "bw"},
+    "BRA": {"name": "Brazil", "iso": "br"},
+    "BRN": {"name": "Brunei", "iso": "bn"},
+    "BUL": {"name": "Bulgaria", "iso": "bg"},
+    "BUR": {"name": "Burkina Faso", "iso": "bf"},
+    "BDI": {"name": "Burundi", "iso": "bi"},
+    "CAM": {"name": "Cambodia", "iso": "kh"},
+    "CMR": {"name": "Cameroon", "iso": "cm"},
+    "CAN": {"name": "Canada", "iso": "ca"},
+    "CPV": {"name": "Cape Verde", "iso": "cv"},
+    "CAF": {"name": "Central African Rep.", "iso": "cf"},
+    "CHA": {"name": "Chad", "iso": "td"},
+    "CHI": {"name": "Chile", "iso": "cl"},
+    "CHN": {"name": "China", "iso": "cn"},
+    "COL": {"name": "Colombia", "iso": "co"},
+    "COM": {"name": "Comoros", "iso": "km"},
+    "CGO": {"name": "Congo", "iso": "cg"},
+    "COD": {"name": "DR Congo", "iso": "cd"},
+    "CRC": {"name": "Costa Rica", "iso": "cr"},
+    "CRO": {"name": "Croatia", "iso": "hr"},
+    "CUB": {"name": "Cuba", "iso": "cu"},
+    "CYP": {"name": "Cyprus", "iso": "cy"},
+    "CZE": {"name": "Czech Republic", "iso": "cz"},
+    "DEN": {"name": "Denmark", "iso": "dk"},
+    "DJI": {"name": "Djibouti", "iso": "dj"},
+    "DOM": {"name": "Dominican Republic", "iso": "do"},
+    "ECU": {"name": "Ecuador", "iso": "ec"},
+    "EGY": {"name": "Egypt", "iso": "eg"},
+    "ESA": {"name": "El Salvador", "iso": "sv"},
+    "GEQ": {"name": "Equatorial Guinea", "iso": "gq"},
+    "ERI": {"name": "Eritrea", "iso": "er"},
+    "EST": {"name": "Estonia", "iso": "ee"},
+    "ETH": {"name": "Ethiopia", "iso": "et"},
+    "FIJ": {"name": "Fiji", "iso": "fj"},
+    "FIN": {"name": "Finland", "iso": "fi"},
+    "FRA": {"name": "France", "iso": "fr"},
+    "GAB": {"name": "Gabon", "iso": "ga"},
+    "GAM": {"name": "Gambia", "iso": "gm"},
+    "GEO": {"name": "Georgia", "iso": "ge"},
+    "GER": {"name": "Germany", "iso": "de"},
+    "GHA": {"name": "Ghana", "iso": "gh"},
+    "GBR": {"name": "Great Britain", "iso": "gb"},
+    "GRE": {"name": "Greece", "iso": "gr"},
+    "GRN": {"name": "Grenada", "iso": "gd"},
+    "GUA": {"name": "Guatemala", "iso": "gt"},
+    "GUI": {"name": "Guinea", "iso": "gn"},
+    "GBS": {"name": "Guinea-Bissau", "iso": "gw"},
+    "GUY": {"name": "Guyana", "iso": "gy"},
+    "HAI": {"name": "Haiti", "iso": "ht"},
+    "HON": {"name": "Honduras", "iso": "hn"},
+    "HKG": {"name": "Hong Kong", "iso": "hk"},
+    "HUN": {"name": "Hungary", "iso": "hu"},
+    "ISL": {"name": "Iceland", "iso": "is"},
+    "IND": {"name": "India", "iso": "in"},
+    "INA": {"name": "Indonesia", "iso": "id"},
+    "IRI": {"name": "Iran", "iso": "ir"},
+    "IRQ": {"name": "Iraq", "iso": "iq"},
+    "IRL": {"name": "Ireland", "iso": "ie"},
+    "ISR": {"name": "Israel", "iso": "il"},
+    "ITA": {"name": "Italy", "iso": "it"},
+    "CIV": {"name": "Ivory Coast", "iso": "ci"},
+    "JAM": {"name": "Jamaica", "iso": "jm"},
+    "JPN": {"name": "Japan", "iso": "jp"},
+    "JOR": {"name": "Jordan", "iso": "jo"},
+    "KAZ": {"name": "Kazakhstan", "iso": "kz"},
+    "KEN": {"name": "Kenya", "iso": "ke"},
+    "PRK": {"name": "North Korea", "iso": "kp"},
+    "KOR": {"name": "South Korea", "iso": "kr"},
+    "KUW": {"name": "Kuwait", "iso": "kw"},
+    "KGZ": {"name": "Kyrgyzstan", "iso": "kg"},
+    "LAO": {"name": "Laos", "iso": "la"},
+    "LAT": {"name": "Latvia", "iso": "lv"},
+    "LIB": {"name": "Lebanon", "iso": "lb"},
+    "LES": {"name": "Lesotho", "iso": "ls"},
+    "LBR": {"name": "Liberia", "iso": "lr"},
+    "LBA": {"name": "Libya", "iso": "ly"},
+    "LIE": {"name": "Liechtenstein", "iso": "li"},
+    "LTU": {"name": "Lithuania", "iso": "lt"},
+    "LUX": {"name": "Luxembourg", "iso": "lu"},
+    "MAD": {"name": "Madagascar", "iso": "mg"},
+    "MAW": {"name": "Malawi", "iso": "mw"},
+    "MAS": {"name": "Malaysia", "iso": "my"},
+    "MDV": {"name": "Maldives", "iso": "mv"},
+    "MLI": {"name": "Mali", "iso": "ml"},
+    "MLT": {"name": "Malta", "iso": "mt"},
+    "MTN": {"name": "Mauritania", "iso": "mr"},
+    "MRI": {"name": "Mauritius", "iso": "mu"},
+    "MEX": {"name": "Mexico", "iso": "mx"},
+    "MDA": {"name": "Moldova", "iso": "md"},
+    "MON": {"name": "Monaco", "iso": "mc"},
+    "MGL": {"name": "Mongolia", "iso": "mn"},
+    "MNE": {"name": "Montenegro", "iso": "me"},
+    "MAR": {"name": "Morocco", "iso": "ma"},
+    "MOZ": {"name": "Mozambique", "iso": "mz"},
+    "MYA": {"name": "Myanmar", "iso": "mm"},
+    "NAM": {"name": "Namibia", "iso": "na"},
+    "NEP": {"name": "Nepal", "iso": "np"},
+    "NED": {"name": "Netherlands", "iso": "nl"},
+    "NZL": {"name": "New Zealand", "iso": "nz"},
+    "NCA": {"name": "Nicaragua", "iso": "ni"},
+    "NIG": {"name": "Niger", "iso": "ne"},
+    "NGR": {"name": "Nigeria", "iso": "ng"},
+    "NOR": {"name": "Norway", "iso": "no"},
+    "OMA": {"name": "Oman", "iso": "om"},
+    "PAK": {"name": "Pakistan", "iso": "pk"},
+    "PAN": {"name": "Panama", "iso": "pa"},
+    "PNG": {"name": "Papua New Guinea", "iso": "pg"},
+    "PAR": {"name": "Paraguay", "iso": "py"},
+    "PER": {"name": "Peru", "iso": "pe"},
+    "PHI": {"name": "Philippines", "iso": "ph"},
+    "PLE": {"name": "Palestine", "iso": "ps"},
+    "POL": {"name": "Poland", "iso": "pl"},
+    "POR": {"name": "Portugal", "iso": "pt"},
+    "PUR": {"name": "Puerto Rico", "iso": "pr"},
+    "QAT": {"name": "Qatar", "iso": "qa"},
+    "ROU": {"name": "Romania", "iso": "ro"},
+    "RUS": {"name": "Russia", "iso": "ru"},
+    "RWA": {"name": "Rwanda", "iso": "rw"},
+    "SKN": {"name": "Saint Kitts & Nevis", "iso": "kn"},
+    "STP": {"name": "Sao Tome & Principe", "iso": "st"},
+    "KSA": {"name": "Saudi Arabia", "iso": "sa"},
+    "SEN": {"name": "Senegal", "iso": "sn"},
+    "SRB": {"name": "Serbia", "iso": "rs"},
+    "SEY": {"name": "Seychelles", "iso": "sc"},
+    "SLE": {"name": "Sierra Leone", "iso": "sl"},
+    "SGP": {"name": "Singapore", "iso": "sg"},
+    "SVK": {"name": "Slovakia", "iso": "sk"},
+    "SLO": {"name": "Slovenia", "iso": "si"},
+    "SOL": {"name": "Solomon Islands", "iso": "sb"},
+    "SOM": {"name": "Somalia", "iso": "so"},
+    "RSA": {"name": "South Africa", "iso": "za"},
+    "ESP": {"name": "Spain", "iso": "es"},
+    "SRI": {"name": "Sri Lanka", "iso": "lk"},
+    "SUD": {"name": "Sudan", "iso": "sd"},
+    "SUR": {"name": "Suriname", "iso": "sr"},
+    "SWZ": {"name": "Eswatini", "iso": "sz"},
+    "SWE": {"name": "Sweden", "iso": "se"},
+    "SUI": {"name": "Switzerland", "iso": "ch"},
+    "SYR": {"name": "Syria", "iso": "sy"},
+    "TPE": {"name": "Chinese Taipei", "iso": "tw"},
+    "TJK": {"name": "Tajikistan", "iso": "tj"},
+    "TAN": {"name": "Tanzania", "iso": "tz"},
+    "THA": {"name": "Thailand", "iso": "th"},
+    "TLS": {"name": "Timor-Leste", "iso": "tl"},
+    "TOG": {"name": "Togo", "iso": "tg"},
+    "TTO": {"name": "Trinidad & Tobago", "iso": "tt"},
+    "TUN": {"name": "Tunisia", "iso": "tn"},
+    "TUR": {"name": "Turkey", "iso": "tr"},
+    "TKM": {"name": "Turkmenistan", "iso": "tm"},
+    "UGA": {"name": "Uganda", "iso": "ug"},
+    "UKR": {"name": "Ukraine", "iso": "ua"},
+    "UAE": {"name": "UAE", "iso": "ae"},
+    "GBR": {"name": "United Kingdom", "iso": "gb"},
+    "USA": {"name": "USA", "iso": "us"},
+    "URU": {"name": "Uruguay", "iso": "uy"},
+    "UZB": {"name": "Uzbekistan", "iso": "uz"},
+    "VAN": {"name": "Vanuatu", "iso": "vu"},
+    "VEN": {"name": "Venezuela", "iso": "ve"},
+    "VIE": {"name": "Vietnam", "iso": "vn"},
+    "YEM": {"name": "Yemen", "iso": "ye"},
+    "ZAM": {"name": "Zambia", "iso": "zm"},
+    "ZIM": {"name": "Zimbabwe", "iso": "zw"},
+}
+
+def country_flag_html(code):
+    if not code:
+        return "—"
+    c = WSM_COUNTRIES.get(code.upper())
+    if c:
+        return f'<img src="https://flagcdn.com/w20/{c["iso"]}.png" width="20" height="14" title="{c["name"]}" style="vertical-align:middle;margin-right:4px;"> {code}'
+    return code
+
+def country_flag_html(code):
+    if not code:
+        return "—"
+    c = WSM_COUNTRIES.get(code.upper())
+    if c:
+        return f'<img src="https://flagcdn.com/w20/{c["iso"]}.png" width="20" height="14" title="{c["name"]}" style="vertical-align:middle;margin-right:4px;"> {code}'
+    return code
+
+
+WSM_COUNTRIES = {
+    "AFG": {"name": "Afghanistan", "iso": "af"},
+    "ALB": {"name": "Albania", "iso": "al"},
+    "ALG": {"name": "Algeria", "iso": "dz"},
+    "AND": {"name": "Andorra", "iso": "ad"},
+    "ANG": {"name": "Angola", "iso": "ao"},
+    "ANT": {"name": "Antigua & Barbuda", "iso": "ag"},
+    "ARG": {"name": "Argentina", "iso": "ar"},
+    "ARM": {"name": "Armenia", "iso": "am"},
+    "ARU": {"name": "Aruba", "iso": "aw"},
+    "AUS": {"name": "Australia", "iso": "au"},
+    "AUT": {"name": "Austria", "iso": "at"},
+    "AZE": {"name": "Azerbaijan", "iso": "az"},
+    "BAH": {"name": "Bahamas", "iso": "bs"},
+    "BHR": {"name": "Bahrain", "iso": "bh"},
+    "BAN": {"name": "Bangladesh", "iso": "bd"},
+    "BAR": {"name": "Barbados", "iso": "bb"},
+    "BLR": {"name": "Belarus", "iso": "by"},
+    "BEL": {"name": "Belgium", "iso": "be"},
+    "BIZ": {"name": "Belize", "iso": "bz"},
+    "BEN": {"name": "Benin", "iso": "bj"},
+    "BHU": {"name": "Bhutan", "iso": "bt"},
+    "BOL": {"name": "Bolivia", "iso": "bo"},
+    "BIH": {"name": "Bosnia & Herzegovina", "iso": "ba"},
+    "BOT": {"name": "Botswana", "iso": "bw"},
+    "BRA": {"name": "Brazil", "iso": "br"},
+    "BRN": {"name": "Brunei", "iso": "bn"},
+    "BUL": {"name": "Bulgaria", "iso": "bg"},
+    "BUR": {"name": "Burkina Faso", "iso": "bf"},
+    "BDI": {"name": "Burundi", "iso": "bi"},
+    "CAM": {"name": "Cambodia", "iso": "kh"},
+    "CMR": {"name": "Cameroon", "iso": "cm"},
+    "CAN": {"name": "Canada", "iso": "ca"},
+    "CPV": {"name": "Cape Verde", "iso": "cv"},
+    "CAF": {"name": "Central African Rep.", "iso": "cf"},
+    "CHA": {"name": "Chad", "iso": "td"},
+    "CHI": {"name": "Chile", "iso": "cl"},
+    "CHN": {"name": "China", "iso": "cn"},
+    "COL": {"name": "Colombia", "iso": "co"},
+    "COM": {"name": "Comoros", "iso": "km"},
+    "CGO": {"name": "Congo", "iso": "cg"},
+    "COD": {"name": "DR Congo", "iso": "cd"},
+    "CRC": {"name": "Costa Rica", "iso": "cr"},
+    "CRO": {"name": "Croatia", "iso": "hr"},
+    "CUB": {"name": "Cuba", "iso": "cu"},
+    "CYP": {"name": "Cyprus", "iso": "cy"},
+    "CZE": {"name": "Czech Republic", "iso": "cz"},
+    "DEN": {"name": "Denmark", "iso": "dk"},
+    "DJI": {"name": "Djibouti", "iso": "dj"},
+    "DOM": {"name": "Dominican Republic", "iso": "do"},
+    "ECU": {"name": "Ecuador", "iso": "ec"},
+    "EGY": {"name": "Egypt", "iso": "eg"},
+    "ESA": {"name": "El Salvador", "iso": "sv"},
+    "GEQ": {"name": "Equatorial Guinea", "iso": "gq"},
+    "ERI": {"name": "Eritrea", "iso": "er"},
+    "EST": {"name": "Estonia", "iso": "ee"},
+    "ETH": {"name": "Ethiopia", "iso": "et"},
+    "FIJ": {"name": "Fiji", "iso": "fj"},
+    "FIN": {"name": "Finland", "iso": "fi"},
+    "FRA": {"name": "France", "iso": "fr"},
+    "GAB": {"name": "Gabon", "iso": "ga"},
+    "GAM": {"name": "Gambia", "iso": "gm"},
+    "GEO": {"name": "Georgia", "iso": "ge"},
+    "GER": {"name": "Germany", "iso": "de"},
+    "GHA": {"name": "Ghana", "iso": "gh"},
+    "GBR": {"name": "Great Britain", "iso": "gb"},
+    "GRE": {"name": "Greece", "iso": "gr"},
+    "GRN": {"name": "Grenada", "iso": "gd"},
+    "GUA": {"name": "Guatemala", "iso": "gt"},
+    "GUI": {"name": "Guinea", "iso": "gn"},
+    "GBS": {"name": "Guinea-Bissau", "iso": "gw"},
+    "GUY": {"name": "Guyana", "iso": "gy"},
+    "HAI": {"name": "Haiti", "iso": "ht"},
+    "HON": {"name": "Honduras", "iso": "hn"},
+    "HKG": {"name": "Hong Kong", "iso": "hk"},
+    "HUN": {"name": "Hungary", "iso": "hu"},
+    "ISL": {"name": "Iceland", "iso": "is"},
+    "IND": {"name": "India", "iso": "in"},
+    "INA": {"name": "Indonesia", "iso": "id"},
+    "IRI": {"name": "Iran", "iso": "ir"},
+    "IRQ": {"name": "Iraq", "iso": "iq"},
+    "IRL": {"name": "Ireland", "iso": "ie"},
+    "ISR": {"name": "Israel", "iso": "il"},
+    "ITA": {"name": "Italy", "iso": "it"},
+    "CIV": {"name": "Ivory Coast", "iso": "ci"},
+    "JAM": {"name": "Jamaica", "iso": "jm"},
+    "JPN": {"name": "Japan", "iso": "jp"},
+    "JOR": {"name": "Jordan", "iso": "jo"},
+    "KAZ": {"name": "Kazakhstan", "iso": "kz"},
+    "KEN": {"name": "Kenya", "iso": "ke"},
+    "PRK": {"name": "North Korea", "iso": "kp"},
+    "KOR": {"name": "South Korea", "iso": "kr"},
+    "KUW": {"name": "Kuwait", "iso": "kw"},
+    "KGZ": {"name": "Kyrgyzstan", "iso": "kg"},
+    "LAO": {"name": "Laos", "iso": "la"},
+    "LAT": {"name": "Latvia", "iso": "lv"},
+    "LIB": {"name": "Lebanon", "iso": "lb"},
+    "LES": {"name": "Lesotho", "iso": "ls"},
+    "LBR": {"name": "Liberia", "iso": "lr"},
+    "LBA": {"name": "Libya", "iso": "ly"},
+    "LIE": {"name": "Liechtenstein", "iso": "li"},
+    "LTU": {"name": "Lithuania", "iso": "lt"},
+    "LUX": {"name": "Luxembourg", "iso": "lu"},
+    "MAD": {"name": "Madagascar", "iso": "mg"},
+    "MAW": {"name": "Malawi", "iso": "mw"},
+    "MAS": {"name": "Malaysia", "iso": "my"},
+    "MDV": {"name": "Maldives", "iso": "mv"},
+    "MLI": {"name": "Mali", "iso": "ml"},
+    "MLT": {"name": "Malta", "iso": "mt"},
+    "MTN": {"name": "Mauritania", "iso": "mr"},
+    "MRI": {"name": "Mauritius", "iso": "mu"},
+    "MEX": {"name": "Mexico", "iso": "mx"},
+    "MDA": {"name": "Moldova", "iso": "md"},
+    "MON": {"name": "Monaco", "iso": "mc"},
+    "MGL": {"name": "Mongolia", "iso": "mn"},
+    "MNE": {"name": "Montenegro", "iso": "me"},
+    "MAR": {"name": "Morocco", "iso": "ma"},
+    "MOZ": {"name": "Mozambique", "iso": "mz"},
+    "MYA": {"name": "Myanmar", "iso": "mm"},
+    "NAM": {"name": "Namibia", "iso": "na"},
+    "NEP": {"name": "Nepal", "iso": "np"},
+    "NED": {"name": "Netherlands", "iso": "nl"},
+    "NZL": {"name": "New Zealand", "iso": "nz"},
+    "NCA": {"name": "Nicaragua", "iso": "ni"},
+    "NIG": {"name": "Niger", "iso": "ne"},
+    "NGR": {"name": "Nigeria", "iso": "ng"},
+    "NOR": {"name": "Norway", "iso": "no"},
+    "OMA": {"name": "Oman", "iso": "om"},
+    "PAK": {"name": "Pakistan", "iso": "pk"},
+    "PAN": {"name": "Panama", "iso": "pa"},
+    "PNG": {"name": "Papua New Guinea", "iso": "pg"},
+    "PAR": {"name": "Paraguay", "iso": "py"},
+    "PER": {"name": "Peru", "iso": "pe"},
+    "PHI": {"name": "Philippines", "iso": "ph"},
+    "PLE": {"name": "Palestine", "iso": "ps"},
+    "POL": {"name": "Poland", "iso": "pl"},
+    "POR": {"name": "Portugal", "iso": "pt"},
+    "PUR": {"name": "Puerto Rico", "iso": "pr"},
+    "QAT": {"name": "Qatar", "iso": "qa"},
+    "ROU": {"name": "Romania", "iso": "ro"},
+    "RUS": {"name": "Russia", "iso": "ru"},
+    "RWA": {"name": "Rwanda", "iso": "rw"},
+    "SKN": {"name": "Saint Kitts & Nevis", "iso": "kn"},
+    "STP": {"name": "Sao Tome & Principe", "iso": "st"},
+    "KSA": {"name": "Saudi Arabia", "iso": "sa"},
+    "SEN": {"name": "Senegal", "iso": "sn"},
+    "SRB": {"name": "Serbia", "iso": "rs"},
+    "SEY": {"name": "Seychelles", "iso": "sc"},
+    "SLE": {"name": "Sierra Leone", "iso": "sl"},
+    "SGP": {"name": "Singapore", "iso": "sg"},
+    "SVK": {"name": "Slovakia", "iso": "sk"},
+    "SLO": {"name": "Slovenia", "iso": "si"},
+    "SOL": {"name": "Solomon Islands", "iso": "sb"},
+    "SOM": {"name": "Somalia", "iso": "so"},
+    "RSA": {"name": "South Africa", "iso": "za"},
+    "ESP": {"name": "Spain", "iso": "es"},
+    "SRI": {"name": "Sri Lanka", "iso": "lk"},
+    "SUD": {"name": "Sudan", "iso": "sd"},
+    "SUR": {"name": "Suriname", "iso": "sr"},
+    "SWZ": {"name": "Eswatini", "iso": "sz"},
+    "SWE": {"name": "Sweden", "iso": "se"},
+    "SUI": {"name": "Switzerland", "iso": "ch"},
+    "SYR": {"name": "Syria", "iso": "sy"},
+    "TPE": {"name": "Chinese Taipei", "iso": "tw"},
+    "TJK": {"name": "Tajikistan", "iso": "tj"},
+    "TAN": {"name": "Tanzania", "iso": "tz"},
+    "THA": {"name": "Thailand", "iso": "th"},
+    "TLS": {"name": "Timor-Leste", "iso": "tl"},
+    "TOG": {"name": "Togo", "iso": "tg"},
+    "TTO": {"name": "Trinidad & Tobago", "iso": "tt"},
+    "TUN": {"name": "Tunisia", "iso": "tn"},
+    "TUR": {"name": "Turkey", "iso": "tr"},
+    "TKM": {"name": "Turkmenistan", "iso": "tm"},
+    "UGA": {"name": "Uganda", "iso": "ug"},
+    "UKR": {"name": "Ukraine", "iso": "ua"},
+    "UAE": {"name": "UAE", "iso": "ae"},
+    "GBR": {"name": "United Kingdom", "iso": "gb"},
+    "USA": {"name": "USA", "iso": "us"},
+    "URU": {"name": "Uruguay", "iso": "uy"},
+    "UZB": {"name": "Uzbekistan", "iso": "uz"},
+    "VAN": {"name": "Vanuatu", "iso": "vu"},
+    "VEN": {"name": "Venezuela", "iso": "ve"},
+    "VIE": {"name": "Vietnam", "iso": "vn"},
+    "YEM": {"name": "Yemen", "iso": "ye"},
+    "ZAM": {"name": "Zambia", "iso": "zm"},
+    "ZIM": {"name": "Zimbabwe", "iso": "zw"},
+}
+
+def country_flag_html(code):
+    if not code:
+        return "—"
+    c = WSM_COUNTRIES.get(code.upper())
+    if c:
+        return f'<img src="https://flagcdn.com/w20/{c["iso"]}.png" width="20" height="14" title="{c["name"]}" style="vertical-align:middle;margin-right:4px;"> {code}'
+    return code
+
+def country_flag_html(code):
+    if not code:
+        return "—"
+    c = WSM_COUNTRIES.get(code.upper())
+    if c:
+        return f'<img src="https://flagcdn.com/w20/{c["iso"]}.png" width="20" height="14" title="{c["name"]}" style="vertical-align:middle;margin-right:4px;"> {code}'
+    return code
 
 app = FastAPI(title="World Strongman Platform API", version="2.0.0")
 
@@ -23,6 +433,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.include_router(competitions.router)
+app.include_router(payments.router)
 app.include_router(divisions.router)
 app.include_router(athletes.router)
 app.include_router(ranking.router)
@@ -61,6 +472,11 @@ from sqlalchemy import select, desc
 from models.athlete import Athlete
 
 templates = Jinja2Templates(directory="templates")
+templates.env.globals["WSM_COUNTRIES"] = WSM_COUNTRIES
+
+@app.get("/countries")
+async def get_countries():
+    return [{"code": k, "name": v["name"], "iso": v["iso"]} for k, v in sorted(WSM_COUNTRIES.items(), key=lambda x: x[1]["name"])]
 
 @app.get("/athletes/{athlete_id}/profile")
 async def athlete_profile(athlete_id: str, request: Request):
@@ -211,7 +627,7 @@ async def api_athletes_search(q: str = ""):
             ))
         result = await db.execute(query)
         athletes = result.scalars().all()
-    return [{"id": str(a.id), "name": f"{a.first_name} {a.last_name}", "country": a.country or "", "photo": a.photo_url or ""} for a in athletes]
+    return [{"id": str(a.id), "first_name": a.first_name or "", "last_name": a.last_name or "", "name": f"{a.first_name} {a.last_name}", "country": a.country or "", "photo": a.photo_url or ""} for a in athletes]
 
 @app.get("/api/coaches/search")
 async def api_coaches_search(q: str = ""):
@@ -376,6 +792,33 @@ async def team_room(team_id: str, request: Request):
         "matches": matches,
     })
 
+
+@app.get("/sitemap.xml")
+async def sitemap():
+    from fastapi.responses import FileResponse
+    return FileResponse("/var/www/wsm-platform/static/sitemap.xml", media_type="application/xml")
+
+@app.get("/robots.txt")
+async def robots():
+    from fastapi.responses import PlainTextResponse
+    content = """User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /organizer
+Sitemap: https://ranking.worldstrongman.org/sitemap.xml"""
+    return PlainTextResponse(content)
+
+@app.get("/register/athlete/complete")
+async def register_athlete_complete(request: Request):
+    return templates.TemplateResponse("register_athlete_complete.html", {"request": request})
+
+@app.get("/privacy-policy")
+async def privacy_policy(request: Request):
+    return templates.TemplateResponse("privacy_policy.html", {"request": request})
+
+@app.get("/cookie-policy")
+async def cookie_policy(request: Request):
+    return templates.TemplateResponse("cookie_policy.html", {"request": request})
 
 @app.get("/asl/divisions/{division_id}")
 async def asl_division_page(division_id: str, request: Request):
@@ -721,7 +1164,7 @@ async def competition_page(competition_id: str, request: Request):
                 if i == 0:
                     # Первая - по жеребьёвке
                     ordered = sorted(participants, key=lambda p: (p.lot_number or 999, p.bib_no or 999))
-                elif disc.is_final:
+                elif disc.is_final or i == len(disciplines) - 1:
                     # Финальная - реверс по очкам
                     def get_points(p):
                         o = overall_standings.get(str(p.id))
