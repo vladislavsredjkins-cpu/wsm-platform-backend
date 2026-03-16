@@ -113,7 +113,7 @@
         .sponsor-box.gold { border-color: #c9a84c88; }
         .sponsor-box.silver { border-color: #88888888; }
         .sponsor-box.bronze { border-color: #cd7f3288; }
-        .sponsor-logo { max-height: 48px; margin-bottom: 8px; opacity: 0.85; }
+        .sponsor-logo { max-height: 120px; max-width: 100%; margin-bottom: 8px; opacity: 0.9; object-fit: contain; }
         .sponsor-name { font-size: 13px; font-weight: 700; color: #aaa; letter-spacing: 1px; text-transform: uppercase; }
         .sponsor-tier {
             font-size: 9px; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase;
@@ -358,16 +358,21 @@
         {% if sponsors %}
         <div class="sponsors-grid">
             {% for s in sponsors %}
+            {% if s.website_url %}
+            <a href="{{ s.website_url }}" target="_blank" class="sponsor-box {{ s.tier|lower }}" style="text-decoration:none;">
+            {% else %}
             <div class="sponsor-box {{ s.tier|lower }}">
+            {% endif %}
                 {% if s.logo_url %}
                     <img src="{{ s.logo_url }}" class="sponsor-logo">
                 {% endif %}
                 <div class="sponsor-name">{{ s.name }}</div>
                 <div class="sponsor-tier {{ s.tier }}">{{ s.tier }}</div>
-                {% if s.paid_until %}
-                    <div class="sponsor-expires">Until {{ s.paid_until }}</div>
-                {% endif %}
+            {% if s.website_url %}
+            </a>
+            {% else %}
             </div>
+            {% endif %}
             {% endfor %}
         </div>
         {% else %}

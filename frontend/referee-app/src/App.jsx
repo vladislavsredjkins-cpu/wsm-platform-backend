@@ -20,6 +20,7 @@ import ASLMatch from './pages/asl/ASLMatch';
 // Organizer
 import OrganizerCompetitions from './pages/organizer/Competitions';
 import OrganizerCompetitionDetail from './pages/organizer/CompetitionDetail';
+import OrganizerProfile from './pages/organizer/Profile';
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth();
@@ -57,6 +58,7 @@ export default function App() {
       <Route path="/asl" element={<ProtectedRoute><ASLDashboard /></ProtectedRoute>} />
       <Route path="/organizer/competitions" element={<ProtectedRoute><OrganizerCompetitions /></ProtectedRoute>} />
       <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><OrganizerCompetitionDetail /></ProtectedRoute>} />
+      <Route path="/organizer/profile" element={<ProtectedRoute><OrganizerProfile /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
     </Routes>

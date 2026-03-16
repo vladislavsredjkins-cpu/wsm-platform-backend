@@ -827,6 +827,71 @@ async def register_team_complete(request: Request):
 async def register_athlete_complete(request: Request):
     return templates.TemplateResponse("register_athlete_complete.html", {"request": request})
 
+@app.get("/competitions/{competition_id}/mc")
+async def mc_screen(competition_id: str, request: Request):
+    from fastapi import HTTPException
+    from models.competition import Competition
+    from models.organizer import Organizer
+    from models.competition_sponsor import CompetitionSponsor
+    import uuid
+
+    async with SessionLocal() as db:
+        comp = await db.get(Competition, uuid.UUID(competition_id))
+        if not comp:
+            raise HTTPException(404)
+
+        # Live data
+        import httpx
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.get(f"http://localhost:8000/competitions/{competition_id}/live-data")
+                live_data = r.json()
+        except:
+            live_data = None
+
+        # Organizer
+        organizer = None
+        if comp.organizer_id:
+            organizer = await db.get(Organizer, comp.organizer_id)
+
+        # Sponsors
+        sponsors = []
+        try:
+            from sqlalchemy import select
+            sp = await db.execute(select(CompetitionSponsor).where(CompetitionSponsor.competition_id == uuid.UUID(competition_id)))
+            sponsors = sp.scalars().all()
+        except:
+            pass
+
+        # Program
+        program = []
+        try:
+            from sqlalchemy import select, text
+            pr = await db.execute(text("SELECT time_slot, type, title, description, person_name, person_role FROM competition_program WHERE competition_id=:cid ORDER BY order_no, time_slot"), {"cid": competition_id})
+            program = [{"time_slot": r[0], "type": r[1], "title": r[2], "description": r[3], "person_name": r[4], "person_role": r[5]} for r in pr.fetchall()]
+        except:
+            pass
+
+        # Guests
+        guests = []
+        try:
+            from sqlalchemy import text
+            gr = await db.execute(text("SELECT name, title, country, photo_url, bio FROM competition_guests WHERE competition_id=:cid ORDER BY order_no"), {"cid": competition_id})
+            guests = [{"name": r[0], "title": r[1], "country": r[2], "photo_url": r[3], "bio": r[4]} for r in gr.fetchall()]
+        except:
+            pass
+
+    return templates.TemplateResponse("mc_screen.html", {
+        "request": request,
+        "competition": comp,
+        "live_data": live_data,
+        "organizer": organizer,
+        "sponsors": sponsors,
+        "program": program,
+        "guests": guests,
+        "division_name": live_data.get("divisions", [{}])[0].get("division_name", "") if live_data else "",
+    })
+
 @app.get("/privacy-policy")
 async def privacy_policy(request: Request):
     return templates.TemplateResponse("privacy_policy.html", {"request": request})

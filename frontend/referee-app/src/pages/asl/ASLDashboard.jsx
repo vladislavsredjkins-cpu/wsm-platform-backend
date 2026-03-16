@@ -1,3 +1,4 @@
+import { useAuth } from '../../AuthContext';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
@@ -6,6 +7,8 @@ import api from '../../api';
 const gold = '#c9a84c';
 
 export default function ASLDashboard() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'WSM_ADMIN';
   const navigate = useNavigate();
   const [leagues, setLeagues] = useState([]);
   const [divisions, setDivisions] = useState([]);
@@ -40,9 +43,7 @@ export default function ASLDashboard() {
           <div style={{ color: gold, fontSize: '11px', letterSpacing: '3px', marginBottom: '6px' }}>ASL LEAGUE</div>
           <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: '700', margin: 0 }}>League Management</h1>
         </div>
-        <button onClick={() => setShowForm(!showForm)} style={{ padding: '10px 20px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
-          + NEW LEAGUE
-        </button>
+        {isAdmin && <button onClick={() => setShowForm(!showForm)} style={{ padding: '10px 20px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>+ NEW LEAGUE</button>}
       </div>
 
       {showForm && (
@@ -84,7 +85,7 @@ export default function ASLDashboard() {
             <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px' }}>DIVISIONS</div>
             <button onClick={() => navigate(`/asl/leagues/${selectedLeague.id}/divisions/new`)}
               style={{ padding: '6px 14px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-              + ADD DIVISION
+              {isAdmin ? '+ ADD DIVISION' : ''}
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

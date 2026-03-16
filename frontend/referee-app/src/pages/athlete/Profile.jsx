@@ -19,7 +19,7 @@ export default function AthleteProfile() {
 
   useEffect(() => {
     if (!user?.athlete_id) return;
-    axios.get(`${API}/athletes/${user.athlete_id}/profile`)
+    axios.get(`${API}/athletes/${user.athlete_id}/data`)
       .then(res => {
         const a = res.data.athlete || res.data;
         setProfile(a);

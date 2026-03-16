@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MC Screen — {{ competition.name }}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0a0a; color:#fff; font-family:system-ui,sans-serif; }
+    .gold { color:#c9a84c; }
+    header { background:#111; border-bottom:2px solid #c9a84c; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
+    .logo { height:44px; }
+    .comp-name { font-size:20px; font-weight:900; letter-spacing:2px; }
+    .comp-meta { font-size:12px; color:#555; margin-top:2px; }
+    .tabs { display:flex; gap:0; border-bottom:1px solid #1e1e1e; background:#0d0d0d; }
+    .tab { padding:14px 28px; font-size:11px; letter-spacing:2px; font-weight:700; cursor:pointer; border-bottom:2px solid transparent; color:#555; transition:all 0.2s; }
+    .tab.active { color:#c9a84c; border-bottom-color:#c9a84c; }
+    .tab:hover { color:#888; }
+    .panel { display:none; padding:32px; }
+    .panel.active { display:block; }
+
+    /* LIVE panel */
+    .live-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .live-card { background:#111; border:1px solid #1e1e1e; border-radius:6px; padding:24px; }
+    .live-label { font-size:9px; letter-spacing:3px; color:#555; margin-bottom:12px; }
+    .athlete-name { font-size:32px; font-weight:900; line-height:1.1; }
+    .athlete-country { font-size:14px; color:#888; margin-top:6px; }
+    .athlete-bib { display:inline-block; background:#c9a84c; color:#000; font-size:11px; font-weight:900; padding:4px 10px; border-radius:3px; margin-top:8px; }
+    .discipline-name { font-size:28px; font-weight:900; color:#c9a84c; }
+    .discipline-meta { font-size:13px; color:#555; margin-top:6px; }
+    .standings-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #0d0d0d; }
+    .standings-place { font-size:22px; font-weight:900; color:#c9a84c; width:32px; }
+    .standings-name { font-size:14px; font-weight:700; flex:1; }
+    .standings-pts { font-size:14px; color:#c9a84c; font-weight:700; }
+    .next-card { background:#111; border:1px solid #1e1e1e; border-left:3px solid #c9a84c; border-radius:6px; padding:16px 20px; margin-top:12px; }
+
+    /* INFO panel */
+    .info-section { background:#111; border:1px solid #1e1e1e; border-radius:6px; padding:24px; margin-bottom:20px; }
+    .info-title { font-size:10px; letter-spacing:3px; color:#c9a84c; margin-bottom:16px; }
+    .info-text { font-size:14px; color:#aaa; line-height:1.8; }
+    .sponsors-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:16px; }
+    .sponsor-card { background:#0d0d0d; border:1px solid #1e1e1e; border-radius:4px; padding:16px; text-align:center; }
+    .sponsor-logo { max-height:60px; max-width:120px; object-fit:contain; filter:grayscale(30%); }
+    .sponsor-name { font-size:11px; color:#555; margin-top:8px; }
+    .guest-card { display:flex; gap:16px; align-items:flex-start; padding:16px 0; border-bottom:1px solid #0d0d0d; }
+    .guest-photo { width:60px; height:60px; border-radius:50%; object-fit:cover; background:#1e1e1e; display:flex; align-items:center; justify-content:center; color:#333; font-size:24px; flex-shrink:0; }
+    .guest-name { font-size:16px; font-weight:700; }
+    .guest-title { font-size:12px; color:#888; margin-top:2px; }
+    .guest-bio { font-size:12px; color:#555; margin-top:6px; line-height:1.6; }
+
+    /* PROGRAM panel */
+    .program-item { display:flex; gap:20px; padding:16px 0; border-bottom:1px solid #0d0d0d; }
+    .program-time { font-size:14px; font-weight:700; color:#c9a84c; width:70px; flex-shrink:0; }
+    .program-type { font-size:9px; letter-spacing:2px; padding:3px 8px; border-radius:3px; margin-bottom:6px; display:inline-block; }
+    .type-competition { background:rgba(201,168,76,0.1); color:#c9a84c; border:1px solid rgba(201,168,76,0.3); }
+    .type-show { background:rgba(76,175,80,0.1); color:#4caf50; border:1px solid rgba(76,175,80,0.3); }
+    .type-break { background:rgba(100,100,100,0.1); color:#888; border:1px solid rgba(100,100,100,0.3); }
+    .type-ceremony { background:rgba(33,150,243,0.1); color:#2196f3; border:1px solid rgba(33,150,243,0.3); }
+    .program-title { font-size:15px; font-weight:700; }
+    .program-desc { font-size:12px; color:#555; margin-top:4px; line-height:1.6; }
+
+    .refresh-btn { background:transparent; border:1px solid #333; color:#555; padding:6px 14px; border-radius:3px; font-size:10px; cursor:pointer; letter-spacing:1px; }
+    .refresh-btn:hover { border-color:#c9a84c; color:#c9a84c; }
+    .live-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#4caf50; margin-right:6px; animation:pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <img src="/static/logo.jpg" class="logo" />
+      <div>
+        <div class="comp-name">{{ competition.name }}</div>
+        <div class="comp-meta">{{ competition.city }}{% if competition.country %}, {{ competition.country }}{% endif %} · {{ competition.start_date }}</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:11px;color:#555;letter-spacing:2px;">MC SCREEN</span>
+      <button class="refresh-btn" onclick="location.reload()">↻ REFRESH</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('live')"><span class="live-dot"></span>LIVE</div>
+    <div class="tab" onclick="showTab('info')">INFO</div>
+    <div class="tab" onclick="showTab('program')">PROGRAM</div>
+    <div class="tab" onclick="showTab('guests')">GUESTS</div>
+    <div class="tab" onclick="showTab('sponsors')">SPONSORS</div>
+  </div>
+
+  <!-- LIVE TAB -->
+  <div class="panel active" id="tab-live">
+    <div class="live-grid">
+      <div>
+        <div class="live-card" style="border-top:3px solid #c9a84c;">
+          <div class="live-label">CURRENT ATHLETE</div>
+          {% if live_data and live_data.divisions %}
+            {% set div = live_data.divisions[0] %}
+            {% if div.participants %}
+              {% set athlete = div.participants[0] %}
+              <div class="athlete-name">{{ athlete.first_name }}<br>{{ athlete.last_name }}</div>
+              <div class="athlete-country">{{ athlete.country or '—' }}</div>
+              {% if athlete.bib_no %}<span class="athlete-bib">BIB {{ athlete.bib_no }}</span>{% endif %}
+            {% else %}
+              <div style="color:#333;font-size:18px;">No athletes yet</div>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="live-card" style="margin-top:16px;">
+          <div class="live-label">CURRENT DISCIPLINE</div>
+          {% if live_data and live_data.divisions and live_data.divisions[0].disciplines %}
+            {% set disc = live_data.divisions[0].disciplines[0] %}
+            <div class="discipline-name">{{ disc.name }}</div>
+            <div class="discipline-meta">Discipline #{{ loop.index }}</div>
+          {% else %}
+            <div style="color:#333;font-size:18px;">—</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div>
+        <div class="live-card">
+          <div class="live-label" style="display:flex;justify-content:space-between;">
+            <span>STANDINGS</span>
+            <span style="color:#c9a84c;">{{ division_name or 'MEN' }}</span>
+          </div>
+          {% if live_data and live_data.divisions %}
+            {% set div = live_data.divisions[0] %}
+            {% for p in div.participants[:5] %}
+              {% set overall = div.overall.get(p.participant_id, {}) %}
+              <div class="standings-row">
+                <div class="standings-place">{{ overall.place or loop.index }}</div>
+                <div class="standings-name">{{ p.first_name }} {{ p.last_name }}<br><span style="font-size:11px;color:#555;">{{ p.country or '' }}</span></div>
+                <div class="standings-pts">{{ overall.total_points or '0' }} pts</div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div style="font-size:9px;letter-spacing:3px;color:#555;margin-bottom:8px;">ON DECK — NEXT ATHLETE</div>
+      {% if live_data and live_data.divisions and live_data.divisions[0].participants|length > 1 %}
+        {% set next = live_data.divisions[0].participants[1] %}
+        <div class="next-card">
+          <span style="color:#c9a84c;font-weight:700;">{{ next.first_name }} {{ next.last_name }}</span>
+          <span style="color:#555;font-size:12px;margin-left:12px;">{{ next.country or '' }}</span>
+          {% if next.bib_no %}<span class="athlete-bib" style="margin-left:8px;">BIB {{ next.bib_no }}</span>{% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- INFO TAB -->
+  <div class="panel" id="tab-info">
+    <div class="info-section">
+      <div class="info-title">ABOUT THIS COMPETITION</div>
+      <div class="info-text">{{ competition.description or 'No description provided.' }}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;">
+        <div><div style="font-size:9px;color:#555;letter-spacing:2px;">LOCATION</div><div style="font-size:15px;font-weight:700;margin-top:4px;">{{ competition.city or '—' }}, {{ competition.country or '' }}</div></div>
+        <div><div style="font-size:9px;color:#555;letter-spacing:2px;">DATE</div><div style="font-size:15px;font-weight:700;margin-top:4px;">{{ competition.start_date or '—' }}</div></div>
+        <div><div style="font-size:9px;color:#555;letter-spacing:2px;">TYPE</div><div style="font-size:15px;font-weight:700;margin-top:4px;">{{ competition.competition_type or 'Classic' }}</div></div>
+      </div>
+    </div>
+    {% if organizer %}
+    <div class="info-section">
+      <div class="info-title">ORGANIZER</div>
+      <div style="display:flex;gap:20px;align-items:center;">
+        {% if organizer.logo_url %}<img src="/{{ organizer.logo_url }}" style="height:60px;object-fit:contain;" />{% endif %}
+        <div>
+          <div style="font-size:18px;font-weight:700;">{{ organizer.name }}</div>
+          <div style="font-size:12px;color:#888;margin-top:4px;">{{ organizer.city or '' }}{% if organizer.country %}, {{ organizer.country }}{% endif %}</div>
+          {% if organizer.website_url %}<a href="{{ organizer.website_url }}" style="color:#c9a84c;font-size:12px;">{{ organizer.website_url }}</a>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- PROGRAM TAB -->
+  <div class="panel" id="tab-program">
+    {% if program %}
+      {% for item in program %}
+      <div class="program-item">
+        <div class="program-time">{{ item.time_slot or '—' }}</div>
+        <div>
+          <span class="program-type type-{{ item.type }}">{{ item.type|upper }}</span>
+          <div class="program-title">{{ item.title }}</div>
+          {% if item.description %}<div class="program-desc">{{ item.description }}</div>{% endif %}
+          {% if item.person_name %}<div style="font-size:12px;color:#c9a84c;margin-top:4px;">{{ item.person_name }}{% if item.person_role %} · {{ item.person_role }}{% endif %}</div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="color:#333;text-align:center;padding:60px;font-size:14px;">No program added yet</div>
+    {% endif %}
+  </div>
+
+  <!-- GUESTS TAB -->
+  <div class="panel" id="tab-guests">
+    {% if guests %}
+      {% for g in guests %}
+      <div class="guest-card">
+        {% if g.photo_url %}
+          <img src="{{ g.photo_url }}" class="guest-photo" style="border-radius:50%;width:60px;height:60px;object-fit:cover;" />
+        {% else %}
+          <div class="guest-photo">👤</div>
+        {% endif %}
+        <div>
+          <div class="guest-name">{{ g.name }}</div>
+          <div class="guest-title">{{ g.title or '' }}{% if g.country %} · {{ g.country }}{% endif %}</div>
+          {% if g.bio %}<div class="guest-bio">{{ g.bio }}</div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="color:#333;text-align:center;padding:60px;font-size:14px;">No guests added yet</div>
+    {% endif %}
+  </div>
+
+  <!-- SPONSORS TAB -->
+  <div class="panel" id="tab-sponsors">
+    {% if sponsors %}
+    <div class="sponsors-grid">
+      {% for s in sponsors %}
+      <div class="sponsor-card">
+        {% if s.logo_url %}<img src="/{{ s.logo_url }}" class="sponsor-logo" />{% endif %}
+        <div class="sponsor-name">{{ s.name }}</div>
+        {% if s.website_url %}<a href="{{ s.website_url }}" style="font-size:10px;color:#c9a84c;">{{ s.website_url }}</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div style="color:#333;text-align:center;padding:60px;font-size:14px;">No sponsors added yet</div>
+    {% endif %}
+  </div>
+
+  <script>
+    function showTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      event.target.classList.add('active');
+    }
+    // Auto-refresh live tab every 30 seconds
+    setInterval(() => {
+      if (document.getElementById('tab-live').classList.contains('active')) {
+        location.reload();
+      }
+    }, 30000);
+  </script>
+</body>
+</html>

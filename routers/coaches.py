@@ -140,3 +140,21 @@ async def delete_certificate(coach_id: uuid.UUID, cert_id: uuid.UUID,
     await db.delete(cert)
     await db.commit()
     return {"status": "deleted"}
+
+@router.get("/{coach_id}/data")
+async def get_coach_data(coach_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.coach import Coach
+    co = await db.get(Coach, coach_id)
+    if not co:
+        raise HTTPException(404)
+    return {
+        "id": str(co.id),
+        "first_name": co.first_name,
+        "last_name": co.last_name,
+        "country": getattr(co, 'country', None),
+        "phone": getattr(co, 'phone', None),
+        "instagram": getattr(co, 'instagram', None),
+        "photo_url": getattr(co, 'photo_url', None),
+        "bio": getattr(co, 'bio', None),
+        "level": getattr(co, 'level', None),
+    }

@@ -335,3 +335,23 @@ async def upload_sponsor_logo(
     await db.commit()
 
     return {"logo_url": sponsor.logo_url}
+
+@router.get("/{athlete_id}/data")
+async def get_athlete_data(athlete_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.athlete import Athlete
+    a = await db.get(Athlete, athlete_id)
+    if not a:
+        raise HTTPException(404)
+    return {
+        "id": str(a.id),
+        "first_name": a.first_name,
+        "last_name": a.last_name,
+        "country": a.country,
+        "gender": getattr(a, 'gender', None),
+        "date_of_birth": str(a.date_of_birth) if getattr(a, 'date_of_birth', None) else None,
+        "bodyweight_kg": str(a.bodyweight_kg) if getattr(a, 'bodyweight_kg', None) else None,
+        "phone": getattr(a, 'phone', None),
+        "instagram": getattr(a, 'instagram', None),
+        "photo_url": getattr(a, 'photo_url', None),
+        "bio": getattr(a, 'bio', None),
+    }

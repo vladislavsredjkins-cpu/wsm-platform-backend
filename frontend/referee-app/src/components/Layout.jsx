@@ -33,6 +33,7 @@ export default function Layout({ children }) {
             <NavItem label="Dashboard" path="/dashboard" current={location.pathname} navigate={navigate} />
             {isReferee && <NavItem label="Referee" path="/referee" current={location.pathname} navigate={navigate} />}
             {isOrganizer && <NavItem label="Organizer" path="/organizer/competitions" current={location.pathname} navigate={navigate} />}
+            {isOrganizer && <NavItem label="My Profile" path="/organizer/profile" current={location.pathname} navigate={navigate} />}
             {isOrganizer && <NavItem label="ASL" path="/asl" current={location.pathname} navigate={navigate} />}
             {isOrganizer && <a href="https://ranking.worldstrongman.org/organizer/help" target="_blank" style={{ padding: '8px 14px', color: '#555', fontSize: '11px', letterSpacing: '2px', textDecoration: 'none' }}>📖 HELP</a>}
             {isOrganizer && <a href="https://ranking.worldstrongman.org/asl/help" target="_blank" style={{ padding: '8px 14px', color: '#555', fontSize: '11px', letterSpacing: '2px', textDecoration: 'none' }}>📖 ASL HELP</a>}

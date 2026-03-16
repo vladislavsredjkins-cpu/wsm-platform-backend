@@ -208,3 +208,21 @@ async def remove_sponsor(
     await db.delete(sponsor)
     await db.commit()
     return {"status": "ok"}
+
+@router.get("/{organizer_id}/data")
+async def get_organizer_data(organizer_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.organizer import Organizer
+    org = await db.get(Organizer, organizer_id)
+    if not org:
+        raise HTTPException(404, "Organizer not found")
+    return {
+        "id": str(org.id),
+        "name": org.name,
+        "type": org.type,
+        "country": org.country,
+        "city": org.city,
+        "phone": getattr(org, 'phone', None),
+        "website_url": getattr(org, 'website', None),
+        "instagram": getattr(org, 'instagram', None),
+        "logo_url": getattr(org, 'photo_url', None),
+    }
