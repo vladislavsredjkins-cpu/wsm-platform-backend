@@ -35,6 +35,47 @@ async def verify_payment(session_id:str):
     except stripe.StripeError as e: raise HTTPException(400,str(e))
 @router.post("/webhook")
 async def stripe_webhook(request:Request):
-    import json; payload=await request.body(); event=json.loads(payload)
-    if event["type"]=="checkout.session.completed": print(f"Payment: {event['data']['object']['id']}")
-    return {"ok":True}
+    import json
+    from models.membership import Membership
+    import datetime, uuid
+    
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    
+    if webhook_secret and sig_header:
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except Exception as e:
+            raise HTTPException(400, f"Webhook error: {e}")
+    else:
+        event = json.loads(payload)
+    
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        metadata = session.get("metadata", {})
+        email = metadata.get("email", "")
+        role = metadata.get("role", "")
+        
+        if email and role:
+            try:
+                from db.database import SessionLocal
+                async with SessionLocal() as db:
+                    membership = Membership(
+                        id=uuid.uuid4(),
+                        user_id=email,
+                        role=role,
+                        stripe_session_id=session["id"],
+                        stripe_payment_intent=session.get("payment_intent", ""),
+                        amount_eur=str(session.get("amount_total", 0) / 100),
+                        status="active",
+                        paid_at=datetime.datetime.utcnow(),
+                        expires_at=datetime.datetime.utcnow() + datetime.timedelta(days=365),
+                    )
+                    db.add(membership)
+                    await db.commit()
+                    print(f"Membership created: {email} / {role}")
+            except Exception as e:
+                print(f"Membership error: {e}")
+    
+    return {"ok": True}
