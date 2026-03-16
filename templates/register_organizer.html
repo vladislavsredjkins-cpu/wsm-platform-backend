@@ -239,7 +239,7 @@ async function submitForm() {
       });
       const checkoutData = await checkoutRes.json();
       if (checkoutRes.ok) {
-        localStorage.setItem('wsm_pending_reg', JSON.stringify({formSubmitted: true}));
+        localStorage.setItem('wsm_pending_organizer', JSON.stringify({email, password, name: document.getElementById('name').value, type: document.getElementById('type').value||null, country: document.getElementById('country').value||null, city: document.getElementById('city').value||null, phone: document.getElementById('phone').value||null, website: document.getElementById('website').value||null, instagram: document.getElementById('instagram').value||null, stripe_session_id: null}));
         window.location.href = checkoutData.checkout_url;
         return;
       } else {

@@ -249,7 +249,7 @@ async function submitForm() {
       });
       const checkoutData = await checkoutRes.json();
       if (checkoutRes.ok) {
-        localStorage.setItem('wsm_pending_reg', JSON.stringify({formSubmitted: true}));
+        localStorage.setItem('wsm_pending_judge', JSON.stringify({email, password, first_name: document.getElementById('first_name').value, last_name: document.getElementById('last_name').value, country: document.getElementById('country').value||null, gender: document.getElementById('gender').value||null, date_of_birth: document.getElementById('date_of_birth').value||null, phone: document.getElementById('phone').value||null, instagram: document.getElementById('instagram').value||null, level: document.getElementById('level').value||null, stripe_session_id: null}));
         window.location.href = checkoutData.checkout_url;
         return;
       } else {
@@ -264,9 +264,6 @@ async function submitForm() {
       btn.textContent = 'Submit Registration →';
       return;
     }
-    // fallback
-    try {
-        const res = await fetch('/auth/register/judge', {
     try {
         const res = await fetch('/auth/register/judge', {
             method: 'POST',

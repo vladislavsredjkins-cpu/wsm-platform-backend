@@ -27,6 +27,9 @@ class TokenResponse(BaseModel):
     email: str
     role: str
     athlete_id: str | None = None
+    judge_id: str | None = None
+    organizer_id: str | None = None
+    team_id: str | None = None
 
 class LinkAthleteRequest(BaseModel):
     athlete_id: uuid.UUID
@@ -53,7 +56,10 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     return TokenResponse(
         access_token=token, user_id=user.id,
         email=user.email, role=user.role,
-        athlete_id=str(user.athlete_id) if user.athlete_id else None
+        athlete_id=str(user.athlete_id) if user.athlete_id else None,
+        judge_id=str(user.judge_id) if user.judge_id else None,
+        organizer_id=str(user.organizer_id) if user.organizer_id else None,
+        team_id=str(user.team_id) if hasattr(user, 'team_id') and user.team_id else None,
     )
 
 @router.get("/me")
@@ -145,7 +151,7 @@ async def register_organizer(data: RegisterOrganizerRequest, db: AsyncSession = 
     user = User(
         email=data.email,
         password_hash=hash_password(data.password),
-        role="PENDING",
+        role="ORGANIZER",
         is_active=True,
     )
     db.add(user)
@@ -239,7 +245,7 @@ async def register_judge(data: RegisterJudgeRequest, db: AsyncSession = Depends(
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
-    user = User(email=data.email, password_hash=hash_password(data.password), role="PENDING", is_active=True)
+    user = User(email=data.email, password_hash=hash_password(data.password), role="JUDGE", is_active=True)
     db.add(user)
     await db.flush()
     dob = None

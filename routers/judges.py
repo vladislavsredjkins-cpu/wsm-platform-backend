@@ -238,3 +238,31 @@ async def delete_certificate(
     await db.delete(cert)
     await db.commit()
     return {"status": "ok"}
+
+
+@router.get("/{judge_id}/data")
+async def get_judge_profile_json(judge_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.judge import Judge
+    from models.user import User
+    from sqlalchemy import select
+    
+    result = await db.execute(select(Judge).where(Judge.id == judge_id))
+    judge = result.scalar_one_or_none()
+    if not judge:
+        raise HTTPException(404, "Judge not found")
+    
+    return {
+        "id": str(judge.id),
+        "first_name": judge.first_name,
+        "last_name": judge.last_name,
+        "country": judge.country,
+        "level": judge.level,
+        "photo_url": judge.photo_url,
+        "instagram": judge.instagram,
+        "phone": judge.phone,
+        "gender": judge.gender,
+        "date_of_birth": str(judge.date_of_birth) if judge.date_of_birth else None,
+        "bio": getattr(judge, 'bio', None),
+        "certificates": [],
+        "competitions_judged": 0,
+    }

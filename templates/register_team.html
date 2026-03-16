@@ -317,7 +317,7 @@ async function submitForm() {
       });
       const checkoutData = await checkoutRes.json();
       if (checkoutRes.ok) {
-        localStorage.setItem('wsm_pending_reg', JSON.stringify({formSubmitted: true}));
+        localStorage.setItem('wsm_pending_team', JSON.stringify({email, password, name: document.getElementById('name').value, country: document.getElementById('country').value||null, city: document.getElementById('city').value||null, phone: document.getElementById('phone').value||null, instagram: document.getElementById('instagram').value||null, stripe_session_id: null}));
         window.location.href = checkoutData.checkout_url;
         return;
       } else {
@@ -332,9 +332,6 @@ async function submitForm() {
       btn.textContent = 'Submit Registration →';
       return;
     }
-    // fallback
-    try {
-        const res = await fetch('/auth/register/team', {
     try {
         const res = await fetch('/auth/register/team', {
             method: 'POST',

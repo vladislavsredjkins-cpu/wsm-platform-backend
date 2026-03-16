@@ -17,7 +17,7 @@ export default function JudgeProfile() {
 
   useEffect(() => {
     if (!user?.judge_id) return;
-    axios.get(`${API}/judges/${user.judge_id}/profile`)
+    axios.get(`${API}/judges/${user.judge_id}/data`)
       .then(res => { const j = res.data.judge || res.data; setProfile(j); setForm({ first_name: j.first_name||'', last_name: j.last_name||'', country: j.country||'', gender: j.gender||'', date_of_birth: j.date_of_birth||'', phone: j.phone||'', instagram: j.instagram||'', bio: j.bio||'', level: j.level||'' }); })
       .finally(() => setLoading(false));
   }, [user]);
