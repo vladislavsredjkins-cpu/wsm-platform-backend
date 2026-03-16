@@ -24,7 +24,7 @@ async def create_checkout(data:CheckoutRequest):
             if promo.data: discounts=[{"promotion_code":promo.data[0].id}]
             else: raise HTTPException(400,"Invalid coupon")
         except stripe.StripeError as e: raise HTTPException(400,str(e))
-    session=stripe.checkout.Session.create(payment_method_types=["card"],line_items=[{"price_data":{"currency":"eur","product_data":{"name":LABELS[data.product_type],"description":"World Strongman International Union"},"unit_amount":PRICES[data.product_type]},"quantity":1}],mode="payment",success_url=data.success_url,cancel_url=data.cancel_url,metadata=data.metadata or {},discounts=discounts if discounts else [])
+    session=stripe.checkout.Session.create(payment_method_types=["card"],line_items=[{"price_data":{"currency":"eur","product_data":{"name":LABELS[data.product_type],"description":"World Strongman International Union"},"unit_amount":PRICES[data.product_type]},"quantity":1}],mode="payment",success_url=data.success_url,cancel_url=data.cancel_url,metadata=data.metadata or {},discounts=discounts if discounts else [],allow_promotion_codes=True)
     return {"checkout_url":session.url,"session_id":session.id}
 @router.get("/verify/{session_id}")
 async def verify_payment(session_id:str):

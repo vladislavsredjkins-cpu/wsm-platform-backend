@@ -58,7 +58,7 @@
     }
 
     // Получаем данные формы из sessionStorage
-    const formDataStr = sessionStorage.getItem('wsm_pending_organizer');
+    const formDataStr = localStorage.getItem('wsm_pending_organizer');
     if (!formDataStr) {
       showError('Session expired. Please register again.');
       return;
@@ -74,7 +74,7 @@
     const data = await res.json();
     
     if (res.ok) {
-      sessionStorage.removeItem('wsm_pending_organizer');
+      localStorage.removeItem('wsm_pending_organizer');
       document.getElementById('loading').style.display = 'none';
       document.getElementById('success').style.display = 'block';
     } else {

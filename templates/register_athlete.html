@@ -272,7 +272,7 @@ async function submitForm() {
       phone: document.getElementById('phone').value || null,
       instagram: document.getElementById('instagram').value || null,
     };
-    sessionStorage.setItem('wsm_pending_athlete', JSON.stringify(formData));
+    localStorage.setItem('wsm_pending_athlete', JSON.stringify(formData));
     
     // Создаём Stripe Checkout
     try {
