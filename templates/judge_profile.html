@@ -344,20 +344,27 @@
         {% if certificates %}
             {% for c in certificates %}
             <div class="cert-item">
-                <div class="cert-icon">📋</div>
+                <div class="cert-icon">🏅</div>
                 <div style="flex:1">
-                    <div class="cert-title">{{ c.title }}</div>
-                    {% if c.issued_by %}
-                        <div class="cert-detail">Issued by: {{ c.issued_by }}</div>
+                    <div class="cert-title">{{ c.course_name or c.title }}</div>
+                    {% if c.certificate_number %}
+                        <div class="cert-detail" style="color:#c9a84c;font-size:11px;letter-spacing:1px;">{{ c.certificate_number }}</div>
                     {% endif %}
                     {% if c.issued_date %}
-                        <div class="cert-detail">Date: {{ c.issued_date }}</div>
+                        <div class="cert-detail">Issued: {{ c.issued_date }}</div>
                     {% endif %}
                     {% if c.expires_date %}
-                        <div class="cert-expires">Expires: {{ c.expires_date }}</div>
+                        <div class="cert-expires">Valid Until: {{ c.expires_date }}</div>
+                    {% endif %}
+                    {% if c.status == 'active' %}
+                        <div style="display:inline-block;background:rgba(76,175,80,0.1);color:#4caf50;border:1px solid rgba(76,175,80,0.3);padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:1px;margin-top:4px;">✓ VALID</div>
+                    {% elif c.status == 'expired' %}
+                        <div style="display:inline-block;background:rgba(255,82,82,0.1);color:#ff5252;border:1px solid rgba(255,82,82,0.3);padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:1px;margin-top:4px;">EXPIRED</div>
                     {% endif %}
                 </div>
-                {% if c.file_url %}
+                {% if c.verify_url %}
+                    <a href="{{ c.verify_url }}" target="_blank" class="cert-link" style="background:#c9a84c;color:#000;padding:6px 14px;border-radius:3px;font-size:10px;font-weight:700;text-decoration:none;letter-spacing:1px;">🔍 VERIFY</a>
+                {% elif c.file_url %}
                     <a href="{{ c.file_url }}" target="_blank" class="cert-link">View</a>
                 {% endif %}
             </div>
