@@ -42,7 +42,7 @@
         .comp-card-date { font-size: 13px; color: #c9a84c; font-weight: 700; }
         .comp-card-coeff { font-size: 11px; letter-spacing: 2px; padding: 3px 8px; border: 1px solid #c9a84c; color: #c9a84c; text-transform: uppercase; display: inline-block; margin-top: 8px; }
         .no-results { grid-column: 1/-1; text-align: center; color: #444; font-size: 14px; letter-spacing: 2px; padding: 60px 0; }
-        .footer { border-top: 1px solid #1e1e1e; padding: 24px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .footer { margin-top: auto; border-top: 1px solid #1e1e1e; padding: 12px 40px; text-align: center; color: #333; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
         .footer span { color: #c9a84c; }
         .upcoming-badge { font-size: 9px; letter-spacing: 2px; padding: 2px 8px; border: 1px solid #7a9a7a; color: #7a9a7a; text-transform: uppercase; display: inline-block; margin-left: 8px; vertical-align: middle; }
         .past-badge { font-size: 9px; letter-spacing: 2px; padding: 2px 8px; border: 1px solid #555; color: #555; text-transform: uppercase; display: inline-block; margin-left: 8px; vertical-align: middle; }
@@ -210,7 +210,11 @@
     {% endfor %}
     <div class="no-results" id="no-results" style="display:none;">No competitions found</div>
 </div>
-<div class="footer">© 2026 <span>World Strongman</span> International Union · All Rights Reserved</div>
+<div class="footer">
+  © 2026 <span>World Strongman</span> International Union · All Rights Reserved
+  <br><a href="/privacy-policy" style="color:#333;text-decoration:none;font-size:9px;margin-right:10px;letter-spacing:1px;">Privacy Policy</a>
+  <a href="/cookie-policy" style="color:#333;text-decoration:none;font-size:9px;letter-spacing:1px;">Cookie Policy</a>
+</div>
 <script>
 function filter() {
     const s = document.getElementById('search').value.toLowerCase();
@@ -227,6 +231,26 @@ function filter() {
     });
     document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
 }
+</script>
+<!-- Cookie Banner -->
+<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #c9a84c;padding:16px 24px;z-index:9999;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div style="color:#888;font-size:12px;max-width:700px;">
+    We use cookies to improve your experience. By continuing to use this site you agree to our 
+    <a href="/cookie-policy" style="color:#c9a84c;">Cookie Policy</a> and 
+    <a href="/privacy-policy" style="color:#c9a84c;">Privacy Policy</a>.
+  </div>
+  <button onclick="acceptCookies()" style="background:#c9a84c;color:#000;border:none;padding:8px 24px;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;">ACCEPT</button>
+</div>
+<script>
+  function acceptCookies() {
+    localStorage.setItem('wsm_cookies_accepted', '1');
+    document.getElementById('cookie-banner').style.display = 'none';
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!localStorage.getItem('wsm_cookies_accepted')) {
+      document.getElementById('cookie-banner').style.display = 'flex';
+    }
+  });
 </script>
 </body>
 </html>
