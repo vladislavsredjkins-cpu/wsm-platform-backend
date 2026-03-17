@@ -7,7 +7,7 @@ from fastapi import APIRouter,HTTPException,Request
 from pydantic import BaseModel
 from typing import Optional
 router=APIRouter(prefix="/payments",tags=["payments"])
-PRICES={"athlete_annual":2500,"judge_annual":3000,"organizer_annual":9900,"team_annual":19900,"competition_local":4900,"competition_national":14900,"competition_continental":29900,"competition_world":49900,"asl_match":7900}
+PRICES={"athlete_annual":2500,"judge_annual":3000,"organizer_annual":9900,"team_annual":19900,"competition_local":4900,"competition_national":14900,"competition_continental":29900,"competition_world":79900,"asl_match":7900}
 LABELS={"athlete_annual":"WSM Athlete Annual Membership","judge_annual":"WSM Judge Annual Membership","organizer_annual":"WSM Organizer Annual Membership","team_annual":"WSM Team Annual Membership","competition_local":"WSM Local Competition Fee","competition_national":"WSM National Competition Fee","competition_continental":"WSM Continental Competition Fee","competition_world":"WSM World/Grand Prix Competition Fee","asl_match":"WSM ASL Match Fee"}
 class CheckoutRequest(BaseModel):
     product_type:str; success_url:str; cancel_url:str; metadata:Optional[dict]=None; coupon_code:Optional[str]=None

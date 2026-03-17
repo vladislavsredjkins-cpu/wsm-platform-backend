@@ -227,7 +227,7 @@
   <!-- LEFT: Banner -->
   <div>
     {% if competition.banner_url %}
-    <img src="{{ competition.banner_url }}" class="banner-img" style="width:100%;height:320px;object-fit:cover;border-radius:6px;border:1px solid #1e1e1e;" />
+    <img src="{{ competition.banner_url }}" class="banner-img" style="width:100%;height:auto;max-height:480px;object-fit:contain;border-radius:6px;border:1px solid #1e1e1e;background:#000;" />
     {% else %}
     <div style="width:100%;height:320px;background:#0d0d0d;border:2px dashed #1e1e1e;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#333;font-size:13px;letter-spacing:2px;">COMPETITION BANNER</div>
     {% endif %}
@@ -242,7 +242,7 @@
       {% if organizer.logo_url %}
       <img src="{{ organizer.logo_url }}" style="width:60px;height:60px;object-fit:contain;margin-bottom:10px;border-radius:4px;" />
       {% endif %}
-      <div style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px;">{{ organizer.name }}</div>
+      <a href="/organizers/{{ organizer.id }}/profile" style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px;text-decoration:none;display:block;">{{ organizer.name }} →</a>
       {% if competition.organizer_email %}
       <a href="mailto:{{ competition.organizer_email }}" style="color:#c9a84c;font-size:12px;text-decoration:none;">{{ competition.organizer_email }}</a>
       {% endif %}

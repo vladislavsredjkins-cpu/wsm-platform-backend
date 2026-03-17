@@ -560,7 +560,8 @@ async def athlete_profile(athlete_id: str, request: Request):
             sp = await db.execute(
                 select(AthleteSponsor).where(AthleteSponsor.athlete_id == uuid.UUID(athlete_id)).limit(3)
             )
-            sponsors = sp.scalars().all()
+            sponsors_raw = sp.scalars().all()
+            sponsors = [{'id': str(s.id), 'name': s.name, 'logo_url': s.logo_url or '', 'mc_text': getattr(s, 'mc_text', '') or '', 'website_url': getattr(s, 'website_url', '') or ''} for s in sponsors_raw]
         except:
             pass
 
@@ -856,12 +857,10 @@ async def mc_screen(competition_id: str, request: Request):
 
         # Sponsors
         sponsors = []
-        try:
-            from sqlalchemy import select
-            sp = await db.execute(select(CompetitionSponsor).where(CompetitionSponsor.competition_id == uuid.UUID(competition_id)))
-            sponsors = sp.scalars().all()
-        except:
-            pass
+        from sqlalchemy import select
+        sp = await db.execute(select(CompetitionSponsor).where(CompetitionSponsor.competition_id == uuid.UUID(competition_id)))
+        sponsors_raw = sp.scalars().all()
+        sponsors = [{'id': str(s.id), 'name': s.name, 'logo_url': s.logo_url or '', 'mc_text': getattr(s, 'mc_text', '') or '', 'website_url': getattr(s, 'website_url', '') or ''} for s in sponsors_raw]
 
         # Program
         program = []
@@ -889,7 +888,7 @@ async def mc_screen(competition_id: str, request: Request):
         "sponsors": sponsors,
         "program": program,
         "guests": guests,
-        "division_name": live_data.get("divisions", [{}])[0].get("division_name", "") if live_data else "",
+        "division_name": (live_data.get("divisions") or [{}])[0].get("division_name", "") if live_data else "",
     })
 
 @app.get("/privacy-policy")
@@ -1287,7 +1286,7 @@ async def competition_page(competition_id: str, request: Request):
         try:
             from models.competition_sponsor import CompetitionSponsor
             sponsors_result = await db.execute(
-                select(CompetitionSponsor).where(CompetitionSponsor.competition_id == uuid.UUID(competition_id))
+                select(CS).where(CS.competition_id == uuid.UUID(competition_id))
             )
             sponsors = sponsors_result.scalars().all()
         except Exception:
@@ -2831,6 +2830,95 @@ async def update_registration(competition_id: str, reg_id: str, data: dict):
                 print(f"Email error: {e}")
 
         return {"id": str(reg.id), "status": reg.status}
+
+
+@app.get("/competitions/{competition_id}/mc-data")
+async def get_mc_data(competition_id: str):
+    from sqlalchemy import select, text
+    from models.competition_sponsor import CompetitionSponsor as CS
+    import uuid
+    async with SessionLocal() as db:
+        sp = await db.execute(select(CS).where(CS.competition_id == uuid.UUID(competition_id)))
+        sponsors = sp.scalars().all()
+        try:
+            pr = await db.execute(text("SELECT id, order_no, time_slot, type, title, description, person_name, person_role FROM competition_program WHERE competition_id=:cid ORDER BY order_no, time_slot"), {"cid": competition_id})
+            program = [{"id": str(r[0]), "order_no": r[1], "time_slot": r[2], "type": r[3], "title": r[4], "description": r[5], "person_name": r[6], "person_role": r[7]} for r in pr.fetchall()]
+        except:
+            program = []
+        try:
+            gr = await db.execute(text("SELECT id, order_no, name, title, country, photo_url, bio FROM competition_guests WHERE competition_id=:cid ORDER BY order_no"), {"cid": competition_id})
+            guests = [{"id": str(r[0]), "order_no": r[1], "name": r[2], "title": r[3], "country": r[4], "photo_url": r[5], "bio": r[6]} for r in gr.fetchall()]
+        except:
+            guests = []
+        return {
+            "sponsors": [{"id": str(s.id), "name": s.name, "logo_url": s.logo_url, "tier": s.tier, "website_url": getattr(s, "website_url", ""), "mc_text": getattr(s, "mc_text", "")} for s in sponsors],
+            "program": program,
+            "guests": guests,
+        }
+
+@app.post("/competitions/{competition_id}/program")
+async def add_program_item(competition_id: str, data: dict):
+    from sqlalchemy import text
+    import uuid
+    async with SessionLocal() as db:
+        id_ = str(uuid.uuid4())
+        await db.execute(text("INSERT INTO competition_program (id, competition_id, order_no, time_slot, type, title, description, person_name, person_role) VALUES (:id, :cid, :order_no, :time_slot, :type, :title, :description, :person_name, :person_role)"), {
+            "id": id_, "cid": competition_id,
+            "order_no": data.get("order_no", 0),
+            "time_slot": data.get("time_slot", ""),
+            "type": data.get("type", "OTHER"),
+            "title": data.get("title", ""),
+            "description": data.get("description", ""),
+            "person_name": data.get("person_name", ""),
+            "person_role": data.get("person_role", ""),
+        })
+        await db.commit()
+        return {"id": id_, **data}
+
+@app.delete("/competitions/{competition_id}/program/{item_id}")
+async def delete_program_item(competition_id: str, item_id: str):
+    from sqlalchemy import text
+    async with SessionLocal() as db:
+        await db.execute(text("DELETE FROM competition_program WHERE id=:id AND competition_id=:cid"), {"id": item_id, "cid": competition_id})
+        await db.commit()
+        return {"ok": True}
+
+@app.post("/competitions/{competition_id}/guests")
+async def add_guest(competition_id: str, data: dict):
+    from sqlalchemy import text
+    import uuid
+    async with SessionLocal() as db:
+        id_ = str(uuid.uuid4())
+        await db.execute(text("INSERT INTO competition_guests (id, competition_id, order_no, name, title, country, photo_url, bio) VALUES (:id, :cid, :order_no, :name, :title, :country, :photo_url, :bio)"), {
+            "id": id_, "cid": competition_id,
+            "order_no": data.get("order_no", 0),
+            "name": data.get("name", ""),
+            "title": data.get("title", ""),
+            "country": data.get("country", ""),
+            "photo_url": data.get("photo_url", ""),
+            "bio": data.get("bio", ""),
+        })
+        await db.commit()
+        return {"id": id_, **data}
+
+@app.delete("/competitions/{competition_id}/guests/{guest_id}")
+async def delete_guest(competition_id: str, guest_id: str):
+    from sqlalchemy import text
+    async with SessionLocal() as db:
+        await db.execute(text("DELETE FROM competition_guests WHERE id=:id AND competition_id=:cid"), {"id": guest_id, "cid": competition_id})
+        await db.commit()
+        return {"ok": True}
+
+@app.patch("/competitions/{competition_id}/sponsors/{sponsor_id}")
+async def update_sponsor_mc(competition_id: str, sponsor_id: str, data: dict):
+    from sqlalchemy import update
+    from models.competition_sponsor import CompetitionSponsor as _CS
+    import uuid
+    async with SessionLocal() as db:
+        if "mc_text" in data:
+            await db.execute(update(_CS).where(_CS.id == uuid.UUID(sponsor_id)).values(mc_text=data["mc_text"]))
+            await db.commit()
+        return {"ok": True}
 
 @app.get("/organizer/help")
 async def organizer_help(request: Request):

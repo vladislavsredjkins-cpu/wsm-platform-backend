@@ -4,11 +4,12 @@ import api from '../../api';
 import Layout from '../../components/Layout';
 import DisciplinesTab from '../../components/DisciplinesTab';
 import DrawTab from '../../components/DrawTab';
+import MCTab from '../../components/MCTab';
 
 const gold = '#c9a84c';
 const inputStyle = { width: '100%', padding: '10px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#fff', borderRadius: '3px', fontSize: '13px', outline: 'none' };
 const labelStyle = { display: 'block', color: '#555', fontSize: '10px', letterSpacing: '2px', marginBottom: '6px' };
-const TABS = ['Divisions', 'Athletes', 'Disciplines', 'Judges', 'Start Order', 'Protocol', 'Registrations'];
+const TABS = ['Divisions', 'Athletes', 'Disciplines', 'Judges', 'Start Order', 'Protocol', 'MC', 'Registrations'];
 
 export default function CompetitionDetail() {
   const { competitionId } = useParams();
@@ -187,10 +188,12 @@ export default function CompetitionDetail() {
           </div>
         </div>
       </div>
-  <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '1px solid #1e1e1e' }}>
+  <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', marginBottom: '24px', borderBottom: '1px solid #1e1e1e' }}>
+        <div style={{ display: 'flex', gap: '4px', minWidth: 'max-content' }}>
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)} style={{ background: 'none', border: 'none', color: tab === t ? gold : '#555', padding: '10px 20px', cursor: 'pointer', fontSize: '13px', fontWeight: tab === t ? '700' : '400', borderBottom: tab === t ? `2px solid ${gold}` : '2px solid transparent', marginBottom: '-1px' }}>{t}</button>
         ))}
+        </div>
       </div>
 
       {tab === 'Divisions' && (
@@ -433,6 +436,7 @@ export default function CompetitionDetail() {
         <DrawTab competitionId={competitionId} divisions={divisions} />
       )}
 
+      {tab === 'MC' && <MCTab competitionId={competitionId} competition={competition} />}
       {tab === 'Registrations' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -467,18 +471,18 @@ export default function CompetitionDetail() {
           </div>
         </div>
       )}
-      <div style={{ marginTop: '32px', background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '20px', marginBottom: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+      <div className="wsm-banner-wrap" style={{ marginTop: '32px', background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {competition.banner_url
-          ? <img src={`https://ranking.worldstrongman.org${competition.banner_url}`} style={{ width: '300px', height: '120px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #2a2a2a' }} />
-          : <div style={{ width: '300px', height: '120px', background: '#0a0a0a', border: '1px dashed #333', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: '12px' }}>No banner</div>
+          ? <img src={competition.banner_url?.startsWith('http') ? competition.banner_url : `https://ranking.worldstrongman.org${competition.banner_url}`} style={{ width: '100%', maxWidth: '300px', height: '120px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #2a2a2a' }} />
+          : <div style={{ width: '100%', maxWidth: '300px', height: '120px', background: '#0a0a0a', border: '1px dashed #333', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: '12px' }}>No banner</div>
         }
-        <div>
+        <div style={{ flex: '1', minWidth: '200px' }}>
           <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px', marginBottom: '8px' }}>COMPETITION BANNER</div>
           <label style={{ padding: '10px 20px', background: gold, color: '#000', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'inline-block' }}>
             🖼️ {bannerUploading ? 'UPLOADING...' : 'UPLOAD BANNER'}
             <input type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={e => e.target.files[0] && uploadBanner(e.target.files[0])} />
           </label>
-          <div style={{ color: '#444', fontSize: '11px', marginTop: '6px' }}>Recommended: 1200×400px</div>
+          <div style={{ color: '#444', fontSize: '11px', marginTop: '6px' }}>Recommended: 1500×640px · JPG/PNG · max 2MB</div>
         </div>
       </div>
 

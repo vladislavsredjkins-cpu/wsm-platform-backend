@@ -21,6 +21,7 @@ class Competition(Base):
     organizer_id = Column(UUID(as_uuid=True), ForeignKey("organizers.id"), nullable=True)
     location = Column(String, nullable=True)
     description = Column(Text, nullable=True)
+    organizer_mc_text = Column(Text, nullable=True)
     banner_url = Column(String, nullable=True)
     status = Column(String, default='DRAFT')
     competition_type = Column(String, nullable=True)

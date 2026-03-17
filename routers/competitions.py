@@ -35,6 +35,8 @@ class CompetitionResponse(BaseModel):
     status: Optional[str] = None
     organizer_email: Optional[str] = None
     competition_type: Optional[str] = None
+    description: Optional[str] = None
+    organizer_mc_text: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -94,19 +96,20 @@ async def get_competition(competition_id: uuid.UUID, db: AsyncSession = Depends(
     return competition
 @router.post("/{competition_id}/banner")
 async def upload_banner(competition_id: uuid.UUID, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
-    from pathlib import Path
-    import shutil
+    import sys
+    sys.path.insert(0, '/var/www/wsm-platform')
+    from utils.r2 import upload_file_to_r2
+    import os
     result = await db.execute(select(Competition).where(Competition.id == competition_id))
     competition = result.scalar_one_or_none()
     if not competition:
         raise HTTPException(status_code=404, detail="Not found")
-    banner_dir = Path("uploads/banners")
-    banner_dir.mkdir(parents=True, exist_ok=True)
     ext = file.filename.split(".")[-1]
-    filename = f"{competition_id}_banner.{ext}"
-    with open(banner_dir / filename, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    competition.banner_url = f"/uploads/banners/{filename}"
+    filename = f"banners/{competition_id}_banner.{ext}"
+    file_bytes = await file.read()
+    upload_file_to_r2(file_bytes, filename, file.content_type or "image/jpeg")
+    public_url = os.getenv("R2_PUBLIC_URL", "")
+    competition.banner_url = f"{public_url}/uploads/{filename}"
     db.add(competition)
     await db.flush()
     await db.commit()

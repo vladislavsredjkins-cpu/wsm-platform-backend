@@ -11,3 +11,4 @@ class CompetitionSponsor(Base):
     logo_url = Column(String, nullable=True)
     website_url = Column(String, nullable=True)
     tier = Column(String, default='FREE')  # PAID or FREE
+    mc_text = Column(String, nullable=True)

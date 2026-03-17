@@ -7,13 +7,13 @@ import api from '../../api';
 const gold = '#c9a84c';
 
 const COMPETITION_TYPES = [
-  { value: 'WORLD_CHAMPIONSHIP', label: 'World Championship', q: 10 },
-  { value: 'CONTINENTAL_CHAMPIONSHIP', label: 'Continental Championship', q: 6 },
-  { value: 'WORLD_CUP', label: 'World Cup', q: 4 },
-  { value: 'SUBCONTINENTAL', label: 'Subcontinental', q: 2 },
-  { value: 'NATIONAL_CHAMPIONSHIP', label: 'National Championship', q: 1 },
-  { value: 'INTERNATIONAL_TOURNAMENT', label: 'International Tournament', q: 0.5 },
-  { value: 'GRAND_PRIX', label: 'Grand Prix', q: 4 },
+  { value: 'WORLD_CHAMPIONSHIP', label: 'World Championship', q: 10, price: 'competition_world', fee: 799 },
+  { value: 'CONTINENTAL_CHAMPIONSHIP', label: 'Continental Championship', q: 6, price: 'competition_continental', fee: 299 },
+  { value: 'WORLD_CUP', label: 'World Cup', q: 4, price: 'competition_world', fee: 799 },
+  { value: 'SUBCONTINENTAL', label: 'Subcontinental', q: 2, price: 'competition_national', fee: 149 },
+  { value: 'NATIONAL_CHAMPIONSHIP', label: 'National Championship', q: 1, price: 'competition_national', fee: 149 },
+  { value: 'INTERNATIONAL_TOURNAMENT', label: 'International Tournament', q: 0.5, price: 'competition_local', fee: 49 },
+  { value: 'GRAND_PRIX', label: 'Grand Prix', q: 4, price: 'competition_world', fee: 799 },
 ];
 
 export default function Competitions() {
@@ -25,7 +25,7 @@ export default function Competitions() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '',
-    coefficient_q: 1,
+    coefficient_q: 10,
     date_start: '',
     date_end: '',
     city: '',
@@ -43,30 +43,62 @@ export default function Competitions() {
 
   useEffect(() => { load(); }, []);
 
+  const selectedType = COMPETITION_TYPES.find(t => t.value === form.competition_type) || COMPETITION_TYPES[0];
+
   const handleSubmit = async () => {
     if (!form.name) return alert('Name is required');
     setSaving(true);
     try {
-      const res = await api.post('/competitions/', {
+      // Сохраняем данные формы в localStorage для использования после оплаты
+      const formData = {
         name: form.name,
-        coefficient_q: parseFloat(form.coefficient_q),
+        coefficient_q: parseFloat(selectedType.q),
         date_start: form.date_start || null,
         date_end: form.date_end || null,
         city: form.city || null,
         country: form.country || null,
         competition_type: form.competition_type || null,
         organizer_email: form.organizer_email || null,
+      };
+      localStorage.setItem('pending_competition', JSON.stringify(formData));
+
+      const res = await api.post('/payments/checkout', {
+        product_type: selectedType.price,
+        success_url: `https://app.ranking.worldstrongman.org/organizer/competitions?payment=success&type=competition`,
+        cancel_url: `https://app.ranking.worldstrongman.org/organizer/competitions?payment=cancelled`,
+        metadata: { 
+          product_type: 'competition',
+          competition_type: form.competition_type,
+          organizer_id: user?.organizer_id || '',
+        }
       });
-      setShowForm(false);
-      setForm({ name: '', coefficient_q: 1, date_start: '', date_end: '', city: '', country: '' });
-      load();
-      navigate(`/organizer/competitions/${res.data.id}`);
+      window.location.href = res.data.url;
     } catch (e) {
-      alert(e.response?.data?.detail || 'Failed to create competition');
+      alert(e.response?.data?.detail || 'Failed to create checkout');
     } finally {
       setSaving(false);
     }
   };
+
+  // После возврата с Stripe — создаём соревнование
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success' && params.get('type') === 'competition') {
+      const pending = localStorage.getItem('pending_competition');
+      if (pending) {
+        const formData = JSON.parse(pending);
+        localStorage.removeItem('pending_competition');
+        api.post('/competitions/', formData).then(res => {
+          load();
+          navigate(`/organizer/competitions/${res.data.id}`);
+        }).catch(() => alert('Payment successful but failed to create competition. Contact support.'));
+      }
+    }
+    if (params.get('payment') === 'cancelled') {
+      alert('Payment cancelled. Competition was not created.');
+      window.history.replaceState({}, '', '/organizer/competitions');
+    }
+  }, []);
 
   return (
     <Layout>
@@ -80,7 +112,24 @@ export default function Competitions() {
         </button>
       </div>
 
-      {/* Create form */}
+      {/* Pricing cards */}
+      {!showForm && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '28px' }}>
+          {[
+            { label: 'Local / International', types: 'International Tournament', fee: 49, color: '#555' },
+            { label: 'National', types: 'National Championship', fee: 149, color: '#888' },
+            { label: 'Continental', types: 'Continental Championship', fee: 299, color: '#c9a84c' },
+            { label: 'World / Grand Prix', types: 'World Championship, World Cup, Grand Prix', fee: 799, color: '#fff' },
+          ].map(p => (
+            <div key={p.label} style={{ background: '#111', border: `1px solid #1e1e1e`, borderRadius: '4px', padding: '20px', textAlign: 'center' }}>
+              <div style={{ color: p.color, fontSize: '11px', fontWeight: '700', letterSpacing: '2px', marginBottom: '8px' }}>{p.label.toUpperCase()}</div>
+              <div style={{ color: '#fff', fontSize: '32px', fontWeight: '900', marginBottom: '4px' }}>€{p.fee}</div>
+              <div style={{ color: '#444', fontSize: '11px', lineHeight: '1.6' }}>{p.types}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {showForm && (
         <div style={{ background: '#111', border: `1px solid ${gold}`, borderRadius: '4px', padding: '24px', marginBottom: '28px' }}>
           <h3 style={{ color: gold, fontSize: '12px', fontWeight: '700', letterSpacing: '2px', margin: '0 0 20px' }}>NEW COMPETITION</h3>
@@ -90,10 +139,13 @@ export default function Competitions() {
               <input style={inputStyle} placeholder="WSM World Championship 2026" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             </div>
             <div>
-              <label style={labelStyle}>Type / Q Coefficient</label>
-              <select style={inputStyle} value={form.coefficient_q} onChange={e => setForm(f => ({ ...f, coefficient_q: e.target.value }))}>
+              <label style={labelStyle}>Type</label>
+              <select style={inputStyle} value={form.competition_type} onChange={e => {
+                const t = COMPETITION_TYPES.find(x => x.value === e.target.value);
+                setForm(f => ({ ...f, competition_type: e.target.value, coefficient_q: t?.q || 1 }));
+              }}>
                 {COMPETITION_TYPES.map(t => (
-                  <option key={t.value} value={t.q}>{t.label} (Q={t.q})</option>
+                  <option key={t.value} value={t.value}>{t.label} (Q={t.q})</option>
                 ))}
               </select>
             </div>
@@ -118,13 +170,20 @@ export default function Competitions() {
               <input style={inputStyle} type="email" placeholder="contact@wsm.com" value={form.organizer_email} onChange={e => setForm(f => ({ ...f, organizer_email: e.target.value }))} />
             </div>
           </div>
-          <button onClick={handleSubmit} disabled={saving} style={{ marginTop: '20px', padding: '12px 32px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
-            {saving ? 'CREATING...' : 'CREATE COMPETITION →'}
+          {/* Price info */}
+          <div style={{ marginTop: '20px', padding: '14px 18px', background: 'rgba(201,168,76,0.08)', border: `1px solid ${gold}`, borderRadius: '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px' }}>REGISTRATION FEE</div>
+              <div style={{ color: '#fff', fontSize: '13px', marginTop: '4px' }}>{selectedType.label}</div>
+            </div>
+            <div style={{ color: gold, fontSize: '28px', fontWeight: '900' }}>€{selectedType.fee}</div>
+          </div>
+          <button onClick={handleSubmit} disabled={saving} style={{ marginTop: '16px', padding: '12px 32px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
+            {saving ? 'REDIRECTING...' : `PAY €${selectedType.fee} & CREATE →`}
           </button>
         </div>
       )}
 
-      {/* List */}
       {loading && <p style={{ color: '#555' }}>Loading...</p>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {competitions.map(c => (
