@@ -128,11 +128,14 @@ async def upload_photo(
     if ext not in ["jpg", "jpeg", "png", "webp"]:
         raise HTTPException(status_code=400, detail="Only jpg/png/webp allowed")
 
-    filename = f"{organizer_id}.{ext}"
-    with open(UPLOAD_DIR / filename, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    org.photo_url = f"/uploads/organizers/{filename}"
+    import sys; sys.path.insert(0, '/var/www/wsm-platform')
+    from utils.r2 import upload_file_to_r2
+    import os
+    filename = f"organizers/{organizer_id}.{ext}"
+    file_bytes = await file.read()
+    upload_file_to_r2(file_bytes, filename, file.content_type or "image/jpeg")
+    public_url = os.getenv("R2_PUBLIC_URL", "")
+    org.photo_url = f"{public_url}/uploads/{filename}"
     await db.commit()
     return {"photo_url": org.photo_url}
 
@@ -184,13 +187,14 @@ async def upload_sponsor_logo(
     if ext not in ["jpg", "jpeg", "png", "webp"]:
         raise HTTPException(status_code=400, detail="Only jpg/png/webp allowed")
 
-    logo_dir = Path("uploads/organizer_sponsors")
-    logo_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"{sponsor_id}.{ext}"
-    with open(logo_dir / filename, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    sponsor.logo_url = f"/uploads/organizer_sponsors/{filename}"
+    import sys; sys.path.insert(0, '/var/www/wsm-platform')
+    from utils.r2 import upload_file_to_r2
+    import os
+    filename = f"organizer_sponsors/{sponsor_id}.{ext}"
+    file_bytes = await file.read()
+    upload_file_to_r2(file_bytes, filename, file.content_type or "image/jpeg")
+    public_url = os.getenv("R2_PUBLIC_URL", "")
+    sponsor.logo_url = f"{public_url}/uploads/{filename}"
     await db.commit()
     return {"logo_url": sponsor.logo_url}
 

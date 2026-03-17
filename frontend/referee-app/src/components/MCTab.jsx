@@ -98,6 +98,8 @@ export default function MCTab({ competitionId, competition }) {
           style={{ marginLeft: 'auto', padding: '8px 16px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none', alignSelf: 'center', letterSpacing: '1px' }}>
           👁 PREVIEW MC SCREEN →
         </a>
+        <button type="button" onClick={() => { navigator.clipboard.writeText(`https://ranking.worldstrongman.org/competitions/${competitionId}/mc`); alert('Link copied!'); }}
+          style={{ marginLeft: '8px', padding: '8px 16px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>📋 COPY LINK</button>
       </div>
 
       {/* INFO */}

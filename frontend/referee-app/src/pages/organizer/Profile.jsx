@@ -82,7 +82,7 @@ export default function OrganizerProfile() {
         <div style={{display:'flex',alignItems:'center',gap:'24px',marginBottom:'32px',padding:'24px',background:'#111',border:'1px solid #1e1e1e',borderRadius:'6px',borderTop:`3px solid ${gold}`}}>
           <div style={{position:'relative'}}>
             {profile?.logo_url
-              ? <img src={`https://ranking.worldstrongman.org${profile.logo_url}`} style={{width:'80px',height:'80px',borderRadius:'50%',objectFit:'cover',border:`2px solid ${gold}`}} />
+              ? <img src={profile.logo_url?.startsWith('http') ? profile.logo_url : `https://ranking.worldstrongman.org${profile.logo_url}`} style={{width:'80px',height:'80px',borderRadius:'50%',objectFit:'cover',border:`2px solid ${gold}`}} />
               : <div style={{width:'80px',height:'80px',borderRadius:'50%',background:'#1e1e1e',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'32px'}}>🏛️</div>
             }
             <label style={{position:'absolute',bottom:0,right:0,background:gold,borderRadius:'50%',width:'24px',height:'24px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'12px'}}>
@@ -161,7 +161,7 @@ export default function OrganizerProfile() {
                 <div key={s.id} style={{background:'#0a0a0a',border:'1px solid #1e1e1e',borderRadius:'4px',padding:'12px',textAlign:'center'}}>
                   <label style={{cursor:'pointer',display:'block',marginBottom:'8px'}}>
                     {s.logo_url
-                      ? <img src={`https://ranking.worldstrongman.org${s.logo_url}`} style={{height:'80px',objectFit:'contain',maxWidth:'100%'}} />
+                      ? <img src={s.logo_url?.startsWith('http') ? s.logo_url : `https://ranking.worldstrongman.org${s.logo_url}`} style={{height:'80px',objectFit:'contain',maxWidth:'100%'}} />
                       : <div style={{height:'80px',display:'flex',alignItems:'center',justifyContent:'center',color:'#333',fontSize:'10px',border:'1px dashed #333',borderRadius:'3px'}}>+ LOGO</div>
                     }
                     <input type="file" accept="image/*" style={{display:'none'}} onChange={async e => {

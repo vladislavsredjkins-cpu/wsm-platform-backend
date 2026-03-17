@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WSM Platform App</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0a0a; color:#fff; font-family:system-ui,sans-serif; min-height:100vh; }
+    .hero { background:#111; border-bottom:2px solid #c9a84c; padding:48px 24px; text-align:center; }
+    .logo { height:80px; border-radius:50%; margin-bottom:24px; }
+    .title { font-size:28px; font-weight:900; letter-spacing:3px; color:#fff; margin-bottom:8px; }
+    .subtitle { font-size:14px; color:#555; letter-spacing:2px; margin-bottom:32px; }
+    .btn { display:inline-block; padding:14px 40px; background:#c9a84c; color:#000; font-size:13px; font-weight:900; letter-spacing:2px; border-radius:4px; text-decoration:none; margin:8px; }
+    .btn-outline { background:transparent; border:2px solid #c9a84c; color:#c9a84c; }
+    .section { max-width:640px; margin:0 auto; padding:48px 24px; }
+    .section-title { font-size:11px; letter-spacing:3px; color:#c9a84c; margin-bottom:24px; }
+    .steps { display:flex; flex-direction:column; gap:16px; }
+    .step { background:#111; border:1px solid #1e1e1e; border-radius:6px; padding:20px 24px; display:flex; gap:16px; align-items:flex-start; }
+    .step-num { background:#c9a84c; color:#000; font-weight:900; font-size:14px; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .step-title { font-size:15px; font-weight:700; margin-bottom:4px; }
+    .step-text { font-size:13px; color:#888; line-height:1.6; }
+    .os-tabs { display:flex; gap:0; border-bottom:1px solid #1e1e1e; margin-bottom:24px; }
+    .os-tab { padding:12px 24px; font-size:12px; font-weight:700; letter-spacing:2px; cursor:pointer; border-bottom:2px solid transparent; color:#555; background:none; border-top:none; border-left:none; border-right:none; }
+    .os-tab.active { color:#c9a84c; border-bottom-color:#c9a84c; }
+    .os-content { display:none; }
+    .os-content.active { display:block; }
+    .roles { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; margin-top:16px; }
+    .role-card { background:#111; border:1px solid #1e1e1e; border-radius:6px; padding:16px; text-align:center; }
+    .role-icon { font-size:28px; margin-bottom:8px; }
+    .role-name { font-size:12px; font-weight:700; color:#c9a84c; letter-spacing:1px; }
+    .qr-box { background:#fff; border-radius:8px; padding:16px; display:inline-block; margin:16px auto; }
+    .qr-box img { width:180px; height:180px; }
+    .center { text-align:center; }
+    footer { text-align:center; padding:32px; color:#333; font-size:12px; border-top:1px solid #1e1e1e; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <img src="/static/logo.jpg" class="logo" alt="WSM">
+    <div class="title">WSM PLATFORM</div>
+    <div class="subtitle">WORLD STRONGMAN INTERNATIONAL UNION</div>
+    <a href="https://app.ranking.worldstrongman.org" class="btn">OPEN APP →</a>
+    <a href="#install" class="btn btn-outline">HOW TO INSTALL</a>
+  </div>
+
+  <div class="section">
+    <div class="section-title">WHO IS THIS FOR</div>
+    <div class="roles">
+      <div class="role-card"><div class="role-icon">🏆</div><div class="role-name">ORGANIZER</div></div>
+      <div class="role-card"><div class="role-icon">⚖️</div><div class="role-name">REFEREE</div></div>
+      <div class="role-card"><div class="role-icon">💪</div><div class="role-name">ATHLETE</div></div>
+      <div class="role-card"><div class="role-icon">🎯</div><div class="role-name">COACH</div></div>
+      <div class="role-card"><div class="role-icon">👥</div><div class="role-name">TEAM</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="install">
+    <div class="section-title">INSTALL THE APP</div>
+    <div class="os-tabs">
+      <button class="os-tab active" onclick="showOS('android')">ANDROID</button>
+      <button class="os-tab" onclick="showOS('ios')">IPHONE / IPAD</button>
+      <button class="os-tab" onclick="showOS('desktop')">DESKTOP</button>
+    </div>
+
+    <div class="os-content active" id="os-android">
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div><div class="step-title">Open Chrome browser</div><div class="step-text">Visit <strong style="color:#c9a84c">app.ranking.worldstrongman.org</strong> in Google Chrome on your Android device.</div></div></div>
+        <div class="step"><div class="step-num">2</div><div><div class="step-title">Tap the menu (⋮)</div><div class="step-text">Tap the three dots in the top right corner of Chrome.</div></div></div>
+        <div class="step"><div class="step-num">3</div><div><div class="step-title">Add to Home screen</div><div class="step-text">Tap "Add to Home screen" and confirm. The WSM app icon will appear on your home screen.</div></div></div>
+        <div class="step"><div class="step-num">4</div><div><div class="step-title">Open and sign in</div><div class="step-text">Tap the WSM icon on your home screen and sign in with your credentials.</div></div></div>
+      </div>
+    </div>
+
+    <div class="os-content" id="os-ios">
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div><div class="step-title">Open Safari browser</div><div class="step-text">Visit <strong style="color:#c9a84c">app.ranking.worldstrongman.org</strong> in Safari (not Chrome) on your iPhone or iPad.</div></div></div>
+        <div class="step"><div class="step-num">2</div><div><div class="step-title">Tap Share button</div><div class="step-text">Tap the Share icon (box with arrow) at the bottom of Safari.</div></div></div>
+        <div class="step"><div class="step-num">3</div><div><div class="step-title">Add to Home Screen</div><div class="step-text">Scroll down and tap "Add to Home Screen". Give it a name and tap Add.</div></div></div>
+        <div class="step"><div class="step-num">4</div><div><div class="step-title">Open and sign in</div><div class="step-text">Tap the WSM icon on your home screen and sign in with your credentials.</div></div></div>
+      </div>
+    </div>
+
+    <div class="os-content" id="os-desktop">
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div><div class="step-title">Open Chrome or Edge</div><div class="step-text">Visit <strong style="color:#c9a84c">app.ranking.worldstrongman.org</strong> in Google Chrome or Microsoft Edge.</div></div></div>
+        <div class="step"><div class="step-num">2</div><div><div class="step-title">Click install icon</div><div class="step-text">Look for the install icon (⊕) in the address bar on the right side and click it.</div></div></div>
+        <div class="step"><div class="step-num">3</div><div><div class="step-title">Confirm installation</div><div class="step-text">Click "Install" in the popup. The app opens in its own window like a native app.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section center">
+    <div class="section-title">SCAN TO OPEN</div>
+    <div class="qr-box">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://app.ranking.worldstrongman.org" alt="QR Code">
+    </div>
+    <p style="color:#555;font-size:12px;margin-top:8px;">Scan with your phone camera</p>
+  </div>
+
+  <footer>
+    © 2026 World Strongman International Union · <a href="https://ranking.worldstrongman.org" style="color:#555">ranking.worldstrongman.org</a>
+  </footer>
+
+  <script>
+    function showOS(os) {
+      document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.os-content').forEach(c => c.classList.remove('active'));
+      document.querySelector(`#os-${os}`).classList.add('active');
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

@@ -2920,6 +2920,10 @@ async def update_sponsor_mc(competition_id: str, sponsor_id: str, data: dict):
             await db.commit()
         return {"ok": True}
 
+@app.get("/app")
+async def app_install(request: Request):
+    return templates.TemplateResponse("app_install.html", {"request": request})
+
 @app.get("/organizer/help")
 async def organizer_help(request: Request):
     return templates.TemplateResponse("organizer_help.html", {"request": request})
