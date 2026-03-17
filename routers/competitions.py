@@ -58,6 +58,7 @@ async def create_competition(
         country=data.country,
         coefficient_q=data.coefficient_q,
         season_id=data.season_id,
+        organizer_id=current_user.organizer_id if current_user.organizer_id else None,
     )
     db.add(competition)
     await db.commit()
@@ -66,10 +67,20 @@ async def create_competition(
 
 
 @router.get("/", response_model=list[CompetitionResponse])
-async def list_competitions(db: AsyncSession = Depends(get_db), published_only: bool = False):
+async def list_competitions(
+    db: AsyncSession = Depends(get_db),
+    published_only: bool = False,
+    organizer_id: Optional[str] = None,
+):
     query = select(Competition)
     if published_only:
         query = query.where(Competition.status == 'PUBLISHED')
+    # Если запрос от организатора — показываем только его соревнования
+    if organizer_id:
+        import uuid as _uuid
+        query = query.where(Competition.organizer_id == _uuid.UUID(organizer_id))
+    elif current_user and current_user.organizer_id and current_user.role not in ('WSM_ADMIN',):
+        query = query.where(Competition.organizer_id == current_user.organizer_id)
     result = await db.execute(query.order_by(Competition.date_start.desc()))
     return result.scalars().all()
 

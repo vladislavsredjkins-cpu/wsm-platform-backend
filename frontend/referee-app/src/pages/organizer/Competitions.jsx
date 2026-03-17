@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../AuthContext';
 import { getCompetitions } from '../../api';
 import Layout from '../../components/Layout';
 import api from '../../api';
-
 const gold = '#c9a84c';
 
 const COMPETITION_TYPES = [
@@ -18,6 +18,7 @@ const COMPETITION_TYPES = [
 
 export default function Competitions() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [competitions, setCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -35,7 +36,7 @@ export default function Competitions() {
 
   const load = () => {
     setLoading(true);
-    getCompetitions()
+    getCompetitions(user?.organizer_id)
       .then(res => setCompetitions(res.data))
       .finally(() => setLoading(false));
   };

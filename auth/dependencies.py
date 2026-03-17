@@ -61,3 +61,4 @@ async def require_federation(current_user: User = Depends(get_current_user)):
     if current_user.role not in ("FEDERATION", "ADMIN", "WSM_ADMIN"):
         raise HTTPException(status_code=403, detail="Federation role required")
     return current_user
+
