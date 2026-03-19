@@ -90,14 +90,14 @@ export default function TeamProfile() {
 
       <div style={{background:'#111',border:'1px solid #1e1e1e',borderRadius:'4px',padding:'24px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'24px',flexWrap:'wrap'}}>
         <div>
-          {team?.logo_url ? <img src={`${API}${team.logo_url}`} style={{width:'80px',height:'80px',objectFit:'cover',border:`2px solid ${gold}`,borderRadius:'4px'}} />
+          {team?.logo_url ? <img src={team.logo_url?.startsWith("http") ? team.logo_url : `${API}${team.logo_url}`} style={{width:'80px',height:'80px',objectFit:'cover',border:`2px solid ${gold}`,borderRadius:'4px'}} />
             : <div style={{width:'80px',height:'80px',background:'#1a1a1a',border:'1px solid #2a2a2a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px',borderRadius:'4px'}}>👥</div>}
           <label style={{display:'block',marginTop:'8px',padding:'5px 10px',border:`1px solid ${gold}`,color:gold,fontSize:'10px',fontWeight:'700',cursor:'pointer',borderRadius:'3px',textAlign:'center'}}>
             📷 LOGO<input type="file" accept=".jpg,.jpeg,.png,.webp" style={{display:'none'}} onChange={e=>e.target.files[0]&&uploadFile(e.target.files[0],'logo')} />
           </label>
         </div>
         <div>
-          {team?.team_photo_url ? <img src={`${API}${team.team_photo_url}`} style={{width:'120px',height:'80px',objectFit:'cover',border:'1px solid #2a2a2a',borderRadius:'4px'}} />
+          {team?.team_photo_url ? <img src={team.team_photo_url?.startsWith("http") ? team.team_photo_url : `${API}${team.team_photo_url}`} style={{width:'120px',height:'80px',objectFit:'cover',border:'1px solid #2a2a2a',borderRadius:'4px'}} />
             : <div style={{width:'120px',height:'80px',background:'#1a1a1a',border:'1px solid #2a2a2a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',color:'#444',borderRadius:'4px'}}>TEAM PHOTO</div>}
           <label style={{display:'block',marginTop:'8px',padding:'5px 10px',border:'1px solid #2a2a2a',color:'#666',fontSize:'10px',fontWeight:'700',cursor:'pointer',borderRadius:'3px',textAlign:'center'}}>
             📷 TEAM PHOTO<input type="file" accept=".jpg,.jpeg,.png,.webp" style={{display:'none'}} onChange={e=>e.target.files[0]&&uploadFile(e.target.files[0],'team-photo')} />
@@ -128,7 +128,7 @@ export default function TeamProfile() {
           <div style={{color:gold,fontSize:'10px',letterSpacing:'3px',marginBottom:'16px',paddingBottom:'8px',borderBottom:'1px solid #1e1e1e'}}>SQUAD</div>
           {team.members.map(m => (
             <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 0',borderBottom:'1px solid #1a1a1a'}}>
-              {m.athlete?.photo_url ? <img src={`${API}${m.athlete.photo_url}`} style={{width:'40px',height:'40px',borderRadius:'50%',objectFit:'cover'}} />
+              {m.athlete?.photo_url ? <img src={m.athlete.photo_url?.startsWith("http") ? m.athlete.photo_url : `${API}${m.athlete.photo_url}`} style={{width:'40px',height:'40px',borderRadius:'50%',objectFit:'cover'}} />
                 : <div style={{width:'40px',height:'40px',borderRadius:'50%',background:'#1a1a1a',display:'flex',alignItems:'center',justifyContent:'center'}}>💪</div>}
               <div>
                 <div style={{color:'#fff',fontWeight:'600',fontSize:'14px'}}>{m.athlete?.first_name} {m.athlete?.last_name}</div>
@@ -145,7 +145,7 @@ export default function TeamProfile() {
         {/* General sponsor - большой */}
         {sponsors.filter(s=>s.tier==='GENERAL').map(s => (
           <div key={s.id} style={{display:'flex',alignItems:'center',gap:'16px',padding:'16px',background:'rgba(201,168,76,0.05)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'4px',marginBottom:'12px'}}>
-            {s.logo_url ? <img src={`${API}${s.logo_url}`} style={{width:'80px',height:'60px',objectFit:'contain',background:'#1a1a1a',borderRadius:'3px'}} />
+            {s.logo_url ? <img src={s.logo_url?.startsWith("http") ? s.logo_url : `${API}${s.logo_url}`} style={{width:'80px',height:'60px',objectFit:'contain',background:'#1a1a1a',borderRadius:'3px'}} />
               : <div style={{width:'80px',height:'60px',background:'#1a1a1a',borderRadius:'3px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px'}}>🏆</div>}
             <div style={{flex:1}}>
               <div style={{color:gold,fontSize:'10px',letterSpacing:'2px',marginBottom:'4px'}}>GENERAL SPONSOR</div>
@@ -159,7 +159,7 @@ export default function TeamProfile() {
         {/* Standard sponsors - поменьше */}
         {sponsors.filter(s=>s.tier==='STANDARD').map(s => (
           <div key={s.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px',background:'#0a0a0a',border:'1px solid #1e1e1e',borderRadius:'4px',marginBottom:'8px'}}>
-            {s.logo_url ? <img src={`${API}${s.logo_url}`} style={{width:'48px',height:'36px',objectFit:'contain',background:'#1a1a1a',borderRadius:'3px'}} />
+            {s.logo_url ? <img src={s.logo_url?.startsWith("http") ? s.logo_url : `${API}${s.logo_url}`} style={{width:'48px',height:'36px',objectFit:'contain',background:'#1a1a1a',borderRadius:'3px'}} />
               : <div style={{width:'48px',height:'36px',background:'#1a1a1a',borderRadius:'3px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px'}}>🎽</div>}
             <div style={{flex:1}}>
               <div style={{color:'#888',fontSize:'10px',letterSpacing:'1px',marginBottom:'2px'}}>STANDARD SPONSOR</div>

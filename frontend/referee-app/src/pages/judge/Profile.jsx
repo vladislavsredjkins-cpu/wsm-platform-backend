@@ -49,7 +49,7 @@ export default function JudgeProfile() {
         <h1 style={{color:'#fff',fontSize:'22px',fontWeight:'700',margin:'0 0 4px'}}>My Profile</h1>
       </div>
       <div style={{background:'#111',border:'1px solid #1e1e1e',borderRadius:'4px',padding:'24px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'20px',flexWrap:'wrap'}}>
-        {profile?.photo_url ? <img src={`${API}${profile.photo_url}`} style={{width:'80px',height:'80px',borderRadius:'50%',objectFit:'cover',border:`2px solid ${gold}`}} />
+        {profile?.photo_url ? <img src={profile.photo_url?.startsWith("http") ? profile.photo_url : `${API}${profile.photo_url}`} style={{width:'80px',height:'80px',borderRadius:'50%',objectFit:'cover',border:`2px solid ${gold}`}} />
           : <div style={{width:'80px',height:'80px',borderRadius:'50%',background:'#1a1a1a',border:'1px solid #2a2a2a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px'}}>⚖️</div>}
         <div>
           <div style={{color:'#fff',fontWeight:'700',fontSize:'16px',marginBottom:'4px'}}>{profile?.first_name} {profile?.last_name}</div>

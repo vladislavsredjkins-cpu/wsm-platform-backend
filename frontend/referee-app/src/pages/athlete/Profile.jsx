@@ -95,7 +95,7 @@ export default function AthleteProfile() {
 
       <div style={{background:'#111',border:'1px solid #1e1e1e',borderRadius:'4px',padding:'24px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'20px',flexWrap:'wrap'}}>
         {profile?.photo_url
-          ? <img src={`${API}${profile.photo_url}`} style={{width:'80px',height:'80px',borderRadius:'50%',objectFit:'cover',border:`2px solid ${gold}`}} />
+          ? <img src={profile.photo_url?.startsWith("http") ? profile.photo_url : `${API}${profile.photo_url}`} style={{width:'80px',height:'80px',borderRadius:'50%',objectFit:'cover',border:`2px solid ${gold}`}} />
           : <div style={{width:'80px',height:'80px',borderRadius:'50%',background:'#1a1a1a',border:'1px solid #2a2a2a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px'}}>💪</div>
         }
         <div>
@@ -146,7 +146,7 @@ export default function AthleteProfile() {
         <div style={{color:gold,fontSize:'10px',letterSpacing:'3px',marginBottom:'16px',paddingBottom:'8px',borderBottom:'1px solid #1e1e1e'}}>SPONSORS ({sponsors.length}/3)</div>
         {sponsors.map(s => (
           <div key={s.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 0',borderBottom:'1px solid #1a1a1a'}}>
-            {s.logo_url ? <img src={`${API}${s.logo_url}`} style={{width:'40px',height:'40px',objectFit:'contain',background:'#1a1a1a',borderRadius:'3px'}} />
+            {s.logo_url ? <img src={s.logo_url?.startsWith("http") ? s.logo_url : `${API}${s.logo_url}`} style={{width:'40px',height:'40px',objectFit:'contain',background:'#1a1a1a',borderRadius:'3px'}} />
               : <div style={{width:'40px',height:'40px',background:'#1a1a1a',borderRadius:'3px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>🎽</div>}
             <div style={{flex:1}}>
               <div style={{color:'#fff',fontWeight:'600',fontSize:'13px'}}>{s.name}</div>
