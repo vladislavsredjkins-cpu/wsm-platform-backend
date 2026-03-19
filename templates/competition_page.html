@@ -6,7 +6,7 @@
     <title>{{ competition.name }} — World Strongman</title>
     <meta name="description" content="{{ competition.name }} — official strongman competition. Results, start order and athlete rankings.">
     <meta property="og:title" content="{{ competition.name }} — World Strongman">
-    <meta property="og:description" content="{{ competition.name }} in {{ competition.location }}. {{ competition.date_start }}.">
+    <meta property="og:description" content="{{ competition.name }}{% if competition.location %} in {{ competition.location }}{% endif %}. {{ competition.date_start }}.">
     <meta property="og:image" content="{{ competition.banner_url or 'https://ranking.worldstrongman.org/static/logo.jpg' }}">
     <meta property="og:url" content="https://ranking.worldstrongman.org/competitions/{{ competition.id }}/page">
     <meta property="og:type" content="website">
