@@ -164,12 +164,12 @@ async def upload_sponsor_logo(team_id: uuid.UUID, sponsor_id: uuid.UUID,
     sponsor = await db.get(TeamSponsor, sponsor_id)
     if not sponsor:
         raise HTTPException(status_code=404, detail="Sponsor not found")
-    os.makedirs("uploads/team_sponsors", exist_ok=True)
     ext = file.filename.split(".")[-1]
-    filename = f"uploads/team_sponsors/{sponsor_id}.{ext}"
-    with open(filename, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    sponsor.logo_url = f"/{filename}"
+    filename = f"team_sponsors/{sponsor_id}.{ext}"
+    file_bytes = await file.read()
+    from utils.r2 import upload_file_to_r2
+    upload_file_to_r2(file_bytes, filename, file.content_type or "image/jpeg")
+    sponsor.logo_url = f"https://pub-22fdd3117dc246539752f3a04b02035f.r2.dev/uploads/{filename}"
     await db.commit()
     return {"logo_url": sponsor.logo_url}
 
@@ -192,11 +192,11 @@ async def upload_team_photo(team_id: uuid.UUID, file: UploadFile = File(...),
     team = await db.get(Team, team_id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-    os.makedirs("uploads/teams", exist_ok=True)
     ext = file.filename.split(".")[-1]
-    filename = f"uploads/teams/{team_id}_photo.{ext}"
-    with open(filename, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    team.team_photo_url = f"/{filename}"
+    filename = f"teams/{team_id}_photo.{ext}"
+    file_bytes = await file.read()
+    from utils.r2 import upload_file_to_r2
+    upload_file_to_r2(file_bytes, filename, file.content_type or "image/jpeg")
+    team.team_photo_url = f"https://pub-22fdd3117dc246539752f3a04b02035f.r2.dev/uploads/{filename}"
     await db.commit()
     return {"team_photo_url": team.team_photo_url}
