@@ -1284,7 +1284,7 @@ async def competition_page(competition_id: str, request: Request):
         # Competition sponsors (model may not exist yet)
         sponsors = []
         try:
-            from models.competition_sponsor import CompetitionSponsor
+            from models.competition_sponsor import CompetitionSponsor as CS
             sponsors_result = await db.execute(
                 select(CS).where(CS.competition_id == uuid.UUID(competition_id))
             )
