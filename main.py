@@ -419,6 +419,11 @@ def country_flag_html(code):
 
 app = FastAPI(title="World Strongman Platform API", version="2.0.0")
 
+@app.get("/google6810233f6ed024b3.html", include_in_schema=False)
+async def google_verification():
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse("google-site-verification: google6810233f6ed024b3.html")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
