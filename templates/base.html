@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}World Strongman{% endblock %}</title>
+    <meta name="description" content="{% block description %}World Strongman International Union — official competition rankings, results and athlete profiles.{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}World Strongman Rankings{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Official strongman competition rankings, results and athlete profiles worldwide.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}https://ranking.worldstrongman.org/static/logo.jpg{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}https://ranking.worldstrongman.org{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{% block canonical %}https://ranking.worldstrongman.org{% endblock %}">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; min-height: 100vh; }

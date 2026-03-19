@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ athlete.first_name }} {{ athlete.last_name }} — World Strongman</title>
+    <meta name="description" content="{{ athlete.first_name }} {{ athlete.last_name }} — WSM athlete profile, rankings and competition results.">
+    <meta property="og:title" content="{{ athlete.first_name }} {{ athlete.last_name }} — World Strongman">
+    <meta property="og:description" content="{{ athlete.first_name }} {{ athlete.last_name }} — WSM athlete profile, rankings and competition results.">
+    <meta property="og:image" content="https://ranking.worldstrongman.org/static/logo.jpg">
+    <meta property="og:url" content="https://ranking.worldstrongman.org/athletes/{{ athlete.id }}/profile">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="https://ranking.worldstrongman.org/athletes/{{ athlete.id }}/profile">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
