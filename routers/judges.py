@@ -163,11 +163,11 @@ async def upload_photo(
     if ext not in ["jpg", "jpeg", "png", "webp"]:
         raise HTTPException(status_code=400, detail="Only jpg/png/webp allowed")
 
-    filename = f"{judge_id}.{ext}"
-    with open(UPLOAD_DIR / filename, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    judge.photo_url = f"/uploads/judges/{filename}"
+    filename = f"judges/{judge_id}.{ext}"
+    file_bytes = await file.read()
+    from utils.r2 import upload_file_to_r2
+    upload_file_to_r2(file_bytes, filename, file.content_type or "image/jpeg")
+    judge.photo_url = f"https://pub-22fdd3117dc246539752f3a04b02035f.r2.dev/uploads/{filename}"
     await db.commit()
     return {"photo_url": judge.photo_url}
 
