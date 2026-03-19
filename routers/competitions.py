@@ -197,13 +197,12 @@ async def upload_sponsor_logo(competition_id: uuid.UUID, sponsor_id: uuid.UUID, 
     sponsor = result.scalar_one_or_none()
     if not sponsor:
         raise HTTPException(status_code=404, detail="Not found")
-    logo_dir = Path("uploads/sponsors")
-    logo_dir.mkdir(parents=True, exist_ok=True)
     ext = file.filename.split(".")[-1]
     filename = f"comp_{sponsor_id}.{ext}"
-    with open(logo_dir / filename, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    sponsor.logo_url = f"/uploads/sponsors/{filename}"
+    file_bytes = await file.read()
+    from utils.r2 import upload_file_to_r2
+    upload_file_to_r2(file_bytes, filename, file.content_type or "image/jpeg")
+    sponsor.logo_url = f"https://pub-22fdd3117dc246539752f3a04b02035f.r2.dev/uploads/{filename}"
     await db.commit()
     return {"logo_url": sponsor.logo_url}
 
