@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../AuthContext';
 import Layout from '../../components/Layout';
+import ChangePassword from '../../components/ChangePassword';
 import axios from 'axios';
 
 const gold = '#c9a84c';
@@ -39,8 +40,10 @@ export default function JudgeProfile() {
     window.location.reload();
   };
 
-  if (loading) return <Layout><p style={{color:'#555'}}>Loading...</p></Layout>;
-  if (!user?.judge_id) return <Layout><p style={{color:'#ff5252'}}>No judge profile linked.</p></Layout>;
+  if (loading) return <Layout><p style={{color:'#555'}}>Loading...</p>      <ChangePassword />
+    </Layout>;
+  if (!user?.judge_id) return <Layout><p style={{color:'#ff5252'}}>No judge profile linked.</p>      <ChangePassword />
+    </Layout>;
 
   return (
     <Layout>
@@ -79,6 +82,7 @@ export default function JudgeProfile() {
       <button onClick={save} disabled={saving} style={{width:'100%',padding:'14px',background:gold,color:'#000',border:'none',borderRadius:'3px',fontSize:'13px',fontWeight:'900',letterSpacing:'2px',cursor:'pointer',textTransform:'uppercase'}}>
         {saving ? 'SAVING...' : 'SAVE PROFILE →'}
       </button>
+          <ChangePassword />
     </Layout>
   );
 }

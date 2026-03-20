@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../AuthContext';
 import Layout from '../../components/Layout';
+import ChangePassword from '../../components/ChangePassword';
 import axios from 'axios';
 
 const gold = '#c9a84c';
@@ -82,8 +83,10 @@ export default function AthleteProfile() {
     setSponsors(sponsors.filter(s => s.id !== sid));
   };
 
-  if (loading) return <Layout><p style={{color:'#555'}}>Loading...</p></Layout>;
-  if (!user?.athlete_id) return <Layout><p style={{color:'#ff5252'}}>No athlete profile linked to your account.</p></Layout>;
+  if (loading) return <Layout><p style={{color:'#555'}}>Loading...</p>      <ChangePassword />
+    </Layout>;
+  if (!user?.athlete_id) return <Layout><p style={{color:'#ff5252'}}>No athlete profile linked to your account.</p>      <ChangePassword />
+    </Layout>;
 
   return (
     <Layout>
@@ -179,6 +182,7 @@ export default function AthleteProfile() {
         style={{width:'100%',padding:'14px',background:gold,color:'#000',border:'none',borderRadius:'3px',fontSize:'13px',fontWeight:'900',letterSpacing:'2px',cursor:'pointer',textTransform:'uppercase'}}>
         {saving ? 'SAVING...' : 'SAVE PROFILE →'}
       </button>
+          <ChangePassword />
     </Layout>
   );
 }

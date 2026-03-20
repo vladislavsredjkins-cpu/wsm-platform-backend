@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../AuthContext';
 import Layout from '../../components/Layout';
+import ChangePassword from '../../components/ChangePassword';
 import api from '../../api';
 
 const gold = '#c9a84c';
@@ -74,7 +75,8 @@ export default function OrganizerProfile() {
     setProfile(res.data);
   };
 
-  if (!user?.organizer_id) return <Layout><p style={{color:'#ff5252',padding:'32px'}}>No organizer profile linked.</p></Layout>;
+  if (!user?.organizer_id) return <Layout><p style={{color:'#ff5252',padding:'32px'}}>No organizer profile linked.</p>      <ChangePassword />
+    </Layout>;
 
   return (
     <Layout>
@@ -179,6 +181,7 @@ export default function OrganizerProfile() {
             </div>
         }
       </div>
+          <ChangePassword />
     </Layout>
   );
 }

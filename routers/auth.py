@@ -343,3 +343,21 @@ async def register_team(data: RegisterTeamRequest, db: AsyncSession = Depends(ge
     await db.commit()
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"status": "ok", "team_id": str(team.id), "access_token": token}
+
+from pydantic import BaseModel as PydanticBase
+
+class ChangePasswordRequest(PydanticBase):
+    current_password: str
+    new_password: str
+
+@router.post("/change-password")
+async def change_password(
+    data: ChangePasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current_user.password_hash = hash_password(data.new_password)
+    await db.commit()
+    return {"status": "ok", "message": "Password changed successfully"}
