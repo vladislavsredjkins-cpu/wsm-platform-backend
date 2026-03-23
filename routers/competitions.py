@@ -457,3 +457,27 @@ async def get_live_data(competition_id: uuid.UUID, db: AsyncSession = Depends(ge
         "status": comp.status,
         "divisions": result,
     }
+
+@router.get("/{competition_id}/registrations")
+async def list_competition_registrations(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.competition_registration import CompetitionRegistration
+    from models.athlete import Athlete
+    result = await db.execute(
+        select(CompetitionRegistration, Athlete)
+        .join(Athlete, CompetitionRegistration.athlete_id == Athlete.id)
+        .where(CompetitionRegistration.competition_id == competition_id)
+        .order_by(CompetitionRegistration.created_at.desc())
+    )
+    rows = result.all()
+    return [{
+        "id": str(r.CompetitionRegistration.id),
+        "athlete_email": r.CompetitionRegistration.athlete_email,
+        "athlete_name": f"{r.Athlete.first_name} {r.Athlete.last_name}",
+        "country": r.Athlete.country,
+        "amount_eur": r.CompetitionRegistration.amount_eur,
+        "payment_method": r.CompetitionRegistration.payment_method,
+        "status": r.CompetitionRegistration.status,
+        "paid_at": str(r.CompetitionRegistration.paid_at) if r.CompetitionRegistration.paid_at else None,
+        "coupon_code": r.CompetitionRegistration.coupon_code,
+        "created_at": str(r.CompetitionRegistration.created_at)
+    } for r in rows]

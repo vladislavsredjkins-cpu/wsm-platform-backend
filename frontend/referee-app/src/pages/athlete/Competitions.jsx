@@ -36,6 +36,7 @@ export default function AthleteCompetitions() {
         athlete_email: user.email,
         amount_eur: comp.entry_fee,
         payment_method: 'stripe',
+        coupon_code: couponCode[comp.id] || null,
       }, { headers: { Authorization: `Bearer ${token}` } });
       // Redirect to Stripe
       const res = await axios.post(`${API}/payments/entry-fee/stripe`, {

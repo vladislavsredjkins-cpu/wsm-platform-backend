@@ -147,10 +147,9 @@ async def entry_fee_stripe(data: EntryFeeRequest):
             promo = stripe.PromotionCode.list(code=data.coupon_code, active=True)
             if promo.data:
                 discounts = [{"promotion_code": promo.data[0].id}]
-            else:
-                raise HTTPException(400, "Invalid coupon code")
-        except stripe.StripeError as e:
-            raise HTTPException(400, str(e))
+            # If not found, just ignore - Stripe will handle it in checkout
+        except stripe.StripeError:
+            pass
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{
@@ -275,6 +274,7 @@ async def create_registration(data: EntryFeeRequest, db: AsyncSession = Depends(
         amount_eur=data.amount_eur,
         status="PENDING",
         non_refundable=True,
+        coupon_code=data.coupon_code,
         created_at=dt.datetime.utcnow(),
     )
     db.add(reg)

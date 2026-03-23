@@ -18,3 +18,4 @@ class CompetitionRegistration(Base):
     non_refundable = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     paid_at = Column(DateTime, nullable=True)
+    coupon_code = Column(String, nullable=True)

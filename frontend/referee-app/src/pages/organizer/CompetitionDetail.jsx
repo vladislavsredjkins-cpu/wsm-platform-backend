@@ -448,15 +448,15 @@ export default function CompetitionDetail() {
           {registrations.length === 0 && <p style={{ color: '#444' }}>No applications yet.</p>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {registrations.map(r => (
-              <div key={r.id} style={{ background: '#111', border: `1px solid ${r.status === 'PENDING' ? '#333' : r.status === 'ACCEPTED' ? '#2a4a2a' : '#4a2a2a'}`, borderRadius: '4px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+              <div key={r.id} style={{ background: '#111', border: `1px solid ${r.status === 'PAID' ? '#1a4a1a' : r.status === 'PENDING' ? '#333' : r.status === 'ACCEPTED' ? '#2a4a2a' : '#4a2a2a'}`, borderRadius: '4px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-                    <span style={{ color: r.status === 'PENDING' ? gold : r.status === 'ACCEPTED' ? '#4caf50' : '#f44336', fontSize: '10px', fontWeight: '700', letterSpacing: '2px' }}>{r.status}</span>
-                    <span style={{ color: '#fff', fontWeight: '600' }}>{r.first_name} {r.last_name}</span>
+                    <span style={{ color: r.status === 'PAID' ? '#4cc44c' : r.status === 'PENDING' ? gold : r.status === 'ACCEPTED' ? '#4caf50' : '#f44336', fontSize: '10px', fontWeight: '700', letterSpacing: '2px' }}>{r.status}</span>
+                    <span style={{ color: '#fff', fontWeight: '600' }}>{r.athlete_name}</span>
                     <span style={{ color: '#555', fontSize: '12px' }}>{r.country}</span>
                     <span style={{ color: gold, fontSize: '12px' }}>{r.division_key}</span>
                   </div>
-                  <div style={{ color: '#444', fontSize: '11px' }}>{r.email} {r.phone ? '· ' + r.phone : ''} {r.notes ? '· ' + r.notes : ''}</div>
+                  <div style={{ color: '#444', fontSize: '11px' }}>{r.athlete_email} · {r.payment_method === 'crypto' ? '₿ USDT' : '💳 Card'} · <span style={{color: r.status === 'PAID' ? '#4cc44c' : '#c9a84c'}}>€{r.amount_eur}</span>{r.coupon_code && <span style={{color:'#2ab8b8', marginLeft:'8px'}}>🏷️ {r.coupon_code}</span>}</div>
                   <div style={{ color: '#333', fontSize: '10px', marginTop: '2px' }}>{r.created_at ? new Date(r.created_at).toLocaleString() : ''}</div>
                 </div>
                 {r.status === 'PENDING' && (
