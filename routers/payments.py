@@ -79,3 +79,114 @@ async def stripe_webhook(request:Request):
                 print(f"Membership error: {e}")
     
     return {"ok": True}
+
+
+import httpx
+
+NOWPAYMENTS_API_KEY = os.getenv("NOWPAYMENTS_API_KEY", "")
+NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1"
+WSM_COMMISSION = 0.15  # 15%
+
+class EntryFeeRequest(BaseModel):
+    competition_id: str
+    athlete_email: str
+    amount_eur: float
+    payment_method: str  # "stripe" or "crypto"
+    success_url: Optional[str] = None
+    cancel_url: Optional[str] = None
+
+class CryptoPaymentRequest(BaseModel):
+    competition_id: str
+    athlete_email: str
+    amount_usd: float
+
+@router.post("/entry-fee/stripe")
+async def entry_fee_stripe(data: EntryFeeRequest):
+    stripe.api_key = _get_stripe_key()
+    amount_cents = int(data.amount_eur * 100)
+    session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{
+            "price_data": {
+                "currency": "eur",
+                "product_data": {
+                    "name": f"WSM Competition Entry Fee",
+                    "description": "Non-refundable entry fee · World Strongman International Union"
+                },
+                "unit_amount": amount_cents
+            },
+            "quantity": 1
+        }],
+        mode="payment",
+        success_url=data.success_url,
+        cancel_url=data.cancel_url,
+        metadata={
+            "type": "entry_fee",
+            "competition_id": data.competition_id,
+            "athlete_email": data.athlete_email,
+            "amount_eur": str(data.amount_eur),
+            "wsm_fee": str(round(data.amount_eur * WSM_COMMISSION, 2)),
+            "organizer_payout": str(round(data.amount_eur * (1 - WSM_COMMISSION), 2)),
+            "non_refundable": "true"
+        }
+    )
+    return {"checkout_url": session.url, "session_id": session.id}
+
+@router.post("/entry-fee/crypto")
+async def entry_fee_crypto(data: CryptoPaymentRequest):
+    if not NOWPAYMENTS_API_KEY:
+        raise HTTPException(400, "Crypto payments not configured")
+    payload = {
+        "price_amount": data.amount_usd,
+        "price_currency": "usd",
+        "pay_currency": "usdttrc20",
+        "order_id": f"entry_{data.competition_id}_{data.athlete_email}",
+        "order_description": f"WSM Entry Fee - Non-refundable",
+        "ipn_callback_url": "https://ranking.worldstrongman.org/api/payments/crypto-webhook",
+    }
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{NOWPAYMENTS_API_URL}/payment",
+            json=payload,
+            headers={"x-api-key": NOWPAYMENTS_API_KEY}
+        )
+        if resp.status_code not in [200, 201]:
+            raise HTTPException(400, f"NOWPayments error: {resp.text}")
+        result = resp.json()
+    return {
+        "payment_id": result.get("payment_id"),
+        "pay_address": result.get("pay_address"),
+        "pay_amount": result.get("pay_amount"),
+        "pay_currency": result.get("pay_currency"),
+        "status": result.get("payment_status"),
+        "wsm_fee": round(data.amount_usd * WSM_COMMISSION, 2),
+        "organizer_payout": round(data.amount_usd * (1 - WSM_COMMISSION), 2)
+    }
+
+@router.get("/entry-fee/crypto/status/{payment_id}")
+async def crypto_payment_status(payment_id: str):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{NOWPAYMENTS_API_URL}/payment/{payment_id}",
+            headers={"x-api-key": NOWPAYMENTS_API_KEY}
+        )
+        result = resp.json()
+    return {
+        "payment_id": payment_id,
+        "status": result.get("payment_status"),
+        "paid": result.get("payment_status") in ["finished", "confirmed"]
+    }
+
+@router.post("/crypto-webhook")
+async def crypto_webhook(request: Request):
+    import json
+    payload = await request.json()
+    payment_status = payload.get("payment_status")
+    order_id = payload.get("order_id", "")
+    if payment_status in ["finished", "confirmed"] and order_id.startswith("entry_"):
+        parts = order_id.split("_", 2)
+        if len(parts) == 3:
+            competition_id = parts[1]
+            athlete_email = parts[2]
+            print(f"Crypto entry fee confirmed: {athlete_email} for competition {competition_id}")
+    return {"ok": True}

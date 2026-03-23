@@ -37,7 +37,7 @@ export default function CompetitionDetail() {
   const [sponsors, setSponsors] = useState([]);
   const [newSponsor, setNewSponsor] = useState({ name: '', website_url: '', tier: 'FREE' });
   const [bannerUploading, setBannerUploading] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', city: '', country: '', organizer_email: '', date_start: '', date_end: '' });
+  const [editForm, setEditForm] = useState({ name: '', city: '', country: '', organizer_email: '', date_start: '', date_end: '', entry_fee_enabled: false, entry_fee: '', registration_deadline: '', entry_fee_non_refundable: true });
   const [saving, setSaving] = useState(false);
   const [liveData, setLiveData] = useState(null);
   const [soDiv, setSoDiv] = useState(0);
@@ -52,7 +52,7 @@ export default function CompetitionDetail() {
     Promise.all([
       api.get(`/competitions/${competitionId}`).then(r => {
         setCompetition(r.data);
-        setEditForm({ name: r.data.name, city: r.data.city||'', country: r.data.country||'', organizer_email: r.data.organizer_email||'', date_start: r.data.date_start||'', date_end: r.data.date_end||'' });
+        setEditForm({ name: r.data.name, city: r.data.city||'', country: r.data.country||'', organizer_email: r.data.organizer_email||'', date_start: r.data.date_start||'', date_end: r.data.date_end||'', entry_fee_enabled: r.data.entry_fee_enabled||false, entry_fee: r.data.entry_fee||'', registration_deadline: r.data.registration_deadline||'', entry_fee_non_refundable: r.data.entry_fee_non_refundable !== false });
       }),
       api.get(`/competitions/${competitionId}/judges`).then(r => setJudges(r.data)),
       api.get(`/competitions/${competitionId}/sponsors`).then(r => setSponsors(r.data)),
@@ -524,6 +524,130 @@ export default function CompetitionDetail() {
             <div key={field}><label style={labelStyle}>{label}</label><input style={inputStyle} value={editForm[field]||''} onChange={e => setEditForm({...editForm, [field]: e.target.value})} /></div>
           ))}
         </div>
+        
+        {/* ENTRY FEE SECTION */}
+        <div style={{ marginTop: '24px', padding: '16px', background: '#0d1a0d', border: '1px solid #1a3a1a', borderRadius: '6px' }}>
+          <div style={{ color: '#4cc44c', fontSize: '10px', letterSpacing: '3px', marginBottom: '14px' }}>💰 ENTRY FEE SETTINGS</div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+            <input 
+              type="checkbox" 
+              id="entry_fee_enabled"
+              checked={editForm.entry_fee_enabled||false} 
+              onChange={e => setEditForm({...editForm, entry_fee_enabled: e.target.checked})}
+              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            <label htmlFor="entry_fee_enabled" style={{ color: '#aaa', fontSize: '12px', cursor: 'pointer', letterSpacing: '1px' }}>
+              Enable Entry Fee for this competition
+            </label>
+          </div>
+
+          {editForm.entry_fee_enabled && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={labelStyle}>ENTRY FEE (EUR)</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  step="0.01"
+                  style={inputStyle} 
+                  value={editForm.entry_fee||''} 
+                  onChange={e => setEditForm({...editForm, entry_fee: e.target.value})}
+                  placeholder="e.g. 30"
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>REGISTRATION DEADLINE</label>
+                <input 
+                  type="date" 
+                  style={inputStyle} 
+                  value={editForm.registration_deadline||''} 
+                  onChange={e => setEditForm({...editForm, registration_deadline: e.target.value})}
+                />
+              </div>
+              <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: '#1a0a0a', borderRadius: '4px', border: '1px solid #3a1a1a' }}>
+                <input 
+                  type="checkbox" 
+                  id="non_refundable"
+                  checked={editForm.entry_fee_non_refundable !== false} 
+                  onChange={e => setEditForm({...editForm, entry_fee_non_refundable: e.target.checked})}
+                  style={{ width: '14px', height: '14px' }}
+                />
+                <label htmlFor="non_refundable" style={{ color: '#c44c4c', fontSize: '11px', letterSpacing: '1px', cursor: 'pointer' }}>
+                  ⚠️ Entry fee is NON-REFUNDABLE — athlete confirms at registration
+                </label>
+              </div>
+              <div style={{ gridColumn: '1/-1', padding: '10px', background: '#0a1a0a', borderRadius: '4px', fontSize: '11px', color: '#666' }}>
+                💰 WSM Commission: <span style={{color:'#c9a84c'}}>15%</span> &nbsp;·&nbsp; 
+                Organizer payout: <span style={{color:'#4cc44c'}}>85%</span> &nbsp;·&nbsp;
+                Payout after registration deadline
+              </div>
+            </div>
+          )}
+        </div>
+
+        
+        {/* ENTRY FEE SECTION */}
+        <div style={{ marginTop: '24px', padding: '16px', background: '#0d1a0d', border: '1px solid #1a3a1a', borderRadius: '6px' }}>
+          <div style={{ color: '#4cc44c', fontSize: '10px', letterSpacing: '3px', marginBottom: '14px' }}>💰 ENTRY FEE SETTINGS</div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+            <input 
+              type="checkbox" 
+              id="entry_fee_enabled"
+              checked={editForm.entry_fee_enabled||false} 
+              onChange={e => setEditForm({...editForm, entry_fee_enabled: e.target.checked})}
+              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            <label htmlFor="entry_fee_enabled" style={{ color: '#aaa', fontSize: '12px', cursor: 'pointer', letterSpacing: '1px' }}>
+              Enable Entry Fee for this competition
+            </label>
+          </div>
+
+          {editForm.entry_fee_enabled && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={labelStyle}>ENTRY FEE (EUR)</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  step="0.01"
+                  style={inputStyle} 
+                  value={editForm.entry_fee||''} 
+                  onChange={e => setEditForm({...editForm, entry_fee: e.target.value})}
+                  placeholder="e.g. 30"
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>REGISTRATION DEADLINE</label>
+                <input 
+                  type="date" 
+                  style={inputStyle} 
+                  value={editForm.registration_deadline||''} 
+                  onChange={e => setEditForm({...editForm, registration_deadline: e.target.value})}
+                />
+              </div>
+              <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: '#1a0a0a', borderRadius: '4px', border: '1px solid #3a1a1a' }}>
+                <input 
+                  type="checkbox" 
+                  id="non_refundable"
+                  checked={editForm.entry_fee_non_refundable !== false} 
+                  onChange={e => setEditForm({...editForm, entry_fee_non_refundable: e.target.checked})}
+                  style={{ width: '14px', height: '14px' }}
+                />
+                <label htmlFor="non_refundable" style={{ color: '#c44c4c', fontSize: '11px', letterSpacing: '1px', cursor: 'pointer' }}>
+                  ⚠️ Entry fee is NON-REFUNDABLE — athlete confirms at registration
+                </label>
+              </div>
+              <div style={{ gridColumn: '1/-1', padding: '10px', background: '#0a1a0a', borderRadius: '4px', fontSize: '11px', color: '#666' }}>
+                💰 WSM Commission: <span style={{color:'#c9a84c'}}>15%</span> &nbsp;·&nbsp; 
+                Organizer payout: <span style={{color:'#4cc44c'}}>85%</span> &nbsp;·&nbsp;
+                Payout after registration deadline
+              </div>
+            </div>
+          )}
+        </div>
+
         <button onClick={saveCompetition} disabled={saving} style={{ marginTop: '16px', padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>
           {saving ? 'SAVING...' : 'SAVE CHANGES →'}
         </button>

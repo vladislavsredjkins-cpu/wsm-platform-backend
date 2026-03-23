@@ -1,6 +1,6 @@
 import uuid
 import datetime
-from sqlalchemy import Column, String, Float, Date, ForeignKey, Text
+from sqlalchemy import Column, String, Float, Date, ForeignKey, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from db.base import Base
@@ -26,4 +26,8 @@ class Competition(Base):
     status = Column(String, default='DRAFT')
     competition_type = Column(String, nullable=True)
     organizer_email = Column(String, nullable=True)
+    entry_fee_enabled = Column(Boolean, default=False)
+    entry_fee = Column(Float, nullable=True)
+    registration_deadline = Column(Date, nullable=True)
+    entry_fee_non_refundable = Column(Boolean, default=True)
     divisions = relationship("CompetitionDivision", back_populates="competition", cascade="all, delete-orphan")

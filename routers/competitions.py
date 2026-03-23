@@ -21,6 +21,10 @@ class CompetitionCreate(BaseModel):
     country: Optional[str] = None
     coefficient_q: float = 1.0
     season_id: Optional[uuid.UUID] = None
+    entry_fee_enabled: bool = False
+    entry_fee: Optional[float] = None
+    registration_deadline: Optional[datetime.date] = None
+    entry_fee_non_refundable: bool = True
 
 
 class CompetitionResponse(BaseModel):
@@ -37,6 +41,10 @@ class CompetitionResponse(BaseModel):
     competition_type: Optional[str] = None
     description: Optional[str] = None
     organizer_mc_text: Optional[str] = None
+    entry_fee_enabled: Optional[bool] = False
+    entry_fee: Optional[float] = None
+    registration_deadline: Optional[datetime.date] = None
+    entry_fee_non_refundable: Optional[bool] = True
 
     class Config:
         from_attributes = True
@@ -61,6 +69,10 @@ async def create_competition(
         coefficient_q=data.coefficient_q,
         season_id=data.season_id,
         organizer_id=current_user.organizer_id if current_user.organizer_id else None,
+        entry_fee_enabled=data.entry_fee_enabled,
+        entry_fee=data.entry_fee,
+        registration_deadline=data.registration_deadline,
+        entry_fee_non_refundable=data.entry_fee_non_refundable,
     )
     db.add(competition)
     await db.commit()
