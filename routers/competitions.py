@@ -89,12 +89,9 @@ async def list_competitions(
     query = select(Competition)
     if published_only:
         query = query.where(Competition.status == 'PUBLISHED')
-    # Если запрос от организатора — показываем только его соревнования
     if organizer_id:
         import uuid as _uuid
         query = query.where(Competition.organizer_id == _uuid.UUID(organizer_id))
-    elif current_user and current_user.organizer_id and current_user.role not in ('WSM_ADMIN',):
-        query = query.where(Competition.organizer_id == current_user.organizer_id)
     result = await db.execute(query.order_by(Competition.date_start.desc()))
     return result.scalars().all()
 
@@ -134,8 +131,15 @@ async def update_competition(competition_id: uuid.UUID, data: dict, db: AsyncSes
     competition = result.scalar_one_or_none()
     if not competition:
         raise HTTPException(status_code=404, detail="Not found")
+    date_fields = ["date_start", "date_end", "registration_deadline"]
+    float_fields = ["entry_fee", "coefficient_q"]
     for key, value in data.items():
         if hasattr(competition, key):
+            if key in date_fields and isinstance(value, str) and value:
+                import datetime as dt
+                value = dt.date.fromisoformat(value)
+            elif key in float_fields and isinstance(value, str) and value:
+                value = float(value)
             setattr(competition, key, value)
     await db.commit()
     return {"status": "ok"}

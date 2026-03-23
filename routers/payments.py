@@ -1,9 +1,12 @@
+import uuid
 import stripe, os
 def _get_stripe_key():
     return os.getenv("STRIPE_SECRET_KEY")
 def _get_pub_key():
     return os.getenv("STRIPE_PUBLISHABLE_KEY")
-from fastapi import APIRouter,HTTPException,Request
+from fastapi import APIRouter,HTTPException,Request,Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from db.database import get_db
 from pydantic import BaseModel
 from typing import Optional
 router=APIRouter(prefix="/payments",tags=["payments"])
@@ -51,13 +54,45 @@ async def stripe_webhook(request:Request):
     else:
         event = json.loads(payload)
     
+    print(f"WEBHOOK RECEIVED: {event['type']}")
+    session_obj = event["data"]["object"]
+    print(f"WEBHOOK METADATA: {session_obj.get('metadata', {})}")
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         metadata = session.get("metadata", {})
         email = metadata.get("email", "")
         role = metadata.get("role", "")
-        
-        if email and role:
+        payment_type = metadata.get("type", "")
+
+        # Handle entry fee payment
+        if payment_type == "entry_fee":
+            try:
+                from db.database import SessionLocal
+                from models.competition_registration import CompetitionRegistration
+                from sqlalchemy import select as sa_select
+                import uuid as _uuid
+                competition_id = metadata.get("competition_id", "")
+                athlete_email = metadata.get("athlete_email", "")
+                async with SessionLocal() as db:
+                    result = await db.execute(
+                        sa_select(CompetitionRegistration).where(
+                            CompetitionRegistration.competition_id == _uuid.UUID(competition_id),
+                            CompetitionRegistration.athlete_email == athlete_email,
+                            CompetitionRegistration.status == "PENDING"
+                        ).order_by(CompetitionRegistration.created_at.desc())
+                    )
+                    reg = result.scalars().first()
+                    if reg:
+                        reg.status = "PAID"
+                        reg.payment_id = session["id"]
+                        reg.paid_at = datetime.datetime.utcnow()
+                        await db.commit()
+                        print(f"Entry fee PAID: {athlete_email} for {competition_id}")
+            except Exception as e:
+                print(f"Entry fee webhook error: {e}")
+
+        # Handle membership payment
+        elif email and role:
             try:
                 from db.database import SessionLocal
                 async with SessionLocal() as db:
@@ -94,6 +129,7 @@ class EntryFeeRequest(BaseModel):
     payment_method: str  # "stripe" or "crypto"
     success_url: Optional[str] = None
     cancel_url: Optional[str] = None
+    coupon_code: Optional[str] = None
 
 class CryptoPaymentRequest(BaseModel):
     competition_id: str
@@ -102,8 +138,19 @@ class CryptoPaymentRequest(BaseModel):
 
 @router.post("/entry-fee/stripe")
 async def entry_fee_stripe(data: EntryFeeRequest):
+    print(f"ENTRY FEE STRIPE: coupon={data.coupon_code}, amount={data.amount_eur}")
     stripe.api_key = _get_stripe_key()
     amount_cents = int(data.amount_eur * 100)
+    discounts = []
+    if data.coupon_code:
+        try:
+            promo = stripe.PromotionCode.list(code=data.coupon_code, active=True)
+            if promo.data:
+                discounts = [{"promotion_code": promo.data[0].id}]
+            else:
+                raise HTTPException(400, "Invalid coupon code")
+        except stripe.StripeError as e:
+            raise HTTPException(400, str(e))
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{
@@ -120,6 +167,7 @@ async def entry_fee_stripe(data: EntryFeeRequest):
         mode="payment",
         success_url=data.success_url,
         cancel_url=data.cancel_url,
+        **(dict(discounts=discounts) if discounts else dict(allow_promotion_codes=True)),
         metadata={
             "type": "entry_fee",
             "competition_id": data.competition_id,
@@ -190,3 +238,77 @@ async def crypto_webhook(request: Request):
             athlete_email = parts[2]
             print(f"Crypto entry fee confirmed: {athlete_email} for competition {competition_id}")
     return {"ok": True}
+
+
+@router.post("/entry-fee/register")
+async def create_registration(data: EntryFeeRequest, db: AsyncSession = Depends(get_db)):
+    """Create PENDING registration record before payment"""
+    from models.competition_registration import CompetitionRegistration
+    from models.athlete import Athlete
+    from sqlalchemy import select as sa_select
+    import datetime as dt
+
+    # Find athlete by email
+    result = await db.execute(sa_select(Athlete).where(Athlete.email == data.athlete_email))
+    athlete = result.scalar_one_or_none()
+    if not athlete:
+        raise HTTPException(400, "Athlete not found")
+
+    # Check if already registered
+    from models.competition_registration import CompetitionRegistration as CR
+    existing = await db.execute(
+        sa_select(CR).where(
+            CR.competition_id == uuid.UUID(data.competition_id),
+            CR.athlete_id == athlete.id,
+            CR.status == "PAID"
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(400, "Already registered and paid for this competition")
+
+    reg = CompetitionRegistration(
+        id=uuid.uuid4(),
+        competition_id=uuid.UUID(data.competition_id),
+        athlete_id=athlete.id,
+        athlete_email=data.athlete_email,
+        payment_method=data.payment_method,
+        amount_eur=data.amount_eur,
+        status="PENDING",
+        non_refundable=True,
+        created_at=dt.datetime.utcnow(),
+    )
+    db.add(reg)
+    await db.commit()
+    await db.refresh(reg)
+    return {"registration_id": str(reg.id)}
+
+@router.get("/entry-fee/registrations/{competition_id}")
+async def list_registrations(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """List all registrations for a competition (organizer view)"""
+    from models.competition_registration import CompetitionRegistration
+    from sqlalchemy import select as sa_select
+    result = await db.execute(
+        sa_select(CompetitionRegistration).where(
+            CompetitionRegistration.competition_id == competition_id
+        ).order_by(CompetitionRegistration.created_at.desc())
+    )
+    regs = result.scalars().all()
+    return [{"id": str(r.id), "athlete_email": r.athlete_email, "amount_eur": r.amount_eur,
+             "payment_method": r.payment_method, "status": r.status,
+             "paid_at": r.paid_at, "created_at": r.created_at} for r in regs]
+
+@router.get("/entry-fee/my-registrations")
+async def my_registrations(db: AsyncSession = Depends(get_db), current_user = Depends(__import__('auth.dependencies', fromlist=['get_current_user']).get_current_user)):
+    from models.competition_registration import CompetitionRegistration
+    from sqlalchemy import select as sa_select
+    from models.athlete import Athlete
+    result = await db.execute(sa_select(Athlete).where(Athlete.email == current_user.email))
+    athlete = result.scalar_one_or_none()
+    if not athlete:
+        return []
+    regs = await db.execute(
+        sa_select(CompetitionRegistration).where(
+            CompetitionRegistration.athlete_id == athlete.id
+        )
+    )
+    return [{"competition_id": str(r.competition_id), "status": r.status, "paid_at": str(r.paid_at)} for r in regs.scalars().all()]

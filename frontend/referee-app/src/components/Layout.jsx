@@ -27,6 +27,7 @@ export default function Layout({ children }) {
     { label: 'My Profile', path: '/organizer/profile', show: isOrganizer },
     { label: 'ASL', path: '/asl', show: isOrganizer },
     { label: 'My Profile', path: '/athlete/profile', show: isAthlete },
+    { label: '🏆 Competitions', path: '/athlete/competitions', show: isAthlete },
     { label: 'My Profile', path: '/judge/profile', show: isJudge },
     { label: 'ASL Matches', path: '/asl/judge', show: isJudge },
     { label: 'My Profile', path: '/coach/profile', show: isCoach },
