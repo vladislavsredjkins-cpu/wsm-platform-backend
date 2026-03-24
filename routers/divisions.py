@@ -146,3 +146,22 @@ async def list_divisions(competition_id: uuid.UUID, db: AsyncSession = Depends(g
         .order_by(CompetitionDivision.division_key)
     )
     return result.scalars().all()
+
+@router.delete("/{division_id}")
+async def delete_division(division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from models.participant import Participant
+    # Check participants
+    parts = await db.execute(select(Participant).where(Participant.competition_division_id == division_id))
+    if parts.scalars().first():
+        raise HTTPException(400, "Cannot delete division with registered athletes")
+    # Check status
+    div = await db.get(CompetitionDivision, division_id)
+    if not div:
+        raise HTTPException(404, "Division not found")
+    if div.status not in ('DRAFT', 'SUBMITTED'):
+        raise HTTPException(400, f"Cannot delete division with status {div.status}")
+    from sqlalchemy import text
+    # Delete via raw SQL to handle all FK constraints
+    await db.execute(text("DELETE FROM competition_divisions WHERE id = :id"), {"id": division_id})
+    await db.commit()
+    return {"status": "deleted"}

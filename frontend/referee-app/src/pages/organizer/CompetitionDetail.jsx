@@ -7,6 +7,12 @@ import DrawTab from '../../components/DrawTab';
 import MCTab from '../../components/MCTab';
 
 const gold = '#c9a84c';
+const WEIGHT_OPTIONS = {
+  MEN: [['U70','Featherweight (–70kg)'],['U80','Lightweight (–80kg)'],['U95','Middleweight (–95kg)'],['U110','Heavyweight (–110kg)'],['O110','Super Heavyweight (110kg+)']],
+  WOMEN: [['U55','Featherweight (–55kg)'],['U65','Lightweight (–65kg)'],['U75','Middleweight (–75kg)'],['U85','Heavyweight (–85kg)'],['O85','Super Heavyweight (85kg+)']],
+  PARA_MEN: [['OPEN','Open'],['U80','Up to 80kg'],['O80','Over 80kg']],
+  PARA_WOMEN: [['OPEN','Open'],['U80','Up to 80kg'],['O80','Over 80kg']],
+};
 const inputStyle = { width: '100%', padding: '10px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#fff', borderRadius: '3px', fontSize: '13px', outline: 'none' };
 const labelStyle = { display: 'block', color: '#555', fontSize: '10px', letterSpacing: '2px', marginBottom: '6px' };
 const TABS = ['Divisions', 'Athletes', 'Disciplines', 'Judges', 'Start Order', 'Protocol', 'MC', 'Registrations'];
@@ -18,7 +24,7 @@ export default function CompetitionDetail() {
   const [tab, setTab] = useState('Divisions');
   const [divisions, setDivisions] = useState([]);
   const [showDivForm, setShowDivForm] = useState(false);
-  const [divForm, setDivForm] = useState({ division_key: '', format: 'Classic' });
+  const [divForm, setDivForm] = useState({ division_key: '', format: 'CLASSIC', _gender: '', _age: 'SENIOR', _weight: '' });
   const [selectedDivision, setSelectedDivision] = useState(null);
   const [athletes, setAthletes] = useState([]);
   const [athleteSearch, setAthleteSearch] = useState('');
@@ -205,22 +211,74 @@ export default function CompetitionDetail() {
           </div>
           {showDivForm && (
             <div style={{ background: '#111', border: `1px solid ${gold}`, borderRadius: '4px', padding: '20px', marginBottom: '20px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div><label style={labelStyle}>Division</label>
-                  <select style={inputStyle} value={divForm.division_key} onChange={e => setDivForm(f => ({ ...f, division_key: e.target.value }))}>
-                    <option value="">Select division</option>
-                    <optgroup label="Men"><option value="MEN">Men Open</option><option value="MEN_U23">Men U23</option><option value="MEN_U105">Men -105kg</option><option value="MEN_U90">Men -90kg</option></optgroup>
-                    <optgroup label="Women"><option value="WOMEN">Women Open</option><option value="WOMEN_U23">Women U23</option><option value="WOMEN_U75">Women -75kg</option></optgroup>
-                    <optgroup label="Masters"><option value="MASTERS_M40">Masters Men 40+</option><option value="MASTERS_M50">Masters Men 50+</option><option value="MASTERS_W40">Masters Women 40+</option></optgroup>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={labelStyle}>GENDER</label>
+                  <select style={inputStyle} value={divForm._gender||''} onChange={e => {
+                    const g = e.target.value;
+                    const age = divForm._age||'SENIOR';
+                    const weight = divForm._weight||'';
+                    const key = weight ? `${g}_${age}_${weight}` : '';
+                    setDivForm(f => ({ ...f, _gender: g, _age: age, _weight: '', division_key: key }));
+                  }}>
+                    <option value="">— Select —</option>
+                    <option value="MEN">Men</option>
+                    <option value="WOMEN">Women</option>
+                    <option value="PARA_MEN">Para Men</option>
+                    <option value="PARA_WOMEN">Para Women</option>
                   </select>
                 </div>
-                <div><label style={labelStyle}>Format</label>
-                  <select style={inputStyle} value={divForm.format} onChange={e => setDivForm(f => ({ ...f, format: e.target.value }))}>
-                    <option value="Classic">Classic</option><option value="Relay">Relay</option><option value="Team Battle">Team Battle</option><option value="Para">Para</option>
+                <div>
+                  <label style={labelStyle}>AGE GROUP</label>
+                  <select style={inputStyle} value={divForm._age||'SENIOR'} onChange={e => {
+                    const age = e.target.value;
+                    const g = divForm._gender||'';
+                    const weight = divForm._weight||'';
+                    const key = g && weight ? `${g}_${age}_${weight}` : '';
+                    setDivForm(f => ({ ...f, _age: age, division_key: key }));
+                  }}>
+                    <option value="JUNIOR">Junior (U23)</option>
+                    <option value="SENIOR">Senior (Open)</option>
+                    <option value="MASTERS40">Masters 40+</option>
+                    <option value="MASTERS50">Masters 50+</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>WEIGHT CLASS {divForm._gender ? '(' + divForm._gender + ')' : ''}</label>
+                  <select key={divForm._gender||'none'} style={inputStyle} value={divForm._weight||''} onChange={e => {
+                    const weight = e.target.value;
+                    const g = divForm._gender||'';
+                    const age = divForm._age||'SENIOR';
+                    const key = g && weight ? g+'_'+age+'_'+weight : '';
+                    setDivForm(f => ({ ...f, _weight: weight, division_key: key }));
+                  }}>
+                    <option value="">— Select —</option>
+                    {(WEIGHT_OPTIONS[divForm._gender||'']||[]).map(([val,label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
-              <button onClick={async () => { await api.post(`/divisions/competition/${competitionId}`, divForm); await loadDivisions();
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={labelStyle}>FORMAT</label>
+                  <select style={inputStyle} value={divForm.format} onChange={e => setDivForm(f => ({ ...f, format: e.target.value }))}>
+                    <option value="CLASSIC">Classic</option>
+                    <option value="RELAY">Relay</option>
+                    <option value="TEAM_BATTLE">Team Battle</option>
+                    <option value="PARA">Para</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>DIVISION KEY (AUTO)</label>
+                  <input style={{...inputStyle, color: divForm.division_key ? '#4cc44c' : '#555'}}
+                    value={divForm.division_key||''}
+                    onChange={e => setDivForm(f => ({ ...f, division_key: e.target.value }))}
+                    placeholder="Auto-generated or custom"
+                  />
+                </div>
+              </div>
+              <button onClick={async () => { await api.post('/divisions/', {...divForm, competition_id: competitionId}); await loadDivisions();
       const regRes = await api.get(`/competitions/${competitionId}/registrations`);
       setRegistrations(regRes.data); setShowDivForm(false); setDivForm({ division_key: '', format: 'Classic' }); }} style={{ marginTop: '16px', padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>CREATE DIVISION</button>
             </div>
@@ -229,7 +287,18 @@ export default function CompetitionDetail() {
             {divisions.map(d => (
               <div key={d.id} style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div><div style={{ color: '#fff', fontWeight: '700', fontSize: '14px', letterSpacing: '2px' }}>{d.division_key}</div><div style={{ color: '#555', fontSize: '12px' }}>{d.format || 'Classic'}</div></div>
+                <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => { setTab('Athletes'); selectDivision(d); }} style={{ padding: '6px 14px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', cursor: 'pointer' }}>ATHLETES →</button>
+                <button onClick={async () => {
+                  const msg = d.status !== 'DRAFT' ? `Division is ${d.status} — cannot delete` : `Delete division ${d.division_key}?`;
+                  if (d.status !== 'DRAFT') { alert(msg); return; }
+                  if (!window.confirm(msg)) return;
+                  try {
+                    await api.delete(`/divisions/${d.id}`);
+                    await loadDivisions();
+                  } catch(e) { alert(e.response?.data?.detail || 'Cannot delete'); }
+                }} style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #4a2a2a', color: '#c44c4c', borderRadius: '3px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
+              </div>
               </div>
             ))}
             {divisions.length === 0 && <p style={{ color: '#444' }}>No divisions yet.</p>}
