@@ -93,7 +93,7 @@ async def list_competitions(
     elif organizer_id:
         import uuid as _uuid
         query = query.where(Competition.organizer_id == _uuid.UUID(organizer_id))
-    elif current_user and current_user.role == 'ORGANIZER' and current_user.organizer_id:
+    elif current_user and 'ORGANIZER' in current_user.role and current_user.organizer_id:
         query = query.where(Competition.organizer_id == current_user.organizer_id)
     result = await db.execute(query.order_by(Competition.date_start.desc()))
     return result.scalars().all()

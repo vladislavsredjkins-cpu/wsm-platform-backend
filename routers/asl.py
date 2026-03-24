@@ -145,6 +145,8 @@ class MatchResult(BaseModel):
 @router.post("/matches")
 async def create_match(data: MatchCreate, db: AsyncSession = Depends(get_db),
                        current_user=Depends(get_current_user)):
+    if current_user.role != 'WSM_ADMIN' and 'ASL_ADMIN' not in current_user.role:
+        raise HTTPException(403, "Only WSM_ADMIN or ASL_ADMIN can create matches")
     from datetime import date
     match_date = None
     if data.match_date:

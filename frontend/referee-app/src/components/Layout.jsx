@@ -13,8 +13,9 @@ export default function Layout({ children }) {
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const role = user?.role || '';
-  const isOrganizer = role === 'WSM_ADMIN' || role === 'ORGANIZER';
-  const isReferee = role === 'REFEREE' || role === 'WSM_ADMIN';
+  const isOrganizer = role === 'WSM_ADMIN' || role.includes('ORGANIZER');
+  const isASLAdmin = role.includes('ASL_ADMIN') || role === 'WSM_ADMIN';
+  const isReferee = role === 'REFEREE' || role === 'WSM_ADMIN' || role.includes('REFEREE');
   const isAthlete = role === 'ATHLETE';
   const isJudge = role === 'JUDGE';
   const isCoach = role === 'COACH';
@@ -25,11 +26,12 @@ export default function Layout({ children }) {
     { label: 'Referee', path: '/referee', show: isReferee },
     { label: 'Organizer', path: '/organizer/competitions', show: isOrganizer },
     { label: 'My Profile', path: '/organizer/profile', show: isOrganizer },
-    { label: 'ASL', path: '/asl', show: isOrganizer },
+    { label: 'ASL', path: '/asl', show: isOrganizer || isASLAdmin },
     { label: 'My Profile', path: '/athlete/profile', show: isAthlete },
     { label: '🏆 Competitions', path: '/athlete/competitions', show: isAthlete },
     { label: 'My Profile', path: '/judge/profile', show: isJudge },
     { label: 'ASL Matches', path: '/asl/judge', show: isJudge },
+    { label: 'ASL Admin', path: '/asl', show: isASLAdmin && !isOrganizer },
     { label: 'My Profile', path: '/coach/profile', show: isCoach },
     { label: 'My Team', path: '/team/profile', show: isTeam },
   ].filter(i => i.show);
