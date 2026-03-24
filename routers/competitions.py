@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from db.database import get_db
 from models.competition import Competition
-from auth.dependencies import require_organizer
+from auth.dependencies import require_organizer, get_current_user_optional
 from models.user import User
 from pydantic import BaseModel
 from typing import Optional
@@ -85,13 +85,16 @@ async def list_competitions(
     db: AsyncSession = Depends(get_db),
     published_only: bool = False,
     organizer_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user_optional),
 ):
     query = select(Competition)
     if published_only:
         query = query.where(Competition.status == 'PUBLISHED')
-    if organizer_id:
+    elif organizer_id:
         import uuid as _uuid
         query = query.where(Competition.organizer_id == _uuid.UUID(organizer_id))
+    elif current_user and current_user.role == 'ORGANIZER' and current_user.organizer_id:
+        query = query.where(Competition.organizer_id == current_user.organizer_id)
     result = await db.execute(query.order_by(Competition.date_start.desc()))
     return result.scalars().all()
 

@@ -64,14 +64,6 @@ class ParticipantResponse(BaseModel):
         from_attributes = True
 
 
-@router.get("/{athlete_id}", response_model=AthleteResponse)
-async def get_athlete(athlete_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    athlete = await db.get(Athlete, athlete_id)
-    if not athlete:
-        raise HTTPException(status_code=404, detail="Athlete not found")
-    return athlete
-
-
 @router.get("/search", response_model=list[AthleteResponse])
 async def search_athletes(q: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -83,6 +75,15 @@ async def search_athletes(q: str, db: AsyncSession = Depends(get_db)):
         ).limit(10)
     )
     return result.scalars().all()
+
+
+@router.get("/{athlete_id}", response_model=AthleteResponse)
+async def get_athlete(athlete_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    athlete = await db.get(Athlete, athlete_id)
+    if not athlete:
+        raise HTTPException(status_code=404, detail="Athlete not found")
+    return athlete
+
 
 
 @router.get("/", response_model=list[AthleteResponse])

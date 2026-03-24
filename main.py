@@ -2273,7 +2273,21 @@ async def rankings_page(request: Request, division: str = "MEN", year: int = 202
         divs_result = await db.execute(
             select(CompetitionDivision.division_key).distinct()
         )
-        all_divisions = sorted(list(set([r[0] for r in divs_result.all() if r[0]])))
+        db_divisions = sorted(list(set([r[0] for r in divs_result.all() if r[0]])))
+        # Standard WSM divisions always shown
+        STANDARD_DIVISIONS = [
+            'MEN_SENIOR_O110', 'MEN_SENIOR_U110', 'MEN_SENIOR_U95', 'MEN_SENIOR_U80', 'MEN_SENIOR_U70',
+            'WOMEN_SENIOR_O85', 'WOMEN_SENIOR_U85', 'WOMEN_SENIOR_U75', 'WOMEN_SENIOR_U65', 'WOMEN_SENIOR_U55',
+            'MEN_JUNIOR_O110', 'MEN_JUNIOR_U110', 'MEN_JUNIOR_U95', 'MEN_JUNIOR_U80', 'MEN_JUNIOR_U70',
+            'WOMEN_JUNIOR_O85', 'WOMEN_JUNIOR_U85', 'WOMEN_JUNIOR_U75', 'WOMEN_JUNIOR_U65', 'WOMEN_JUNIOR_U55',
+            'MEN_MASTERS40_O110', 'MEN_MASTERS40_U110', 'MEN_MASTERS40_U95', 'MEN_MASTERS40_U80', 'MEN_MASTERS40_U70',
+            'WOMEN_MASTERS40_O85', 'WOMEN_MASTERS40_U85', 'WOMEN_MASTERS40_U75', 'WOMEN_MASTERS40_U65', 'WOMEN_MASTERS40_U55',
+            'MEN_MASTERS50_O110', 'MEN_MASTERS50_U110', 'MEN_MASTERS50_U95', 'MEN_MASTERS50_U80', 'MEN_MASTERS50_U70',
+            'WOMEN_MASTERS50_O85', 'WOMEN_MASTERS50_U85', 'WOMEN_MASTERS50_U75', 'WOMEN_MASTERS50_U65', 'WOMEN_MASTERS50_U55',
+            'PARA_MEN_OPEN', 'PARA_MEN_U80', 'PARA_MEN_O80',
+            'PARA_WOMEN_OPEN', 'PARA_WOMEN_U80', 'PARA_WOMEN_O80',
+        ]
+        all_divisions = sorted(list(set(db_divisions + STANDARD_DIVISIONS)))
 
         # Все годы
         years_result = await db.execute(

@@ -221,15 +221,30 @@
     <div class="filters">
         <div class="filter-group">
             <div class="filter-label">Division</div>
-            <select class="filter-select" onchange="navigate(this.value, null)">
-                {% for d in all_divisions %}
-                <option value="{{ d }}" {% if d == selected_division %}selected{% endif %}>{{ d }}</option>
-                {% endfor %}
+            <select class="filter-select" id="sel-gender" onchange="updateWeightsAndGo()">
+                <option value="MEN">Men</option>
+                <option value="WOMEN">Women</option>
+                <option value="PARA_MEN">Para Men</option>
+                <option value="PARA_WOMEN">Para Women</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">Age Group</div>
+            <select class="filter-select" id="sel-age" onchange="updateWeightsAndGo()">
+                <option value="SENIOR">Senior</option>
+                <option value="JUNIOR">Junior (U23)</option>
+                <option value="MASTERS40">Masters 40+</option>
+                <option value="MASTERS50">Masters 50+</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">Weight Class</div>
+            <select class="filter-select" id="sel-weight" onchange="goToDiv()">
             </select>
         </div>
         <div class="filter-group">
             <div class="filter-label">Season</div>
-            <select class="filter-select" onchange="navigate(null, this.value)">
+            <select class="filter-select" id="sel-season" onchange="navigate(null, this.value)">
                 {% for y in all_years %}
                 <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
@@ -244,13 +259,7 @@
         {% endif %}
     </div>
 
-    <!-- Division quick tabs -->
-    <div class="filter-tabs">
-        {% for d in all_divisions %}
-        <a href="/rankings?division={{ d }}&year={{ selected_year }}"
-           class="filter-tab {% if d == selected_division %}active{% endif %}">{{ d }}</a>
-        {% endfor %}
-    </div>
+
 </div>
 
 <div class="wrap">
@@ -332,9 +341,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 function navigate(division, year) {
-    const d = division || document.querySelector('.filter-select').value;
-    const y = year || document.querySelectorAll('.filter-select')[1].value;
-    window.location.href = `/rankings?division=${d}&year=${y}`;
+    const d = division || (document.getElementById('sel-gender')?.value + '_' + document.getElementById('sel-age')?.value + '_' + document.getElementById('sel-weight')?.value);
+    const y = year || document.getElementById('sel-season')?.value || '{{ selected_year }}';
+    window.location.href = '/rankings?division=' + d + '&year=' + y;
 }
 
 function toggleExpand(id) {
@@ -601,5 +610,50 @@ function drawNameSection(ctx, W, H, name, country, points) {
   <br><a href="/privacy-policy" style="color:#555;text-decoration:none;font-size:9px;margin-right:10px;letter-spacing:1px;">Privacy Policy</a>
   <a href="/cookie-policy" style="color:#555;text-decoration:none;font-size:9px;letter-spacing:1px;">Cookie Policy</a>
 </div>
+
+<script>
+const WEIGHTS={
+  MEN:[['O110','Super Heavy (110kg+)'],['U110','Heavy (–110kg)'],['U95','Middle (–95kg)'],['U80','Light (–80kg)'],['U70','Feather (–70kg)']],
+  WOMEN:[['O85','Super Heavy (85kg+)'],['U85','Heavy (–85kg)'],['U75','Middle (–75kg)'],['U65','Light (–65kg)'],['U55','Feather (–55kg)']],
+  PARA_MEN:[['OPEN','Open'],['U80','Up to 80kg'],['O80','Over 80kg']],
+  PARA_WOMEN:[['OPEN','Open'],['U80','Up to 80kg'],['O80','Over 80kg']]
+};
+const CUR_DIV="{{ selected_division }}";
+function parseDiv(d){
+  const m=d.match(/^(MEN|WOMEN|PARA_MEN|PARA_WOMEN)_(SENIOR|JUNIOR|MASTERS40|MASTERS50)_(.+)$/);
+  return m?{g:m[1],a:m[2],w:m[3]}:{g:'MEN',a:'SENIOR',w:'O110'};
+}
+function fillWeights(g,curW){
+  const s=document.getElementById('sel-weight');
+  if(!s) return;
+  s.innerHTML='';
+  (WEIGHTS[g]||WEIGHTS.MEN).forEach(function(pair){
+    const o=document.createElement('option');
+    o.value=pair[0]; o.text=pair[1];
+    if(pair[0]===curW) o.selected=true;
+    s.appendChild(o);
+  });
+}
+function updateWeightsAndGo(){
+  const g=document.getElementById('sel-gender').value;
+  fillWeights(g,'');
+  goToDiv();
+}
+function goToDiv(){
+  const g=document.getElementById('sel-gender').value;
+  const a=document.getElementById('sel-age').value;
+  const w=document.getElementById('sel-weight').value;
+  if(w) navigate(g+'_'+a+'_'+w, null);
+}
+document.addEventListener('DOMContentLoaded', function(){
+  const p=parseDiv(CUR_DIV);
+  const gs=document.getElementById('sel-gender');
+  const as=document.getElementById('sel-age');
+  if(gs) gs.value=p.g;
+  if(as) as.value=p.a;
+  fillWeights(p.g, p.w);
+});
+</script>
+
 </body>
 </html>

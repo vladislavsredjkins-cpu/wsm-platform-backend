@@ -62,3 +62,21 @@ async def require_federation(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Federation role required")
     return current_user
 
+
+
+
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
+    db: AsyncSession = Depends(get_db)
+):
+    if not credentials:
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        user = await db.get(User, int(user_id))
+        return user if user and user.is_active else None
+    except Exception:
+        return None
