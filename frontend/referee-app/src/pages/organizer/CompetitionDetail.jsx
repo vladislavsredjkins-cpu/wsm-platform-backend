@@ -5,6 +5,7 @@ import Layout from '../../components/Layout';
 import DisciplinesTab from '../../components/DisciplinesTab';
 import DrawTab from '../../components/DrawTab';
 import MCTab from '../../components/MCTab';
+import { divisionLabel } from '../../constants/divisions';
 
 const gold = '#c9a84c';
 const WEIGHT_OPTIONS = {
@@ -286,7 +287,7 @@ export default function CompetitionDetail() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {divisions.map(d => (
               <div key={d.id} style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div><div style={{ color: '#fff', fontWeight: '700', fontSize: '14px', letterSpacing: '2px' }}>{d.division_key}</div><div style={{ color: '#555', fontSize: '12px' }}>{d.format || 'Classic'}</div></div>
+                <div><div style={{ color: '#fff', fontWeight: '700', fontSize: '14px', letterSpacing: '1px' }}>{divisionLabel(d.division_key)}</div><div style={{ color: '#555', fontSize: '10px', letterSpacing: '2px' }}>{d.division_key}</div><div style={{ color: '#555', fontSize: '12px' }}>{d.format || 'Classic'}</div></div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => { setTab('Athletes'); selectDivision(d); }} style={{ padding: '6px 14px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', cursor: 'pointer' }}>ATHLETES →</button>
                 <button onClick={async () => {
@@ -348,9 +349,17 @@ export default function CompetitionDetail() {
               <div style={{ color: gold, fontSize: '10px', letterSpacing: '3px', marginBottom: '12px' }}>REGISTERED ({athletes.length})</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {athletes.map(a => (
-                  <div key={a.participant_id} style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div key={a.id} style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <span style={{ color: gold, fontSize: '16px', fontWeight: '900' }}>#{a.bib_no||'?'}</span>
                     <span style={{ color: '#fff', fontWeight: '600' }}>{a.first_name} {a.last_name}</span>
+                    <button onClick={async () => {
+                      if (!window.confirm('Remove athlete from division?')) return;
+                      try {
+                        await api.delete(`/athletes/participants/${a.id}`);
+                        const res = await api.get(`/athletes/division/${selectedDivision.id}`);
+                        setAthletes(res.data);
+                      } catch(e) { alert(e.response?.data?.detail || 'Error'); }
+                    }} style={{ marginLeft: 'auto', padding: '4px 10px', background: 'transparent', border: '1px solid #4a2a2a', color: '#c44c4c', borderRadius: '3px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
                     <span style={{ color: '#555', fontSize: '12px' }}>{a.country}</span>
                     <span style={{ color: '#444', fontSize: '12px', marginLeft: 'auto' }}>{a.bodyweight_kg ? a.bodyweight_kg + ' kg' : ''}</span>
                   </div>
@@ -532,6 +541,28 @@ export default function CompetitionDetail() {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={async () => { await api.patch(`/competitions/${competitionId}/registrations/${r.id}`, { status: 'ACCEPTED' }); const res = await api.get(`/competitions/${competitionId}/registrations`); setRegistrations(res.data); }} style={{ padding: '8px 16px', background: '#2a4a2a', border: '1px solid #4caf50', color: '#4caf50', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>✓ ACCEPT</button>
                     <button onClick={async () => { const reason = prompt('Reject reason (optional):'); await api.patch(`/competitions/${competitionId}/registrations/${r.id}`, { status: 'REJECTED', reject_reason: reason || '' }); const res = await api.get(`/competitions/${competitionId}/registrations`); setRegistrations(res.data); }} style={{ padding: '8px 16px', background: '#4a2a2a', border: '1px solid #f44336', color: '#f44336', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>✕ REJECT</button>
+                  </div>
+                )}
+                {r.status === 'PAID' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '160px' }}>
+                    <select
+                      id={`div-select-${r.id}`}
+                      style={{ padding: '6px 10px', background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#fff', borderRadius: '3px', fontSize: '11px' }}
+                      defaultValue=""
+                    >
+                      <option value="">Select division...</option>
+                      {divisions.map(d => <option key={d.id} value={d.id}>{d.division_key}</option>)}
+                    </select>
+                    <button onClick={async () => {
+                      const divId = document.getElementById(`div-select-${r.id}`).value;
+                      if (!divId) { alert('Select a division first'); return; }
+                      try {
+                        await api.post('/athletes/register', { competition_division_id: divId, athlete_id: r.athlete_id });
+                        alert('✅ Athlete added to division!');
+                      } catch(e) { alert(e.response?.data?.detail || 'Error adding athlete'); }
+                    }} style={{ padding: '6px 12px', background: '#1a3a1a', border: '1px solid #4cc44c', color: '#4cc44c', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                      ➕ ADD TO DIVISION
+                    </button>
                   </div>
                 )}
                 {r.status !== 'PENDING' && r.reject_reason && (

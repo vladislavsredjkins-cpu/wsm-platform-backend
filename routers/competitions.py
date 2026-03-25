@@ -482,5 +482,6 @@ async def list_competition_registrations(competition_id: uuid.UUID, db: AsyncSes
         "status": r.CompetitionRegistration.status,
         "paid_at": str(r.CompetitionRegistration.paid_at) if r.CompetitionRegistration.paid_at else None,
         "coupon_code": r.CompetitionRegistration.coupon_code,
+        "athlete_id": str(r.CompetitionRegistration.athlete_id),
         "created_at": str(r.CompetitionRegistration.created_at)
     } for r in rows]
