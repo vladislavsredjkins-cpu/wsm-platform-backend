@@ -40,7 +40,7 @@ export default function AthleteProfile() {
     axios.get(`${API}/athletes/${user.athlete_id}/sponsors`)
       .then(res => setSponsors(res.data))
       .catch(() => {});
-  }, [user]);
+  }, [user?.athlete_id]);
 
   const save = async () => {
     setSaving(true); setMsg(''); setError('');
