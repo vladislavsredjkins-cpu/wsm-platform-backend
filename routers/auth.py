@@ -185,6 +185,36 @@ async def register_organizer(data: RegisterOrganizerRequest, db: AsyncSession = 
     }
 
 
+# ── EVENTS ORGANIZER REGISTRATION (auto-approve) ─────────────────
+@router.post("/register/events-organizer")
+async def register_events_organizer(data: RegisterOrganizerRequest, db: AsyncSession = Depends(get_db)):
+    from models.organizer import Organizer
+    result = await db.execute(select(User).where(User.email == data.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(
+        email=data.email,
+        password_hash=hash_password(data.password),
+        role="ORGANIZER",
+        is_active=True,
+    )
+    db.add(user)
+    await db.flush()
+    org = Organizer(
+        user_id=user.id,
+        name=data.name,
+        type=data.type or "club",
+        country=data.country,
+        email=data.email,
+    )
+    db.add(org)
+    await db.flush()
+    user.organizer_id = org.id
+    await db.commit()
+    await db.refresh(user)
+    token = create_access_token({"sub": str(user.id), "role": user.role, "organizer_id": str(org.id)})
+    return {"access_token": token, "email": user.email, "role": user.role, "organizer_id": str(org.id)}
+
 # ── ATHLETE REGISTRATION ──────────────────────────────────────────
 class RegisterAthleteRequest(BaseModel):
     email: str

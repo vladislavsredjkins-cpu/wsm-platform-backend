@@ -426,7 +426,7 @@ async def google_verification():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://app.ranking.worldstrongman.org", "https://ranking.worldstrongman.org"],
+    allow_origins=["https://app.ranking.worldstrongman.org", "https://ranking.worldstrongman.org", "https://events.worldstrongman.org"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -16,6 +16,7 @@ class Competition(Base):
     city = Column(String, nullable=True)
     country = Column(String, nullable=True)
     coefficient_q = Column(Float, nullable=False, default=1.0)
+    is_rated = Column(Boolean, nullable=False, default=True)
     season_id = Column(UUID(as_uuid=True), ForeignKey("seasons.id"), nullable=True)
 
     organizer_id = Column(UUID(as_uuid=True), ForeignKey("organizers.id"), nullable=True)

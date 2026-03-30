@@ -1,0 +1,15 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --wsm-teal: #005B5C;
+  --wsm-sand: #E8D5B5;
+  --wsm-bg: #f7f4ef;
+  --wsm-text: #1a1a1a;
+  --wsm-border: #e8e0d0;
+}
+body {
+  background: var(--wsm-bg);
+  color: var(--wsm-text);
+  font-family: system-ui, sans-serif;
+  min-height: 100vh;
+}
+a { color: var(--wsm-teal); }
