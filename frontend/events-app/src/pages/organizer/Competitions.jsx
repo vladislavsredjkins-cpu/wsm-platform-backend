@@ -7,13 +7,7 @@ import api from '../../api';
 const gold = '#c9a84c';
 
 const COMPETITION_TYPES = [
-  { value: 'WORLD_CHAMPIONSHIP', label: 'World Championship', q: 10, price: 'competition_world', fee: 799 },
-  { value: 'CONTINENTAL_CHAMPIONSHIP', label: 'Continental Championship', q: 6, price: 'competition_continental', fee: 299 },
-  { value: 'WORLD_CUP', label: 'World Cup', q: 4, price: 'competition_world', fee: 799 },
-  { value: 'SUBCONTINENTAL', label: 'Subcontinental', q: 2, price: 'competition_national', fee: 149 },
-  { value: 'NATIONAL_CHAMPIONSHIP', label: 'National Championship', q: 1, price: 'competition_national', fee: 149 },
-  { value: 'INTERNATIONAL_TOURNAMENT', label: 'International Tournament', q: 0.5, price: 'competition_local', fee: 49 },
-  { value: 'GRAND_PRIX', label: 'Grand Prix', q: 4, price: 'competition_world', fee: 799 },
+  { value: 'INTERNATIONAL_TOURNAMENT', label: 'Exhibition Tournament', q: 1, price: 'events_single', fee: 19 },
 ];
 
 export default function Competitions() {
@@ -116,15 +110,13 @@ export default function Competitions() {
       {!showForm && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '28px' }}>
           {[
-            { label: 'Local / International', types: 'International Tournament', fee: 49, color: '#555' },
-            { label: 'National', types: 'National Championship', fee: 149, color: '#888' },
-            { label: 'Continental', types: 'Continental Championship', fee: 299, color: '#c9a84c' },
-            { label: 'World / Grand Prix', types: 'World Championship, World Cup, Grand Prix', fee: 799, color: '#fff' },
+            { label: 'Add Event', types: 'Add 1 more tournament', fee: 19 },
+            { label: 'Season Pass', types: '3 months unlimited', fee: 39 },
           ].map(p => (
-            <div key={p.label} style={{ background: '#111', border: `1px solid #1e1e1e`, borderRadius: '4px', padding: '20px', textAlign: 'center' }}>
-              <div style={{ color: p.color, fontSize: '11px', fontWeight: '700', letterSpacing: '2px', marginBottom: '8px' }}>{p.label.toUpperCase()}</div>
-              <div style={{ color: '#fff', fontSize: '32px', fontWeight: '900', marginBottom: '4px' }}>€{p.fee}</div>
-              <div style={{ color: '#444', fontSize: '11px', lineHeight: '1.6' }}>{p.types}</div>
+            <div key={p.label} style={{ background: '#fff', border: '1px solid #e8e0d0', borderTop: '3px solid #005B5C', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
+              <div style={{ color: '#005B5C', fontSize: '11px', fontWeight: '700', letterSpacing: '2px', marginBottom: '8px' }}>{p.label.toUpperCase()}</div>
+              <div style={{ color: '#1a1a1a', fontSize: '32px', fontWeight: '900', marginBottom: '4px' }}>€{p.fee}</div>
+              <div style={{ color: '#888', fontSize: '11px', lineHeight: '1.6' }}>{p.types}</div>
             </div>
           ))}
         </div>
