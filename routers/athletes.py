@@ -25,6 +25,9 @@ class AthleteCreate(BaseModel):
     bodyweight_kg: Optional[Decimal] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    instagram: Optional[str] = None
+    bio: Optional[str] = None
+    achievements: Optional[str] = None
 
 
 class AthleteResponse(BaseModel):
@@ -353,4 +356,5 @@ async def get_athlete_data(athlete_id: uuid.UUID, db: AsyncSession = Depends(get
         "instagram": getattr(a, 'instagram', None),
         "photo_url": getattr(a, 'photo_url', None),
         "bio": getattr(a, 'bio', None),
+        "achievements": getattr(a, 'achievements', None),
     }

@@ -34,6 +34,7 @@ export default function AthleteProfile() {
           phone: a.phone || '',
           instagram: a.instagram || '',
           bio: a.bio || '',
+          achievements: a.achievements || '',
         });
       })
       .finally(() => setLoading(false));
@@ -51,7 +52,7 @@ export default function AthleteProfile() {
       });
       setMsg('✓ Profile saved!');
     } catch(e) {
-      setError('✗ ' + (e.response?.data?.detail || 'Save failed'));
+      setError('✗ ' + (Array.isArray(e.response?.data?.detail) ? e.response.data.detail.map(d => d.msg || JSON.stringify(d)).join(', ') : e.response?.data?.detail || 'Save failed'));
     } finally { setSaving(false); }
   };
 
@@ -93,7 +94,7 @@ export default function AthleteProfile() {
       <div style={{marginBottom:'32px'}}>
         <div style={{color:gold,fontSize:'11px',letterSpacing:'3px',marginBottom:'8px'}}>ATHLETE CABINET</div>
         <h1 style={{color:'#fff',fontSize:'22px',fontWeight:'700',margin:'0 0 4px'}}>My Profile</h1>
-        <p style={{color:'#555',fontSize:'13px',margin:0}}>Edit your public athlete profile</p>
+        <p style={{color:"#555",fontSize:"13px",margin:0}}>Edit your public athlete profile</p><a href={`https://ranking.worldstrongman.org/athletes-list`} target="_blank" style={{display:"inline-block",marginTop:"10px",padding:"7px 16px",border:"1px solid #005B5C",color:"#005B5C",fontSize:"11px",fontWeight:"700",letterSpacing:"2px",textDecoration:"none",borderRadius:"3px"}}>🏆 VIEW MY RANKING →</a>
       </div>
 
       <div style={{background:'#111',border:'1px solid #1e1e1e',borderRadius:'4px',padding:'24px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'20px',flexWrap:'wrap'}}>
@@ -140,6 +141,11 @@ export default function AthleteProfile() {
           <div style={{gridColumn:'1/-1',display:'flex',flexDirection:'column',gap:'6px'}}>
             <label style={{color:'#888',fontSize:'10px',fontWeight:'700',letterSpacing:'1px',textTransform:'uppercase'}}>Bio</label>
             <textarea value={form.bio||''} onChange={e=>setForm({...form,bio:e.target.value})} rows={3}
+              style={{padding:'10px 12px',background:'#0a0a0a',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'14px',outline:'none',resize:'vertical',width:'100%',boxSizing:'border-box'}} />
+          </div>
+          <div style={{gridColumn:'1/-1',display:'flex',flexDirection:'column',gap:'6px'}}>
+            <label style={{color:'#888',fontSize:'10px',fontWeight:'700',letterSpacing:'1px',textTransform:'uppercase'}}>Achievements</label>
+            <textarea value={form.achievements||''} onChange={e=>setForm({...form,achievements:e.target.value})} rows={3}
               style={{padding:'10px 12px',background:'#0a0a0a',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'14px',outline:'none',resize:'vertical',width:'100%',boxSizing:'border-box'}} />
           </div>
         </div>

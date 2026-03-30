@@ -21,6 +21,7 @@ class Athlete(Base):
     bio = Column(Text, nullable=True)
     bodyweight_kg = Column(Numeric(5, 2), nullable=True)
     instagram = Column(String(100), nullable=True)
+    achievements = Column(Text, nullable=True)
 
     participants = relationship("Participant", back_populates="athlete")
     ranking_awards = relationship("RankingAward", back_populates="athlete")

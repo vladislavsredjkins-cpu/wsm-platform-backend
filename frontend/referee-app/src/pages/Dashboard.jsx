@@ -29,7 +29,7 @@ function OrganizerDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getCompetitions()
+    getCompetitions(user?.organizer_id)
       .then(res => setCompetitions(res.data))
       .finally(() => setLoading(false));
   }, []);
