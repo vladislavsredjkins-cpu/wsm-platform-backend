@@ -33,7 +33,7 @@ export default function Landing() {
   const [competitions, setCompetitions] = useState([]);
 
   useEffect(() => {
-    axios.get(`${API}/competitions/?is_rated=false`).then(res => {
+    axios.get(`${API}/events-api/tournaments/all`).then(res => {
       const data = res.data || [];
       setCompetitions(data.slice(0, 6));
       const organizers = new Set(data.map(c => c.organizer_id)).size;
@@ -121,7 +121,7 @@ export default function Landing() {
 
       {competitions.length > 0 && (
         <div style={{ maxWidth: '800px', margin: '48px auto', padding: '0 24px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1a1a1a', marginBottom: '20px' }}>Recent tournaments</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}><h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1a1a1a', margin: 0 }}>Recent tournaments</h2><button onClick={() => navigate('/tournaments')} style={{ background: 'none', border: `1px solid ${teal}`, color: teal, padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>View all →</button></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
             {competitions.map(c => (
               <div key={c.id} style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '10px', padding: '16px' }}>

@@ -228,3 +228,22 @@ async def list_events_disciplines(events_division_id: uuid.UUID, db: AsyncSessio
         .order_by(CompetitionDiscipline.order_no)
     )
     return result.scalars().all()
+
+# ── PUBLIC TOURNAMENTS LIST ────────────────────────────────────────
+@router.get("/tournaments")
+async def list_events_tournaments(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(text("""
+        SELECT * FROM competitions 
+        WHERE is_events = TRUE AND status = 'PUBLISHED'
+        ORDER BY date_start ASC
+    """))
+    return [dict(r) for r in result.mappings().all()]
+
+@router.get("/tournaments/all")
+async def list_all_events_tournaments(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(text("""
+        SELECT * FROM competitions 
+        WHERE is_events = TRUE
+        ORDER BY date_start ASC
+    """))
+    return [dict(r) for r in result.mappings().all()]
