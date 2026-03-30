@@ -506,3 +506,12 @@ async def create_events_division(data: dict, db: AsyncSession = Depends(get_db))
     })
     await db.commit()
     return {"status": "ok"}
+
+@router.get("/events-divisions/{competition_id}")
+async def get_events_divisions(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    result = await db.execute(text(
+        "SELECT * FROM events_divisions WHERE competition_id = :cid ORDER BY order_num"
+    ), {"cid": str(competition_id)})
+    rows = result.mappings().all()
+    return [dict(r) for r in rows]

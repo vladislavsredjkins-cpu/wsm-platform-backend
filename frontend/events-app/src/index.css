@@ -13,3 +13,44 @@ body {
   min-height: 100vh;
 }
 a { color: var(--wsm-teal); }
+
+/* Override dark WSM components for events light theme */
+.wsm-content { background: #f7f4ef !important; }
+
+/* Dark blocks override */
+div[style*="background: #111"],
+div[style*="background:#111"],
+div[style*="background: #0a0a0a"],
+div[style*="background:#0a0a0a"] {
+  background: #fff !important;
+  border-color: #e8e0d0 !important;
+  color: #1a1a1a !important;
+}
+
+/* Gold text → teal */
+div[style*="color: #c9a84c"],
+span[style*="color: #c9a84c"],
+button[style*="color: #c9a84c"] {
+  color: #005B5C !important;
+}
+
+/* Gold borders → teal */
+div[style*="border.*#c9a84c"],
+button[style*="border.*#c9a84c"] {
+  border-color: #005B5C !important;
+}
+
+/* Gold background buttons → teal */
+button[style*="background: #c9a84c"],
+button[style*="background:#c9a84c"] {
+  background: #005B5C !important;
+  color: #fff !important;
+}
+
+/* White text on dark → dark text */
+div[style*="color: #fff"],
+h1[style*="color: #fff"],
+h2[style*="color: #fff"],
+h3[style*="color: #fff"] {
+  color: #1a1a1a !important;
+}

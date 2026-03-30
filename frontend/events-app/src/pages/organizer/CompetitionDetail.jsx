@@ -20,6 +20,7 @@ const TABS = ['Divisions', 'Athletes', 'Disciplines', 'Judges', 'Start Order', '
 
 export default function CompetitionDetail() {
   const { competitionId } = useParams();
+  const API = 'https://ranking.worldstrongman.org';
   const [competition, setCompetition] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('Divisions');
@@ -47,6 +48,7 @@ export default function CompetitionDetail() {
   const [editForm, setEditForm] = useState({ name: '', city: '', country: '', organizer_email: '', date_start: '', date_end: '', entry_fee_enabled: false, entry_fee: '', registration_deadline: '', entry_fee_non_refundable: true });
   const [saving, setSaving] = useState(false);
   const [liveData, setLiveData] = useState(null);
+  const [eventsDivisions, setEventsDivisions] = useState([]);
   const [soDiv, setSoDiv] = useState(0);
   const [registrations, setRegistrations] = useState([]);
   const [soDisc, setSoDisc] = useState(0);
@@ -65,6 +67,10 @@ export default function CompetitionDetail() {
       api.get(`/competitions/${competitionId}/sponsors`).then(r => setSponsors(r.data)),
       api.get(`/competitions/${competitionId}/live-data`).then(r => setLiveData(r.data)),
       loadDivisions(),
+      fetch(`https://ranking.worldstrongman.org/competitions/events-divisions/${competitionId}`)
+        .then(r => r.json())
+        .then(data => { if(Array.isArray(data)) setEventsDivisions(data); })
+        .catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [competitionId, loadDivisions]);
 
@@ -179,11 +185,11 @@ export default function CompetitionDetail() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '3px', margin: 0 }}>{competition.name}</h1>
+            <h1 style={{ color: '#1a1a1a', fontSize: '28px', fontWeight: '900', letterSpacing: '3px', margin: 0 }}>{competition.name}</h1>
             <div style={{ color: '#555', fontSize: '12px', letterSpacing: '2px', marginTop: '4px' }}>{competition.date_start} · {competition.city} · {competition.country}</div>
           </div>
   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ padding: '4px 10px', background: '#111', border: '1px solid #333', color: gold, fontSize: '11px', letterSpacing: '2px', borderRadius: '3px' }}>Q {competition.coefficient_q}</span>
+            
             <a href={`https://ranking.worldstrongman.org/competitions/${competitionId}/draw`} target="_blank" style={{ padding: '8px 16px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>🎲 DRAW</a>
             <a href={`https://ranking.worldstrongman.org/competitions/${competitionId}/live-screen`} target="_blank" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #555', color: '#888', borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>📺 LIVE</a>
             <a href={`https://ranking.worldstrongman.org/competitions/${competitionId}/warmup-screen`} target="_blank" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #555', color: '#888', borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>🏋️ WARMUP</a>
@@ -302,7 +308,16 @@ export default function CompetitionDetail() {
               </div>
               </div>
             ))}
-            {divisions.length === 0 && <p style={{ color: '#444' }}>No divisions yet.</p>}
+            {divisions.length === 0 && eventsDivisions.length === 0 && <p style={{ color: '#444' }}>No divisions yet.</p>}
+            {eventsDivisions.map(d => (
+              <div key={d.id} style={{ background: '#fff', border: '1px solid #e8e0d0', borderTop: '3px solid #005B5C', borderRadius: '8px', padding: '16px 20px', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a1a', marginBottom: '4px' }}>{d.name}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>{d.gender} · {d.weight_min}–{d.weight_max}kg · {d.age_group} · {d.format}{d.format === 'team' ? ` · ${d.team_size} per team` : ''}</div>
+                </div>
+                <div style={{ fontSize: '11px', color: '#005B5C', border: '1px solid #005B5C', padding: '3px 10px', borderRadius: '4px' }}>{d.status}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -433,7 +448,7 @@ export default function CompetitionDetail() {
           </div>
           {liveData && liveData.divisions.map(div => (
             <div key={div.division_id} style={{ marginBottom: '32px' }}>
-              <div style={{ color: '#fff', fontSize: '13px', fontWeight: '700', letterSpacing: '3px', marginBottom: '12px', paddingBottom: '8px', borderBottom: `1px solid ${gold}` }}>{div.division_name}</div>
+              <div style={{ color: '#1a1a1a', fontSize: '13px', fontWeight: '700', letterSpacing: '3px', marginBottom: '12px', paddingBottom: '8px', borderBottom: `1px solid ${gold}` }}>{div.division_name}</div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
@@ -602,7 +617,7 @@ export default function CompetitionDetail() {
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{ color: s.tier === 'PAID' ? gold : '#888', fontSize: '10px', fontWeight: '700', background: s.tier === 'PAID' ? 'rgba(201,168,76,0.1)' : '#1a1a1a', padding: '2px 6px', borderRadius: '2px' }}>{s.tier}</span>
-                <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>{s.name}</span>
+                <span style={{ color: '#1a1a1a', fontSize: '14px', fontWeight: '600' }}>{s.name}</span>
               </div>
               {s.website_url && <a href={s.website_url} target="_blank" style={{ color: '#555', fontSize: '11px', textDecoration: 'none' }}>{s.website_url}</a>}
             </div>
