@@ -7,6 +7,7 @@ from models.athlete import Athlete
 from auth.security import hash_password, verify_password, create_access_token
 from auth.dependencies import get_current_user
 from pydantic import BaseModel
+from typing import Optional
 import datetime
 import uuid
 
@@ -374,6 +375,7 @@ async def register_team(data: RegisterTeamRequest, db: AsyncSession = Depends(ge
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"status": "ok", "team_id": str(team.id), "access_token": token}
 
+from pydantic import BaseModel
 from pydantic import BaseModel as PydanticBase
 
 class ChangePasswordRequest(PydanticBase):
@@ -391,3 +393,59 @@ async def change_password(
     current_user.password_hash = hash_password(data.new_password)
     await db.commit()
     return {"status": "ok", "message": "Password changed successfully"}
+
+# ── EVENTS JUDGE INVITES ──────────────────────────────────────────
+import secrets
+
+class JudgeInviteCreate(BaseModel):
+    competition_id: str
+    email: str
+    name: Optional[str] = None
+
+@router.post("/events/invite-judge")
+async def invite_judge(data: JudgeInviteCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy import text
+    token = secrets.token_urlsafe(32)
+    await db.execute(text("""
+        INSERT INTO events_judge_invites (competition_id, email, name, token)
+        VALUES (:comp_id, :email, :name, :token)
+    """), {
+        "comp_id": data.competition_id,
+        "email": data.email,
+        "name": data.name,
+        "token": token,
+    })
+    await db.commit()
+    invite_url = f"https://events.worldstrongman.org/judge/{token}"
+    return {"status": "ok", "token": token, "invite_url": invite_url}
+
+@router.get("/events/judge-invites/{competition_id}")
+async def list_judge_invites(competition_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy import text
+    result = await db.execute(text("""
+        SELECT * FROM events_judge_invites WHERE competition_id = :comp_id ORDER BY created_at DESC
+    """), {"comp_id": competition_id})
+    return [dict(r) for r in result.mappings().all()]
+
+@router.get("/events/judge-access/{token}")
+async def judge_access(token: str, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    result = await db.execute(text("""
+        SELECT * FROM events_judge_invites WHERE token = :token AND status = 'pending'
+    """), {"token": token})
+    invite = result.mappings().first()
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invalid or expired invite")
+    await db.execute(text("""
+        UPDATE events_judge_invites SET status = 'used', used_at = NOW() WHERE token = :token
+    """), {"token": token})
+    await db.commit()
+    # Генерируем временный JWT токен для судьи
+    judge_token = create_access_token({
+        "sub": str(invite["id"]),
+        "role": "REFEREE",
+        "competition_id": str(invite["competition_id"]),
+        "email": invite["email"],
+        "name": invite["name"],
+    })
+    return {"access_token": judge_token, "competition_id": str(invite["competition_id"])}
