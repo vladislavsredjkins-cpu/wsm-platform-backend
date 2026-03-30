@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API = 'https://ranking.worldstrongman.org';
+const API = 'https://api.events.worldstrongman.org';
 const teal = '#005B5C';
 const sand = '#E8D5B5';
 
@@ -167,7 +167,7 @@ export default function Landing() {
         </div>
         <div style={{ marginTop: '24px', padding: '16px 20px', background: '#fff', border: '1px solid #e8e0d0', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ fontSize: '13px', color: '#888' }}>Want official WSM rankings and federation membership?</div>
-          <a href="https://ranking.worldstrongman.org" style={{ fontSize: '13px', fontWeight: '600', color: teal, textDecoration: 'none' }}>ranking.worldstrongman.org →</a>
+          <a href="https://api.events.worldstrongman.org" style={{ fontSize: '13px', fontWeight: '600', color: teal, textDecoration: 'none' }}>ranking.worldstrongman.org →</a>
         </div>
       </div>
 

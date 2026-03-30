@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const teal = '#005B5C';
 const sand = '#E8D5B5';
-const API = 'https://ranking.worldstrongman.org';
+const API = 'https://api.events.worldstrongman.org';
 
 const SPORTS = ['All', 'Strongman', 'Strict Curl', 'Stick Pulling', 'Powerlifting'];
 

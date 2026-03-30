@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const teal = '#005B5C';
 const sand = '#E8D5B5';
-const API = 'https://ranking.worldstrongman.org';
+const API = 'https://api.events.worldstrongman.org';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export default function Register() {
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/auth/register/events-organizer`, {
+      const res = await axios.post(`${API}/auth/register`, {
         email: form.email,
         password: form.password,
         name: form.name,

@@ -260,3 +260,14 @@ async def events_stats(db: AsyncSession = Depends(get_db)):
         "athletes": athletes.scalar(),
         "organizers": organizers.scalar(),
     }
+
+# ── ORGANIZER'S EVENTS TOURNAMENTS ────────────────────────────────
+@router.get("/my-tournaments")
+async def my_events_tournaments(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    result = await db.execute(text("""
+        SELECT c.* FROM competitions c
+        JOIN organizers o ON o.id = c.organizer_id
+        WHERE c.is_events = TRUE AND o.user_id = :user_id
+        ORDER BY c.created_at DESC
+    """), {"user_id": str(current_user.id)})
+    return [dict(r) for r in result.mappings().all()]

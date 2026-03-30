@@ -1,187 +1,131 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '../../AuthContext';
-import Layout from '../../components/Layout';
-import ChangePassword from '../../components/ChangePassword';
-import api from '../../api';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-const gold = '#c9a84c';
+const teal = '#005B5C';
+const API = 'https://api.events.worldstrongman.org';
+
+const inp = { width: '100%', padding: '10px 14px', border: '1px solid #e8e0d0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box', background: '#fafafa' };
+const lbl = { display: 'block', fontSize: '11px', fontWeight: '600', color: '#555', marginBottom: '5px', letterSpacing: '0.5px' };
 
 export default function OrganizerProfile() {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [form, setForm] = useState({});
-  const [editing, setEditing] = useState(false);
-  const [error, setError] = useState('');
-  const [saved, setSaved] = useState(false);
-  const [sponsors, setSponsors] = useState([]);
-  const [sponsorForm, setSponsorForm] = useState({ name: '', website_url: '', tier: 'GOLD' });
-  const [addingSponsors, setAddingSponsors] = useState(false);
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [form, setForm] = useState({ name: '', country: '', city: '' });
+  const [pwForm, setPwForm] = useState({ current: '', new: '', confirm: '' });
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState(false);
 
   useEffect(() => {
-    if (!user?.organizer_id) return;
-    api.get(`/organizers/${user.organizer_id}/data`)
-      .then(res => {
-        setProfile(res.data);
-        setForm({
-          name: res.data.name || '',
-          type: res.data.type || '',
-          country: res.data.country || '',
-          city: res.data.city || '',
-          phone: res.data.phone || '',
-          website_url: res.data.website_url || '',
-          instagram: res.data.instagram || '',
-        });
-      })
-      .catch(() => setError('Failed to load profile'));
-    api.get(`/organizers/${user.organizer_id}/sponsors`)
-      .then(res => setSponsors(res.data || []))
+    const token = localStorage.getItem('token');
+    axios.get(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => setUser(r.data))
       .catch(() => {});
-  }, [user]);
+    axios.get(`${API}/auth/organizer-profile`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => setForm({ name: r.data.name || '', country: r.data.country || '', city: r.data.city || '' }))
+      .catch(() => {});
+  }, []);
 
-  const save = async () => {
+  const saveProfile = async () => {
+    setSaving(true);
+    setSuccess(false);
     try {
-      await api.patch(`/organizers/${user.organizer_id}`, form);
-      setSaved(true);
-      setEditing(false);
-      setTimeout(() => setSaved(false), 3000);
-    } catch(e) {
-      setError(e.response?.data?.detail || 'Save failed');
-    }
+      await axios.patch(`${API}/auth/profile`, form, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      setSuccess(true);
+    } catch(e) {}
+    setSaving(false);
   };
 
-  const deleteSponsor = async (sponsorId) => {
-    if (!confirm('Delete this sponsor?')) return;
-    await api.delete(`/organizers/${user.organizer_id}/sponsors/${sponsorId}`);
-    const res = await api.get(`/organizers/${user.organizer_id}/sponsors`);
-    setSponsors(res.data || []);
+  const changePassword = async () => {
+    setPwError('');
+    if (pwForm.new !== pwForm.confirm) { setPwError('Passwords do not match'); return; }
+    if (pwForm.new.length < 6) { setPwError('Min 6 characters'); return; }
+    try {
+      await axios.post(`${API}/auth/change-password`, { current_password: pwForm.current, new_password: pwForm.new }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      setPwSuccess(true);
+      setPwForm({ current: '', new: '', confirm: '' });
+    } catch(e) { setPwError(e.response?.data?.detail || 'Error'); }
   };
-
-  const addSponsor = async () => {
-    if (!sponsorForm.name) return;
-    await api.post(`/organizers/${user.organizer_id}/sponsors`, sponsorForm);
-    const res = await api.get(`/organizers/${user.organizer_id}/sponsors`);
-    setSponsors(res.data || []);
-    setSponsorForm({ name: '', website_url: '', tier: 'GOLD' });
-    setAddingSponsors(false);
-  };
-
-  const uploadLogo = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    await api.post(`/organizers/${user.organizer_id}/photo`, fd);
-    const res = await api.get(`/organizers/${user.organizer_id}/data`);
-    setProfile(res.data);
-  };
-
-  if (!user?.organizer_id) return <Layout><p style={{color:'#ff5252',padding:'32px'}}>No organizer profile linked.</p>      <ChangePassword />
-    </Layout>;
 
   return (
-    <Layout>
-      <div style={{maxWidth:'700px',margin:'0 auto',padding:'32px 24px',fontFamily:'system-ui,sans-serif'}}>
-        <div style={{display:'flex',alignItems:'center',gap:'24px',marginBottom:'32px',padding:'24px',background:'#111',border:'1px solid #1e1e1e',borderRadius:'6px',borderTop:`3px solid ${gold}`}}>
-          <div style={{position:'relative'}}>
-            {profile?.logo_url
-              ? <img src={profile.logo_url?.startsWith('http') ? profile.logo_url : `https://ranking.worldstrongman.org${profile.logo_url}`} style={{width:'80px',height:'80px',borderRadius:'50%',objectFit:'cover',border:`2px solid ${gold}`}} />
-              : <div style={{width:'80px',height:'80px',borderRadius:'50%',background:'#1e1e1e',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'32px'}}>🏛️</div>
-            }
-            <label style={{position:'absolute',bottom:0,right:0,background:gold,borderRadius:'50%',width:'24px',height:'24px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'12px'}}>
-              📷<input type="file" accept="image/*" onChange={uploadLogo} style={{display:'none'}} />
-            </label>
-          </div>
-          <div>
-            <div style={{color:'#fff',fontWeight:'700',fontSize:'18px'}}>{profile?.name}</div>
-            <div style={{color:'#888',fontSize:'12px',marginTop:'4px'}}>{profile?.type} · {profile?.city}, {profile?.country}</div>
-            <div style={{color:gold,fontSize:'11px',marginTop:'4px',letterSpacing:'1px'}}>ORGANIZER</div>
-          </div>
+    <div style={{ minHeight: '100vh', background: '#f7f4ef' }}>
+      <div style={{ background: '#fff', borderBottom: '1px solid #e8e0d0', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '36px', height: '36px', background: teal, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '800', color: '#E8D5B5', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>W</div>
+          <span style={{ fontWeight: '700', color: '#1a1a1a', fontSize: '15px' }}>My Profile</span>
         </div>
-
-        {error && <div style={{background:'rgba(255,82,82,0.1)',border:'1px solid rgba(255,82,82,0.3)',color:'#ff5252',padding:'10px 14px',borderRadius:'3px',marginBottom:'16px'}}>{error}</div>}
-        {saved && <div style={{background:'rgba(76,175,80,0.1)',border:'1px solid rgba(76,175,80,0.3)',color:'#4caf50',padding:'10px 14px',borderRadius:'3px',marginBottom:'16px'}}>✓ Saved</div>}
-
-        <div style={{background:'#111',border:'1px solid #1e1e1e',borderRadius:'6px',padding:'24px'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
-            <div style={{color:gold,fontSize:'10px',letterSpacing:'3px'}}>ORGANIZATION INFO</div>
-            {!editing
-              ? <button onClick={() => setEditing(true)} style={{background:'transparent',border:`1px solid ${gold}`,color:gold,padding:'6px 16px',borderRadius:'3px',fontSize:'11px',cursor:'pointer'}}>EDIT</button>
-              : <div style={{display:'flex',gap:'8px'}}>
-                  <button onClick={save} style={{background:gold,border:'none',color:'#000',padding:'6px 16px',borderRadius:'3px',fontSize:'11px',fontWeight:'700',cursor:'pointer'}}>SAVE</button>
-                  <button onClick={() => setEditing(false)} style={{background:'transparent',border:'1px solid #333',color:'#555',padding:'6px 16px',borderRadius:'3px',fontSize:'11px',cursor:'pointer'}}>CANCEL</button>
-                </div>
-            }
-          </div>
-
-          {[
-            ['name','Organization Name'],
-            ['type','Type'],
-            ['country','Country'],
-            ['city','City'],
-            ['phone','Phone'],
-            ['website_url','Website'],
-            ['instagram','Instagram'],
-          ].map(([field, label]) => (
-            <div key={field} style={{marginBottom:'16px'}}>
-              <div style={{color:'#555',fontSize:'10px',letterSpacing:'2px',marginBottom:'6px'}}>{label}</div>
-              {editing
-                ? <input value={form[field]||''} onChange={e => setForm({...form,[field]:e.target.value})}
-                    style={{width:'100%',padding:'10px 12px',background:'#0a0a0a',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'14px'}} />
-                : <div style={{color:'#fff',fontSize:'14px'}}>{profile?.[field] || <span style={{color:'#333'}}>—</span>}</div>
-              }
-            </div>
-          ))}
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <span onClick={() => navigate('/dashboard')} style={{ fontSize: '13px', color: '#666', cursor: 'pointer' }}>Dashboard</span>
+          <span onClick={() => navigate('/organizer/competitions')} style={{ fontSize: '13px', color: '#666', cursor: 'pointer' }}>Competitions</span>
+          <span onClick={() => { localStorage.clear(); navigate('/login'); }} style={{ fontSize: '13px', color: '#c62828', cursor: 'pointer' }}>Logout</span>
         </div>
       </div>
-      <div style={{background:'#111',border:'1px solid #1e1e1e',borderRadius:'6px',padding:'24px',marginTop:'20px'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
-          <div style={{color:gold,fontSize:'10px',letterSpacing:'3px'}}>SPONSORS</div>
-          <button onClick={() => setAddingSponsors(!addingSponsors)} style={{background:'transparent',border:`1px solid ${gold}`,color:gold,padding:'6px 16px',borderRadius:'3px',fontSize:'11px',cursor:'pointer'}}>+ ADD</button>
-        </div>
-        {addingSponsors && (
-          <div style={{background:'#0a0a0a',border:'1px solid #2a2a2a',borderRadius:'4px',padding:'16px',marginBottom:'16px'}}>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'12px'}}>
-              <input placeholder="Sponsor name" value={sponsorForm.name} onChange={e => setSponsorForm({...sponsorForm,name:e.target.value})}
-                style={{padding:'8px 12px',background:'#111',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'13px'}} />
-              <select value={sponsorForm.tier} onChange={e => setSponsorForm({...sponsorForm,tier:e.target.value})}
-                style={{padding:'8px 12px',background:'#111',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'13px'}}>
-                <option value="TITLE">TITLE</option>
-                <option value="GOLD">GOLD</option>
-                <option value="SILVER">SILVER</option>
-                <option value="BRONZE">BRONZE</option>
-              </select>
-              <input placeholder="Website URL" value={sponsorForm.website_url} onChange={e => setSponsorForm({...sponsorForm,website_url:e.target.value})}
-                style={{padding:'8px 12px',background:'#111',border:'1px solid #2a2a2a',borderRadius:'3px',color:'#fff',fontSize:'13px'}} />
-            </div>
-            <button onClick={addSponsor} style={{background:gold,border:'none',color:'#000',padding:'8px 20px',borderRadius:'3px',fontSize:'11px',fontWeight:'700',cursor:'pointer'}}>SAVE SPONSOR</button>
+
+      <div style={{ maxWidth: '600px', margin: '40px auto', padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+        {/* Account info */}
+        <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '12px', padding: '24px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 20px', color: '#1a1a1a' }}>Account</h2>
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
+            <strong>Email:</strong> {user?.email}
           </div>
-        )}
-        {sponsors.length === 0
-          ? <div style={{color:'#333',fontSize:'13px'}}>No sponsors yet</div>
-          : <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:'12px'}}>
-              {sponsors.map(s => (
-                <div key={s.id} style={{background:'#0a0a0a',border:'1px solid #1e1e1e',borderRadius:'4px',padding:'12px',textAlign:'center'}}>
-                  <label style={{cursor:'pointer',display:'block',marginBottom:'8px'}}>
-                    {s.logo_url
-                      ? <img src={s.logo_url?.startsWith('http') ? s.logo_url : `https://ranking.worldstrongman.org${s.logo_url}`} style={{height:'80px',objectFit:'contain',maxWidth:'100%'}} />
-                      : <div style={{height:'80px',display:'flex',alignItems:'center',justifyContent:'center',color:'#333',fontSize:'10px',border:'1px dashed #333',borderRadius:'3px'}}>+ LOGO</div>
-                    }
-                    <input type="file" accept="image/*" style={{display:'none'}} onChange={async e => {
-                      const fd = new FormData(); fd.append('file', e.target.files[0]);
-                      await api.post(`/organizers/${user.organizer_id}/sponsors/${s.id}/logo`, fd);
-                      const res = await api.get(`/organizers/${user.organizer_id}/sponsors`);
-                      setSponsors(res.data || []);
-                    }} />
-                  </label>
-                  <div style={{color:'#fff',fontSize:'12px',fontWeight:'700'}}>{s.name}</div>
-                  {s.website_url && <a href={s.website_url} target="_blank" style={{color:gold,fontSize:'10px',display:'block',marginTop:'4px'}}>{s.website_url}</a>}
-                  <button onClick={() => deleteSponsor(s.id)} style={{marginTop:'8px',background:'transparent',border:'1px solid #ff5252',color:'#ff5252',padding:'3px 8px',borderRadius:'3px',fontSize:'10px',cursor:'pointer',width:'100%'}}>✕ REMOVE</button>
-                </div>
-              ))}
+          <div style={{ fontSize: '14px', color: '#666' }}>
+            <strong>Role:</strong> {user?.role}
+          </div>
+        </div>
+
+        {/* Organization */}
+        <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '12px', padding: '24px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 20px', color: '#1a1a1a' }}>Organization</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <label style={lbl}>ORGANIZATION NAME</label>
+              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Latvia Strongman Federation" style={inp} />
             </div>
-        }
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={lbl}>COUNTRY</label>
+                <input value={form.country} onChange={e => setForm({...form, country: e.target.value})} placeholder="Latvia" style={inp} />
+              </div>
+              <div>
+                <label style={lbl}>CITY</label>
+                <input value={form.city} onChange={e => setForm({...form, city: e.target.value})} placeholder="Riga" style={inp} />
+              </div>
+            </div>
+            {success && <div style={{ color: '#2e7d32', fontSize: '13px' }}>✅ Saved!</div>}
+            <button onClick={saveProfile} disabled={saving} style={{ padding: '10px 24px', background: teal, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', alignSelf: 'flex-start' }}>
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+
+        {/* Change password */}
+        <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '12px', padding: '24px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 20px', color: '#1a1a1a' }}>Change Password</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <label style={lbl}>CURRENT PASSWORD</label>
+              <input type="password" value={pwForm.current} onChange={e => setPwForm({...pwForm, current: e.target.value})} style={inp} />
+            </div>
+            <div>
+              <label style={lbl}>NEW PASSWORD</label>
+              <input type="password" value={pwForm.new} onChange={e => setPwForm({...pwForm, new: e.target.value})} style={inp} />
+            </div>
+            <div>
+              <label style={lbl}>CONFIRM NEW PASSWORD</label>
+              <input type="password" value={pwForm.confirm} onChange={e => setPwForm({...pwForm, confirm: e.target.value})} style={inp} />
+            </div>
+            {pwError && <div style={{ color: '#c62828', fontSize: '13px' }}>{pwError}</div>}
+            {pwSuccess && <div style={{ color: '#2e7d32', fontSize: '13px' }}>✅ Password changed!</div>}
+            <button onClick={changePassword} style={{ padding: '10px 24px', background: teal, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', alignSelf: 'flex-start' }}>
+              Change Password
+            </button>
+          </div>
+        </div>
+
       </div>
-          <ChangePassword />
-    </Layout>
+    </div>
   );
 }

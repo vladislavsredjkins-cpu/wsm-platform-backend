@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://ranking.worldstrongman.org',
+  baseURL: 'https://api.events.worldstrongman.org',
 });
 
 api.interceptors.request.use((config) => {
@@ -13,9 +13,8 @@ api.interceptors.request.use((config) => {
 export const login = (email, password) =>
   api.post('/auth/login', { email, password });
 
-export const getCompetitions = (organizer_id = null) => {
-  const params = organizer_id ? `?organizer_id=${organizer_id}` : '';
-  return api.get(`/competitions/${params}`);
+export const getCompetitions = () => {
+  return api.get('/events-api/my-tournaments');
 };
 export const getResults = (disciplineId) => api.get(`/results/discipline/${disciplineId}`);
 export const upsertResult = (disciplineId, data) => api.post(`/results/discipline/${disciplineId}`, data);

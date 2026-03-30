@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const teal = '#005B5C';
 const sand = '#E8D5B5';
-const API = 'https://ranking.worldstrongman.org';
+const API = 'https://api.events.worldstrongman.org';
 
 const inp = { width: '100%', padding: '10px 14px', border: '1px solid #e8e0d0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box', background: '#fafafa' };
 const lbl = { display: 'block', fontSize: '11px', fontWeight: '600', color: '#555', marginBottom: '5px', letterSpacing: '0.5px' };
@@ -45,13 +45,13 @@ export default function EventsCompetitionDetail() {
 
   useEffect(() => {
     axios.get(`${API}/competitions/${competitionId}`).then(r => setCompetition(r.data)).catch(() => {});
-    axios.get(`${API}/events-api/divisions/${competitionId}`).then(r => setDivisions(r.data)).catch(() => {});
-    axios.get(`${API}/events-api/participants/competition/${competitionId}`).then(r => setParticipants(r.data)).catch(() => {});
-    axios.get(`${API}/events-api/judge-invites/${competitionId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(r => setJudgeInvites(r.data)).catch(() => {});
+    axios.get(`${API}/divisions/${competitionId}`).then(r => setDivisions(r.data)).catch(() => {});
+    axios.get(`${API}/participants/competition/${competitionId}`).then(r => setParticipants(r.data)).catch(() => {});
+    axios.get(`${API}/judges/invites/${competitionId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(r => setJudgeInvites(r.data)).catch(() => {});
   }, [competitionId]);
 
   const loadDisciplines = (divId) => {
-    axios.get(`${API}/events-api/divisions/${divId}/disciplines`).then(r => setDisciplines(r.data)).catch(() => {});
+    axios.get(`${API}/divisions/${divId}/disciplines`).then(r => setDisciplines(r.data)).catch(() => {});
   };
 
   const selectDivision = (div) => {
@@ -62,12 +62,12 @@ export default function EventsCompetitionDetail() {
   const createDivision = async () => {
     setSaving(true);
     try {
-      await axios.post(`${API}/events-api/divisions`, { ...divForm, competition_id: competitionId,
+      await axios.post(`${API}/divisions/`, { ...divForm, competition_id: competitionId,
         weight_min: divForm.weight_min ? parseFloat(divForm.weight_min) : null,
         weight_max: divForm.weight_max ? parseFloat(divForm.weight_max) : null,
         team_size: divForm.team_size ? parseInt(divForm.team_size) : null,
       }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-      const r = await axios.get(`${API}/events-api/divisions/${competitionId}`);
+      const r = await axios.get(`${API}/divisions/${competitionId}`);
       setDivisions(r.data);
       setShowDivForm(false);
       setDivForm({ name: '', gender: 'male', weight_min: '', weight_max: '', age_group: 'open', format: 'individual', team_size: '', sport_type: 'strongman' });
@@ -79,7 +79,7 @@ export default function EventsCompetitionDetail() {
     if (!selectedDivision) return;
     setSaving(true);
     try {
-      await axios.post(`${API}/events-api/divisions/${selectedDivision.id}/disciplines`,
+      await axios.post(`${API}/divisions/${selectedDivision.id}/disciplines`,
         { ...discForm, order_no: parseInt(discForm.order_no) || 1 },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
@@ -94,11 +94,11 @@ export default function EventsCompetitionDetail() {
     if (!judgeEmail) return;
     setInviting(true);
     try {
-      await axios.post(`${API}/events-api/invite-judge`,
+      await axios.post(`${API}/judges/invite`,
         { competition_id: competitionId, email: judgeEmail, name: judgeName },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
-      const r = await axios.get(`${API}/events-api/judge-invites/${competitionId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const r = await axios.get(`${API}/judges/invites/${competitionId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       setJudgeInvites(r.data);
       setJudgeEmail(''); setJudgeName('');
     } catch(e) { alert('Error sending invite'); }

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 
 const teal = '#005B5C';
-const API = 'https://ranking.worldstrongman.org';
+const API = 'https://api.events.worldstrongman.org';
 
 const COUNTRIES = [
   'Afghanistan','Albania','Algeria','Argentina','Armenia','Australia','Austria','Azerbaijan',

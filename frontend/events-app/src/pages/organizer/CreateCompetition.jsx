@@ -4,7 +4,7 @@ import { useAuth } from '../../AuthContext';
 import Layout from '../../components/Layout';
 import axios from 'axios';
 
-const API = 'https://ranking.worldstrongman.org';
+const API = 'https://api.events.worldstrongman.org';
 const teal = '#005B5C';
 const sand = '#E8D5B5';
 
@@ -78,18 +78,14 @@ export default function CreateCompetition() {
         date_end: compForm.date_end || null,
         city: compForm.city || null,
         country: compForm.country || null,
-        competition_type: 'INTERNATIONAL_TOURNAMENT',
-        coefficient_q: 1,
-        is_rated: false,
         sport_type: sport,
-        organizer_email: user?.email,
       }, { headers: { Authorization: `Bearer ${token}` } });
 
       const compId = res.data.id;
 
       // Создаём divisions
       for (const div of divisions) {
-        await axios.post(`${API}/competitions/events/divisions`, {
+        await axios.post(`${API}/divisions/`, {
           competition_id: compId,
           ...div,
         }, { headers: { Authorization: `Bearer ${token}` } });
