@@ -161,6 +161,16 @@ export default function AthleteProfile() {
               <div style={{color:'#fff',fontWeight:'600',fontSize:'13px'}}>{s.name}</div>
               {s.website_url && <a href={s.website_url} target="_blank" style={{color:'#555',fontSize:'11px'}}>{s.website_url}</a>}
             </div>
+            <label style={{padding:'4px 10px',border:'1px solid #333',color:'#666',fontSize:'11px',cursor:'pointer',borderRadius:'3px'}}>
+              📷
+              <input type="file" accept=".jpg,.jpeg,.png,.webp" style={{display:'none'}} onChange={async e=>{
+                if(!e.target.files[0]) return;
+                const token = localStorage.getItem('token');
+                const fd = new FormData(); fd.append('file', e.target.files[0]);
+                const res = await axios.post(`${API}/athletes/${user.athlete_id}/sponsors/${s.id}/logo`, fd, {headers:{Authorization:`Bearer ${token}`,'Content-Type':'multipart/form-data'}});
+                setSponsors(sponsors.map(sp=>sp.id===s.id?{...sp,logo_url:res.data.logo_url}:sp));
+              }} />
+            </label>
             <button onClick={()=>deleteSponsor(s.id)} style={{background:'transparent',border:'1px solid #333',color:'#666',padding:'4px 10px',borderRadius:'3px',cursor:'pointer',fontSize:'11px'}}>✕ Remove</button>
           </div>
         ))}
