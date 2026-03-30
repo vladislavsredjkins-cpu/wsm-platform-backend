@@ -247,3 +247,16 @@ async def list_all_events_tournaments(db: AsyncSession = Depends(get_db)):
         ORDER BY date_start ASC
     """))
     return [dict(r) for r in result.mappings().all()]
+
+# ── EVENTS STATS ───────────────────────────────────────────────────
+@router.get("/stats")
+async def events_stats(db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text as sql_text
+    tournaments = await db.execute(sql_text("SELECT COUNT(*) FROM competitions WHERE is_events = TRUE"))
+    athletes = await db.execute(sql_text("SELECT COUNT(*) FROM events_participants"))
+    organizers = await db.execute(sql_text("SELECT COUNT(*) FROM users WHERE role = 'ORGANIZER'"))
+    return {
+        "tournaments": tournaments.scalar(),
+        "athletes": athletes.scalar(),
+        "organizers": organizers.scalar(),
+    }

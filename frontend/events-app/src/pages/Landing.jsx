@@ -39,8 +39,8 @@ export default function Landing() {
       const organizers = new Set(data.map(c => c.organizer_id)).size;
       setStats(s => ({ ...s, tournaments: data.length, organizers }));
     }).catch(() => {});
-    axios.get(`${API}/athletes-list`).then(res => {
-      setStats(s => ({ ...s, athletes: res.data?.length || 0 }));
+    axios.get(`${API}/events-api/stats`).then(res => {
+      setStats(s => ({ ...s, athletes: res.data.athletes }));
     }).catch(() => {});
   }, []);
 
