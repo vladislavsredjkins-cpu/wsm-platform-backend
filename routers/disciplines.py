@@ -118,3 +118,33 @@ async def calculate_standings(discipline_id: uuid.UUID, db: AsyncSession = Depen
     service = DisciplineStandingService(db)
     standings = await service.calculate(discipline_id)
     return {"status": "ok", "standings_created": len(standings)}
+
+# ── EVENTS DISCIPLINES ────────────────────────────────────────────
+@router.post("/events-division/{events_division_id}")
+async def create_events_discipline(events_division_id: uuid.UUID, data: DisciplineCreate, db: AsyncSession = Depends(get_db)):
+    from models.competition_discipline import CompetitionDiscipline
+    discipline = CompetitionDiscipline(
+        events_division_id=events_division_id,
+        discipline_name=data.discipline_name,
+        discipline_mode=data.discipline_mode,
+        order_no=data.order_no,
+        time_cap_seconds=data.time_cap_seconds,
+        implement_weight=data.implement_weight,
+        result_unit=data.result_unit,
+        notes=data.notes,
+    )
+    db.add(discipline)
+    await db.commit()
+    await db.refresh(discipline)
+    return discipline
+
+@router.get("/events-division/{events_division_id}")
+async def list_events_disciplines(events_division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    from models.competition_discipline import CompetitionDiscipline
+    result = await db.execute(
+        select(CompetitionDiscipline)
+        .where(CompetitionDiscipline.events_division_id == events_division_id)
+        .order_by(CompetitionDiscipline.order_no)
+    )
+    return result.scalars().all()

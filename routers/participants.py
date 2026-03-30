@@ -86,3 +86,81 @@ async def get_participant(participant_id: uuid.UUID, db: AsyncSession = Depends(
     if not participant:
         raise HTTPException(status_code=404, detail="Participant not found")
     return participant
+# ── EVENTS PARTICIPANTS ───────────────────────────────────────────
+from pydantic import BaseModel as PydanticBase
+from typing import Optional
+import datetime
+
+class EventsParticipantCreate(PydanticBase):
+    events_division_id: uuid.UUID
+    competition_id: uuid.UUID
+    first_name: str
+    last_name: str
+    email: Optional[str] = None
+    country: Optional[str] = None
+    date_of_birth: Optional[datetime.date] = None
+    bodyweight_kg: Optional[float] = None
+    phone: Optional[str] = None
+
+@router.post("/events")
+async def create_events_participant(data: EventsParticipantCreate, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    result = await db.execute(text("""
+        INSERT INTO events_participants 
+        (events_division_id, competition_id, first_name, last_name, email, country, date_of_birth, bodyweight_kg, phone)
+        VALUES (:div_id, :comp_id, :first_name, :last_name, :email, :country, :dob, :bw, :phone)
+        RETURNING *
+    """), {
+        "div_id": str(data.events_division_id),
+        "comp_id": str(data.competition_id),
+        "first_name": data.first_name,
+        "last_name": data.last_name,
+        "email": data.email,
+        "country": data.country,
+        "dob": data.date_of_birth,
+        "bw": data.bodyweight_kg,
+        "phone": data.phone,
+    })
+    await db.commit()
+    row = result.mappings().first()
+    return dict(row)
+
+@router.get("/events/competition/{competition_id}")
+async def list_events_participants(competition_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    result = await db.execute(text("""
+        SELECT ep.*, ed.name as division_name 
+        FROM events_participants ep
+        LEFT JOIN events_divisions ed ON ep.events_division_id = ed.id
+        WHERE ep.competition_id = :comp_id
+        ORDER BY ed.name, ep.last_name
+    """), {"comp_id": str(competition_id)})
+    return [dict(r) for r in result.mappings().all()]
+
+@router.get("/events/division/{events_division_id}")
+async def list_events_participants_by_division(events_division_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    result = await db.execute(text("""
+        SELECT * FROM events_participants 
+        WHERE events_division_id = :div_id
+        ORDER BY bib_no, last_name
+    """), {"div_id": str(events_division_id)})
+    return [dict(r) for r in result.mappings().all()]
+
+@router.patch("/events/{participant_id}/bib")
+async def set_events_participant_bib(participant_id: uuid.UUID, bib_no: int, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    await db.execute(text(
+        "UPDATE events_participants SET bib_no = :bib WHERE id = :id"
+    ), {"bib": bib_no, "id": str(participant_id)})
+    await db.commit()
+    return {"status": "ok"}
+
+@router.delete("/events/{participant_id}")
+async def delete_events_participant(participant_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    await db.execute(text(
+        "DELETE FROM events_participants WHERE id = :id"
+    ), {"id": str(participant_id)})
+    await db.commit()
+    return {"status": "ok"}

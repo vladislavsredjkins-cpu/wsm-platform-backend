@@ -19,7 +19,8 @@ class CompetitionDiscipline(Base):
     __tablename__ = "competition_disciplines"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id"), nullable=False)
+    competition_division_id = Column(UUID(as_uuid=True), ForeignKey("competition_divisions.id"), nullable=True)
+    events_division_id = Column(UUID(as_uuid=True), ForeignKey("events_divisions.id"), nullable=True)
     order_no = Column(Integer, nullable=True)
     discipline_name = Column(String(200), nullable=False)
     discipline_mode = Column(String(50), nullable=False, default="AMRAP_REPS")
