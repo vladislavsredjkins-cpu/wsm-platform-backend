@@ -54,3 +54,23 @@ class CompetitionDivision(Base):
     snapshots = relationship("CompetitionDivisionSnapshot", back_populates="division", cascade="all, delete-orphan")
     ranking_awards = relationship("RankingAward", back_populates="division", cascade="all, delete-orphan")
     weight_category = relationship("WeightCategory")
+
+# ── EVENTS PLATFORM — flexible division ──────────────────────────
+import uuid as _uuid
+from sqlalchemy import Boolean, Text
+
+class EventsDivision(Base):
+    __tablename__ = "events_divisions"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=_uuid.uuid4)
+    competition_id = Column(UUID(as_uuid=True), ForeignKey("competitions.id"), nullable=False)
+    name = Column(String(100), nullable=False)          # "Men Open 90+"
+    gender = Column(String(10), nullable=True)          # male/female/mixed
+    weight_min = Column(Integer, nullable=True)         # kg
+    weight_max = Column(Integer, nullable=True)         # kg
+    age_group = Column(String(20), nullable=True)       # open/junior/master
+    format = Column(String(20), default="individual")   # individual/relay/team
+    team_size = Column(Integer, nullable=True)          # если team
+    sport_type = Column(String(30), default="strongman")
+    status = Column(String(20), default="DRAFT")
+    order = Column(Integer, default=0)
+    competition = relationship("Competition", foreign_keys=[competition_id])
