@@ -6,6 +6,7 @@ from db.database import SessionLocal
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from routers import competitions, payments, judges, certificates, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams, matches, asl
+from routers import events_router
 
 
 WSM_COUNTRIES = {
@@ -455,6 +456,7 @@ app.include_router(coaches.router)
 app.include_router(teams.router)
 app.include_router(matches.router)
 app.include_router(asl.router)
+app.include_router(events_router.router, prefix="/events-api")
 
 
 @app.get("/")

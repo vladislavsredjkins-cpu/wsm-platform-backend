@@ -14,6 +14,7 @@ import OrganizerCompetitions from './pages/organizer/Competitions';
 import CreateCompetition from './pages/organizer/CreateCompetition';
 import OrganizerCompetitionDetail from './pages/organizer/CompetitionDetail';
 import OrganizerProfile from './pages/organizer/Profile';
+import AthleteRegister from './pages/AthleteRegister';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/organizer/competitions/new" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
       <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><OrganizerCompetitionDetail /></ProtectedRoute>} />
       <Route path="/organizer/profile" element={<ProtectedRoute><OrganizerProfile /></ProtectedRoute>} />
+      <Route path="/tournament/:competitionId/register" element={<AthleteRegister />} />
       <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
     </Routes>
   );
