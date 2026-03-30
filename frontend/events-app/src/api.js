@@ -14,7 +14,7 @@ export const login = (email, password) =>
   api.post('/auth/login', { email, password });
 
 export const getCompetitions = () => {
-  return api.get('/events-api/my-tournaments');
+  return api.get('/competitions/');
 };
 export const getResults = (disciplineId) => api.get(`/results/discipline/${disciplineId}`);
 export const upsertResult = (disciplineId, data) => api.post(`/results/discipline/${disciplineId}`, data);

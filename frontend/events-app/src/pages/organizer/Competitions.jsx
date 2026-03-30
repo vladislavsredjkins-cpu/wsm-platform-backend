@@ -30,7 +30,7 @@ export default function Competitions() {
 
   const load = () => {
     setLoading(true);
-    getCompetitions(user?.organizer_id)
+    getCompetitions()
       .then(res => setCompetitions(res.data))
       .finally(() => setLoading(false));
   };

@@ -14,6 +14,7 @@ import OrganizerCompetitions from './pages/organizer/Competitions';
 import CreateCompetition from './pages/organizer/CreateCompetition';
 import OrganizerCompetitionDetail from './pages/organizer/CompetitionDetail';
 import EventsCompetitionDetail from './pages/organizer/EventsCompetitionDetail';
+import FullCompetitionDetail from './pages/organizer/FullCompetitionDetail';
 import OrganizerProfile from './pages/organizer/Profile';
 import AthleteRegister from './pages/AthleteRegister';
 import Tournaments from './pages/Tournaments';
@@ -45,7 +46,7 @@ export default function App() {
       <Route path="/team/profile" element={<ProtectedRoute><TeamProfile /></ProtectedRoute>} />
       <Route path="/organizer/competitions" element={<ProtectedRoute><OrganizerCompetitions /></ProtectedRoute>} />
       <Route path="/organizer/competitions/new" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
-      <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><EventsCompetitionDetail /></ProtectedRoute>} />
+      <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><FullCompetitionDetail /></ProtectedRoute>} />
       <Route path="/organizer/profile" element={<ProtectedRoute><OrganizerProfile /></ProtectedRoute>} />
       <Route path="/tournaments" element={<Tournaments />} />
       <Route path="/tournament/:competitionId/register" element={<AthleteRegister />} />
