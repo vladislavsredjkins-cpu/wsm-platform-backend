@@ -101,7 +101,7 @@ export default function Competitions() {
           <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: '700', margin: '0 0 4px' }}>Competitions</h1>
           <p style={{ color: '#555', fontSize: '13px', margin: 0 }}>Manage your competitions</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} style={{ padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
+        <button onClick={() => navigate('/organizer/competitions/new')} style={{ padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
           {showForm ? 'CANCEL' : '+ NEW COMPETITION'}
         </button>
       </div>

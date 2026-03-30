@@ -485,3 +485,24 @@ async def list_competition_registrations(competition_id: uuid.UUID, db: AsyncSes
         "athlete_id": str(r.CompetitionRegistration.athlete_id),
         "created_at": str(r.CompetitionRegistration.created_at)
     } for r in rows]
+
+# ── EVENTS DIVISIONS ──────────────────────────────────────────────
+@router.post("/events/divisions")
+async def create_events_division(data: dict, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    await db.execute(text("""
+        INSERT INTO events_divisions (id, competition_id, name, gender, weight_min, weight_max, age_group, format, team_size, sport_type)
+        VALUES (gen_random_uuid(), :competition_id, :name, :gender, :weight_min, :weight_max, :age_group, :format, :team_size, :sport_type)
+    """), {
+        "competition_id": data.get("competition_id"),
+        "name": data.get("name"),
+        "gender": data.get("gender", "male"),
+        "weight_min": data.get("weight_min"),
+        "weight_max": data.get("weight_max"),
+        "age_group": data.get("age_group", "open"),
+        "format": data.get("format", "individual"),
+        "team_size": data.get("team_size"),
+        "sport_type": data.get("sport_type", "strongman"),
+    })
+    await db.commit()
+    return {"status": "ok"}

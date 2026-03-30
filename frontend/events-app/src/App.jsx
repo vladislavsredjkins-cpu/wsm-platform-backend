@@ -11,6 +11,7 @@ import AthleteProfile from './pages/athlete/Profile';
 import AthleteCompetitions from './pages/athlete/Competitions';
 import TeamProfile from './pages/team/Profile';
 import OrganizerCompetitions from './pages/organizer/Competitions';
+import CreateCompetition from './pages/organizer/CreateCompetition';
 import OrganizerCompetitionDetail from './pages/organizer/CompetitionDetail';
 import OrganizerProfile from './pages/organizer/Profile';
 
@@ -40,6 +41,7 @@ export default function App() {
       <Route path="/athlete/competitions" element={<ProtectedRoute><AthleteCompetitions /></ProtectedRoute>} />
       <Route path="/team/profile" element={<ProtectedRoute><TeamProfile /></ProtectedRoute>} />
       <Route path="/organizer/competitions" element={<ProtectedRoute><OrganizerCompetitions /></ProtectedRoute>} />
+      <Route path="/organizer/competitions/new" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
       <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><OrganizerCompetitionDetail /></ProtectedRoute>} />
       <Route path="/organizer/profile" element={<ProtectedRoute><OrganizerProfile /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
