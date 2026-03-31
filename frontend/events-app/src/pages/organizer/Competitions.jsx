@@ -4,7 +4,6 @@ import { useAuth } from '../../AuthContext';
 import { getCompetitions } from '../../api';
 import Layout from '../../components/Layout';
 import api from '../../api';
-const gold = '#c9a84c';
 
 const COMPETITION_TYPES = [
   { value: 'INTERNATIONAL_TOURNAMENT', label: 'Exhibition Tournament', q: 1, price: 'events_single', fee: 19 },
@@ -98,10 +97,10 @@ export default function Competitions() {
     <Layout>
       <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: '700', margin: '0 0 4px' }}>Competitions</h1>
-          <p style={{ color: '#555', fontSize: '13px', margin: 0 }}>Manage your competitions</p>
+          <h1 style={{ color: '#1a1a1a', fontSize: '22px', fontWeight: '700', margin: '0 0 4px' }}>Competitions</h1>
+          <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>Manage your competitions</p>
         </div>
-        <button onClick={() => navigate('/organizer/competitions/new')} style={{ padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
+        <button onClick={() => navigate('/organizer/competitions/new')} style={{ padding: '10px 24px', background: '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
           {showForm ? 'CANCEL' : '+ NEW COMPETITION'}
         </button>
       </div>
@@ -123,8 +122,8 @@ export default function Competitions() {
       )}
 
       {showForm && (
-        <div style={{ background: '#111', border: `1px solid ${gold}`, borderRadius: '4px', padding: '24px', marginBottom: '28px' }}>
-          <h3 style={{ color: gold, fontSize: '12px', fontWeight: '700', letterSpacing: '2px', margin: '0 0 20px' }}>NEW COMPETITION</h3>
+        <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '24px', marginBottom: '28px' }}>
+          <h3 style={{ color: '#005B5C', fontSize: '12px', fontWeight: '700', letterSpacing: '2px', margin: '0 0 20px' }}>NEW COMPETITION</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle}>Competition Name</label>
@@ -163,43 +162,43 @@ export default function Competitions() {
             </div>
           </div>
           {/* Price info */}
-          <div style={{ marginTop: '20px', padding: '14px 18px', background: 'rgba(201,168,76,0.08)', border: `1px solid ${gold}`, borderRadius: '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginTop: '20px', padding: '14px 18px', background: 'rgba(0,91,92,0.05)', border: '1px solid #e8e0d0', borderRadius: '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ color: '#888', fontSize: '11px', letterSpacing: '2px' }}>REGISTRATION FEE</div>
-              <div style={{ color: '#fff', fontSize: '13px', marginTop: '4px' }}>{selectedType.label}</div>
+              <div style={{ color: '#1a1a1a', fontSize: '13px', marginTop: '4px' }}>{selectedType.label}</div>
             </div>
-            <div style={{ color: gold, fontSize: '28px', fontWeight: '900' }}>€{selectedType.fee}</div>
+            <div style={{ color: '#005B5C', fontSize: '28px', fontWeight: '900' }}>€{selectedType.fee}</div>
           </div>
-          <button onClick={handleSubmit} disabled={saving} style={{ marginTop: '16px', padding: '12px 32px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
+          <button onClick={handleSubmit} disabled={saving} style={{ marginTop: '16px', padding: '12px 32px', background: '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', cursor: 'pointer' }}>
             {saving ? 'REDIRECTING...' : `PAY €${selectedType.fee} & CREATE →`}
           </button>
         </div>
       )}
 
-      {loading && <p style={{ color: '#555' }}>Loading...</p>}
+      {loading && <p style={{ color: '#888' }}>Loading...</p>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {competitions.map(c => (
           <div key={c.id}
             onClick={() => navigate(`/organizer/competitions/${c.id}`)}
-            style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = gold}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#1e1e1e'}
+            style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#005B5C'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e8e0d0'}
           >
             <div>
-              <div style={{ color: '#fff', fontWeight: '600', fontSize: '15px', marginBottom: '3px' }}>{c.name}</div>
-              <div style={{ color: '#555', fontSize: '12px' }}>{c.date_start || 'No date'}{c.city ? ` · ${c.city}` : ''}{c.country ? ` · ${c.country}` : ''}</div>
+              <div style={{ color: '#1a1a1a', fontWeight: '600', fontSize: '15px', marginBottom: '3px' }}>{c.name}</div>
+              <div style={{ color: '#888', fontSize: '12px' }}>{c.date_start || 'No date'}{c.city ? ` · ${c.city}` : ''}{c.country ? ` · ${c.country}` : ''}</div>
             </div>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div style={{ background: 'rgba(201,168,76,0.1)', color: gold, fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '2px' }}>Q {c.coefficient_q}</div>
-              <span style={{ color: '#333' }}>→</span>
+              <div style={{ background: 'rgba(0,91,92,0.08)', color: '#005B5C', fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '2px' }}>Q {c.coefficient_q}</div>
+              <span style={{ color: '#aaa' }}>→</span>
             </div>
           </div>
         ))}
-        {!loading && competitions.length === 0 && <p style={{ color: '#444' }}>No competitions yet.</p>}
+        {!loading && competitions.length === 0 && <p style={{ color: '#888' }}>No competitions yet.</p>}
       </div>
     </Layout>
   );
 }
 
-const labelStyle = { display: 'block', color: '#888', fontSize: '11px', fontWeight: '600', letterSpacing: '1px', marginBottom: '6px' };
-const inputStyle = { width: '100%', padding: '11px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' };
+const labelStyle = { display: 'block', color: '#666', fontSize: '11px', fontWeight: '600', letterSpacing: '1px', marginBottom: '6px' };
+const inputStyle = { width: '100%', padding: '11px 14px', background: '#fff', border: '1px solid #e8e0d0', borderRadius: '3px', color: '#1a1a1a', fontSize: '14px', outline: 'none', boxSizing: 'border-box' };
