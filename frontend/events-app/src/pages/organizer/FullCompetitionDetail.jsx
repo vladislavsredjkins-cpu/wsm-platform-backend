@@ -32,11 +32,9 @@ export default function CompetitionDetail() {
   const [bwForm, setBwForm] = useState({});
   const [savingAthlete, setSavingAthlete] = useState(false);
   const [judges, setJudges] = useState([]);
-  const [judgeSearch, setJudgeSearch] = useState('');
-  const [judgeResults, setJudgeResults] = useState([]);
-  const [selectedJudge, setSelectedJudge] = useState(null);
-  const [judgeRole, setJudgeRole] = useState('Judge');
-  const [savingJudge, setSavingJudge] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: '', name: '' });
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [lastInviteLink, setLastInviteLink] = useState(null);
   const [sponsors, setSponsors] = useState([]);
   const [newSponsor, setNewSponsor] = useState({ name: '', website_url: '', tier: 'FREE' });
   const [bannerUploading, setBannerUploading] = useState(false);
@@ -146,29 +144,19 @@ export default function CompetitionDetail() {
     setSponsors(sponsors.filter(s => s.id !== sid));
   };
 
-  const searchJudges = async (q) => {
-    setJudgeSearch(q);
-    if (q.length < 2) { setJudgeResults([]); return; }
-    const res = await api.get(`/judges/search?q=${q}`);
-    setJudgeResults(res.data);
-  };
-
-  const assignJudge = async () => {
-    if (!selectedJudge) return;
-    setSavingJudge(true);
+  const sendInvite = async () => {
+    if (!inviteForm.name) return alert('Name is required');
+    setSendingInvite(true);
+    setLastInviteLink(null);
     try {
-      await api.post(`/judges/invite`, { competition_id: competitionId, judge_id: selectedJudge.id, role: judgeRole });
+      const inv = await api.post(`/judges/invite`, { competition_id: competitionId, email: inviteForm.email, name: inviteForm.name });
+      const link = `https://events.worldstrongman.org/judge/${inv.data.token}`;
+      setLastInviteLink(link);
       const res = await api.get(`/judges/invites/${competitionId}`);
       setJudges(res.data);
-      setSelectedJudge(null); setJudgeSearch(''); setJudgeResults([]); setJudgeRole('Judge');
-    } catch(e) { alert(e.response?.data?.detail || 'Failed to assign judge'); }
-    finally { setSavingJudge(false); }
-  };
-
-  const removeJudge = async (assignmentId) => {
-    if (!confirm('Remove judge from this competition?')) return;
-    await axios.delete(`${API}/competitions/${competitionId}/judges/${assignmentId}`, authCfg());
-    setJudges(judges.filter(j => j.id !== assignmentId));
+      setInviteForm({ email: '', name: '' });
+    } catch(e) { alert(e.response?.data?.detail || 'Failed to generate invite'); }
+    finally { setSendingInvite(false); }
   };
 
   if (loading) return <Layout><p style={{ color: '#555' }}>Loading...</p></Layout>;
@@ -468,47 +456,56 @@ export default function CompetitionDetail() {
 
       {tab === 'Judges' && (
         <div>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={labelStyle}>Search Judge</label>
-            <input style={inputStyle} placeholder="Type name..." value={judgeSearch} onChange={e => searchJudges(e.target.value)} />
-            {judgeResults.length > 0 && (
-              <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '3px', marginTop: '4px' }}>
-                {judgeResults.map(j => (
-                  <div key={j.id} onClick={() => { setSelectedJudge(j); setJudgeSearch(j.first_name + ' ' + j.last_name); setJudgeResults([]); }} style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #f0ebe3', color: '#1a1a1a' }}>
-                    {j.first_name} {j.last_name} <span style={{ color: '#888', fontSize: '12px' }}>· {j.country||'—'}</span>
-                  </div>
-                ))}
+          <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '20px', marginBottom: '24px' }}>
+            <div style={{ color: '#005B5C', fontSize: '10px', letterSpacing: '3px', marginBottom: '16px' }}>INVITE JUDGE BY EMAIL</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
+              <div>
+                <label style={labelStyle}>Email</label>
+                <input style={inputStyle} type="email" placeholder="judge@example.com" value={inviteForm.email} onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))} />
               </div>
-            )}
-            {selectedJudge && (
-              <div style={{ marginTop: '12px', background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '16px' }}>
-                <div style={{ color: '#005B5C', fontSize: '13px', marginBottom: '12px' }}>✓ {selectedJudge.first_name} {selectedJudge.last_name}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'end' }}>
-                  <div><label style={labelStyle}>Role</label>
-                    <select style={inputStyle} value={judgeRole} onChange={e => setJudgeRole(e.target.value)}>
-                      <option value="Head Judge">Head Judge</option>
-                      <option value="Judge">Judge</option>
-                      <option value="Technical Delegate">Technical Delegate</option>
-                      <option value="Referee">Referee</option>
-                    </select>
-                  </div>
-                  <button onClick={assignJudge} style={{ padding: '11px 24px', background: '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>ASSIGN →</button>
+              <div>
+                <label style={labelStyle}>Name</label>
+                <input style={inputStyle} placeholder="John Smith" value={inviteForm.name} onChange={e => setInviteForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <button onClick={sendInvite} disabled={sendingInvite} style={{ padding: '11px 20px', background: '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: sendingInvite ? 'not-allowed' : 'pointer', opacity: sendingInvite ? 0.7 : 1, whiteSpace: 'nowrap' }}>
+                {sendingInvite ? 'GENERATING...' : 'GENERATE INVITE LINK →'}
+              </button>
+            </div>
+            {lastInviteLink && (
+              <div style={{ marginTop: '16px', background: '#f0faf0', border: '1px solid #c8e6c9', borderRadius: '4px', padding: '16px' }}>
+                <div style={{ color: '#2e7d32', fontSize: '13px', fontWeight: '600', marginBottom: '10px' }}>✅ Link created! Share with judge:</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <div style={{ flex: 1, background: '#fff', border: '1px solid #c8e6c9', borderRadius: '3px', padding: '8px 12px', fontSize: '12px', color: '#333', wordBreak: 'break-all' }}>{lastInviteLink}</div>
+                  <button onClick={() => navigator.clipboard.writeText(lastInviteLink)} style={{ padding: '8px 14px', background: '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>Copy</button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
+                  <span style={{ color: '#888' }}>Send via:</span>
+                  <a href={`mailto:?subject=Judge+Invitation&body=${encodeURIComponent(lastInviteLink)}`} style={{ color: '#005B5C', fontWeight: '600', textDecoration: 'none' }}>Email</a>
+                  <span style={{ color: '#ddd' }}>·</span>
+                  <a href={`https://wa.me/?text=${encodeURIComponent('Join as judge: ' + lastInviteLink)}`} target="_blank" rel="noopener noreferrer" style={{ color: '#25d366', fontWeight: '600', textDecoration: 'none' }}>WhatsApp</a>
+                  <span style={{ color: '#ddd' }}>·</span>
+                  <a href={`https://t.me/share/url?url=${encodeURIComponent(lastInviteLink)}&text=${encodeURIComponent('Join as judge')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#229ED9', fontWeight: '600', textDecoration: 'none' }}>Telegram</a>
                 </div>
               </div>
             )}
           </div>
-          <div style={{ color: '#005B5C', fontSize: '10px', letterSpacing: '3px', marginBottom: '12px' }}>ASSIGNED JUDGES ({judges.length})</div>
+          <div style={{ color: '#005B5C', fontSize: '10px', letterSpacing: '3px', marginBottom: '12px' }}>INVITATIONS ({judges.length})</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {judges.map(j => (
               <div key={j.id} style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ background: 'rgba(0,91,92,0.08)', color: '#005B5C', fontSize: '10px', fontWeight: '700', padding: '3px 8px', borderRadius: '2px' }}>{j.role}</div>
-                  <div><div style={{ color: '#1a1a1a', fontWeight: '600' }}>{j.first_name} {j.last_name}</div><div style={{ color: '#888', fontSize: '12px' }}>{j.country||'—'}</div></div>
+                <div>
+                  <div style={{ color: '#1a1a1a', fontWeight: '600', marginBottom: '2px' }}>{j.name}</div>
+                  <div style={{ color: '#888', fontSize: '12px' }}>{j.email}</div>
                 </div>
-                <button onClick={() => removeJudge(j.id)} style={{ background: 'transparent', border: '1px solid #e8e0d0', color: '#888', padding: '4px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' }}>Remove</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: j.status === 'used' ? 'rgba(0,91,92,0.08)' : 'rgba(255,193,7,0.12)', color: j.status === 'used' ? '#005B5C' : '#b8860b', fontSize: '10px', fontWeight: '700', padding: '3px 8px', borderRadius: '2px', letterSpacing: '1px' }}>{(j.status || 'pending').toUpperCase()}</div>
+                  {j.status !== 'used' && j.token && (
+                    <button onClick={() => { navigator.clipboard.writeText(`https://events.worldstrongman.org/judge/${j.token}`); }} style={{ background: 'transparent', border: '1px solid #e8e0d0', color: '#555', padding: '4px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' }}>Copy link</button>
+                  )}
+                </div>
               </div>
             ))}
-            {judges.length === 0 && (<p style={{ color: '#888' }}>No judges assigned yet.</p>)}
+            {judges.length === 0 && <p style={{ color: '#888' }}>No invitations sent yet.</p>}
           </div>
         </div>
       )}
