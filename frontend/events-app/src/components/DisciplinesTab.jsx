@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import api from '../api';
 
-const gold = '#c9a84c';
-const labelStyle = { display: 'block', color: '#888', fontSize: '11px', fontWeight: '600', letterSpacing: '1px', marginBottom: '6px' };
-const inputStyle = { width: '100%', padding: '11px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '3px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' };
+const accent = '#005B5C';
+const labelStyle = { display: 'block', color: '#666', fontSize: '11px', fontWeight: '600', letterSpacing: '1px', marginBottom: '6px' };
+const inputStyle = { width: '100%', padding: '10px 14px', background: '#fafafa', border: '1px solid #e8e0d0', borderRadius: '4px', color: '#1a1a1a', fontSize: '13px', outline: 'none', boxSizing: 'border-box' };
 
 const DISCIPLINES_BY_FORMAT = {
   RELAY: [
@@ -103,7 +103,7 @@ export default function DisciplinesTab({ divisions }) {
   const [form, setForm] = useState(EMPTY_FORM);
 
   const loadDisciplines = async (divisionId) => {
-    const res = await api.get(`/disciplines/division/${divisionId}`);
+    const res = await api.get(`/divisions/${divisionId}/disciplines`);
     setDisciplines(res.data);
     setForm(f => ({ ...f, order_no: res.data.length + 1 }));
   };
@@ -122,8 +122,7 @@ export default function DisciplinesTab({ divisions }) {
     if (!form.discipline_name) return alert('Name required');
     setSaving(true);
     try {
-      await api.post('/disciplines/', {
-        competition_division_id: selectedDivision.id,
+      await api.post(`/divisions/${selectedDivision.id}/disciplines`, {
         discipline_name: form.discipline_name,
         discipline_mode: form.discipline_mode,
         order_no: parseInt(form.order_no) || disciplines.length + 1,
@@ -162,32 +161,32 @@ export default function DisciplinesTab({ divisions }) {
         <div style={{ color: '#888', fontSize: '11px', fontWeight: '600', letterSpacing: '1px', marginBottom: '12px' }}>DIVISION</div>
         {divisions.map(d => (
           <div key={d.id} onClick={() => selectDivision(d)}
-            style={{ padding: '10px 14px', borderRadius: '3px', cursor: 'pointer', marginBottom: '4px',
-              background: selectedDivision?.id === d.id ? 'rgba(201,168,76,0.1)' : 'transparent',
-              border: selectedDivision?.id === d.id ? `1px solid rgba(201,168,76,0.3)` : '1px solid transparent',
-              color: selectedDivision?.id === d.id ? gold : '#888', fontSize: '13px',
+            style={{ padding: '10px 14px', borderRadius: '4px', cursor: 'pointer', marginBottom: '4px',
+              background: selectedDivision?.id === d.id ? 'rgba(0,91,92,0.08)' : '#fff',
+              border: selectedDivision?.id === d.id ? `1px solid ${accent}` : '1px solid #e8e0d0',
+              color: selectedDivision?.id === d.id ? accent : '#555', fontSize: '13px',
               fontWeight: selectedDivision?.id === d.id ? '600' : '400' }}>
-            <div>{d.division_key}</div>
-            <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>{d.format}</div>
+            <div>{d.name || d.division_key}</div>
+            <div style={{ fontSize: '11px', color: '#aaa', marginTop: '2px' }}>{d.format}</div>
           </div>
         ))}
-        {divisions.length === 0 && <p style={{ color: '#444', fontSize: '13px' }}>No divisions yet.</p>}
+        {divisions.length === 0 && <p style={{ color: '#888', fontSize: '13px' }}>No divisions yet.</p>}
       </div>
 
       {/* Disciplines panel */}
       <div>
         {!selectedDivision ? (
-          <p style={{ color: '#444' }}>Select a division to manage disciplines.</p>
+          <p style={{ color: '#888' }}>Select a division to manage disciplines.</p>
         ) : (
           <>
             <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ color: '#fff', margin: 0, fontSize: '16px' }}>
-                {selectedDivision.division_key}
-                <span style={{ color: '#555', fontWeight: '400', fontSize: '13px' }}> ({disciplines.length}/8 · {selectedDivision.format})</span>
+              <h3 style={{ color: '#1a1a1a', margin: 0, fontSize: '16px' }}>
+                {selectedDivision.name || selectedDivision.division_key}
+                <span style={{ color: '#888', fontWeight: '400', fontSize: '13px' }}> ({disciplines.length}/8 · {selectedDivision.format})</span>
               </h3>
               {disciplines.length < 8 && (
                 <button onClick={() => setShowForm(!showForm)}
-                  style={{ padding: '7px 16px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                  style={{ padding: '7px 16px', background: showForm ? 'transparent' : accent, border: `1px solid ${accent}`, color: showForm ? accent : '#fff', borderRadius: '4px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
                   {showForm ? 'CANCEL' : '+ ADD DISCIPLINE'}
                 </button>
               )}
@@ -195,19 +194,19 @@ export default function DisciplinesTab({ divisions }) {
 
             {/* Add form */}
             {showForm && (
-              <div style={{ background: '#111', border: `1px solid ${gold}`, borderRadius: '4px', padding: '20px', marginBottom: '20px' }}>
+              <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '8px', padding: '20px', marginBottom: '20px' }}>
                 {/* Template groups */}
                 {getTemplates().map(group => (
                   <div key={group.group} style={{ marginBottom: '14px' }}>
-                    <div style={{ color: '#555', fontSize: '10px', fontWeight: '700', letterSpacing: '1.5px', marginBottom: '8px' }}>{group.group}</div>
+                    <div style={{ color: '#aaa', fontSize: '10px', fontWeight: '700', letterSpacing: '1.5px', marginBottom: '8px' }}>{group.group}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {group.items.map(t => (
                         <button key={t.name} onClick={() => selectTemplate(t)}
                           style={{ padding: '6px 12px',
-                            background: form.discipline_name === t.name ? 'rgba(201,168,76,0.15)' : '#0a0a0a',
-                            border: form.discipline_name === t.name ? `1px solid ${gold}` : '1px solid #2a2a2a',
-                            color: form.discipline_name === t.name ? gold : '#888',
-                            borderRadius: '3px', cursor: 'pointer', fontSize: '12px' }}>
+                            background: form.discipline_name === t.name ? 'rgba(0,91,92,0.08)' : '#fafafa',
+                            border: form.discipline_name === t.name ? `1px solid ${accent}` : '1px solid #e8e0d0',
+                            color: form.discipline_name === t.name ? accent : '#555',
+                            borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
                           {MODE_ICONS[t.mode]} {t.name}
                         </button>
                       ))}
@@ -215,7 +214,7 @@ export default function DisciplinesTab({ divisions }) {
                   </div>
                 ))}
 
-                <div style={{ borderTop: '1px solid #1e1e1e', paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ borderTop: '1px solid #f0ebe3', paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={labelStyle}>Discipline Name</label>
                     <input style={inputStyle} placeholder="e.g. Log Lift" value={form.discipline_name}
@@ -231,6 +230,7 @@ export default function DisciplinesTab({ divisions }) {
                       <option value="MAX_WEIGHT_WITHIN_CAP">🏋️ Max Weight</option>
                       <option value="STATIC_HOLD_TIME">🕐 Static Hold</option>
                       <option value="RELAY_DUAL_METRIC">🔄 Relay</option>
+                      <option value="win_loss">🏆 Win/Loss</option>
                     </select>
                   </div>
                   <div>
@@ -262,7 +262,7 @@ export default function DisciplinesTab({ divisions }) {
                   </div>
                 </div>
                 <button onClick={createDiscipline} disabled={saving}
-                  style={{ marginTop: '16px', padding: '10px 28px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                  style={{ marginTop: '16px', padding: '10px 28px', background: accent, color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
                   {saving ? 'ADDING...' : 'ADD DISCIPLINE →'}
                 </button>
               </div>
@@ -271,27 +271,27 @@ export default function DisciplinesTab({ divisions }) {
             {/* Disciplines list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {disciplines.map((d, i) => (
-                <div key={d.id} style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ color: gold, fontSize: '13px', fontWeight: '700', width: '28px', textAlign: 'center' }}>
+                <div key={d.id} style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ color: accent, fontSize: '13px', fontWeight: '700', width: '28px', textAlign: 'center' }}>
                     {d.order_no || i + 1}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ color: '#fff', fontWeight: '600', fontSize: '14px' }}>{d.discipline_name}</div>
-                    <div style={{ color: '#555', fontSize: '12px', marginTop: '3px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ color: '#1a1a1a', fontWeight: '600', fontSize: '14px' }}>{d.discipline_name}</div>
+                    <div style={{ color: '#888', fontSize: '12px', marginTop: '3px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <span>{MODE_ICONS[d.discipline_mode]} {MODE_LABELS[d.discipline_mode] || d.discipline_mode}</span>
-                      {d.implement_weight && <span style={{ color: gold }}>⚖️ {d.implement_weight}</span>}
+                      {d.implement_weight && <span style={{ color: accent }}>⚖️ {d.implement_weight}</span>}
                       {d.time_cap_seconds && <span>⏱ {d.time_cap_seconds}s</span>}
                       {d.track_length_meters && <span>📏 {d.track_length_meters}m</span>}
                     </div>
-                    {d.notes && <div style={{ color: '#444', fontSize: '11px', marginTop: '4px', fontStyle: 'italic' }}>{d.notes}</div>}
+                    {d.notes && <div style={{ color: '#aaa', fontSize: '11px', marginTop: '4px', fontStyle: 'italic' }}>{d.notes}</div>}
                   </div>
                   <button onClick={() => deleteDiscipline(d.id)}
-                    style={{ background: 'transparent', border: '1px solid #2a2a2a', color: '#555', padding: '4px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' }}>
+                    style={{ background: 'transparent', border: '1px solid #ffcdd2', color: '#c44c4c', padding: '4px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' }}>
                     ✕
                   </button>
                 </div>
               ))}
-              {disciplines.length === 0 && <p style={{ color: '#444' }}>No disciplines yet. Add up to 8.</p>}
+              {disciplines.length === 0 && <p style={{ color: '#888' }}>No disciplines yet. Add up to 8.</p>}
             </div>
           </>
         )}
