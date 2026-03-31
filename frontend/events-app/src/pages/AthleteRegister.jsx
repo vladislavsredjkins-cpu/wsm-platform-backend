@@ -32,7 +32,7 @@ export default function AthleteRegister() {
 
   useEffect(() => {
     axios.get(`${API}/competitions/${competitionId}`).then(r => setCompetition(r.data)).catch(() => {});
-    axios.get(`${API}/events-api/divisions/${competitionId}`).then(r => setDivisions(r.data)).catch(() => {});
+    axios.get(`${API}/divisions/${competitionId}`).then(r => setDivisions(r.data)).catch(() => {});
   }, [competitionId]);
 
   const handle = async () => {
@@ -42,7 +42,7 @@ export default function AthleteRegister() {
     }
     setLoading(true);
     try {
-      await axios.post(`${API}/events-api/participants`, {
+      await axios.post(`${API}/participants/`, {
         ...form,
         competition_id: competitionId,
         bodyweight_kg: form.bodyweight_kg ? parseFloat(form.bodyweight_kg) : null,
@@ -74,7 +74,7 @@ export default function AthleteRegister() {
       <div style={{ width: '100%', maxWidth: '480px', background: '#fff', border: '1px solid #e8e0d0', borderTop: `3px solid ${teal}`, borderRadius: '12px', padding: '40px 32px' }}>
 
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ width: '56px', height: '56px', background: teal, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '24px', color: '#E8D5B5', fontWeight: '800' }}>W</div>
+          <div style={{ width: '56px', height: '56px', background: teal, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '24px', color: '#E8D5B5', fontWeight: '800' }}>E</div>
           <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#1a1a1a', margin: '0 0 6px' }}>Athlete Registration</h1>
           {competition && <p style={{ fontSize: '14px', color: teal, fontWeight: '600', margin: 0 }}>{competition.name}</p>}
         </div>

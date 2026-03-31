@@ -343,6 +343,17 @@ export default function CompetitionDetail() {
                   <div key={a.id} style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <span style={{ color: '#005B5C', fontSize: '16px', fontWeight: '900' }}>#{a.bib_no||'?'}</span>
                     <span style={{ color: '#1a1a1a', fontWeight: '600' }}>{a.first_name} {a.last_name}</span>
+                    <span style={{ color: '#888', fontSize: '12px' }}>{a.country}</span>
+                    <span style={{ color: '#888', fontSize: '12px' }}>{a.bodyweight_kg ? a.bodyweight_kg + ' kg' : ''}</span>
+                    {a.status === 'pending' && (
+                      <button onClick={async () => {
+                        try {
+                          await api.patch(`/participants/${a.id}/status`, { status: 'confirmed' });
+                          const res = await api.get(`/participants/competition/${competitionId}`);
+                          setAthletes(res.data.filter(p => p.events_division_id === selectedDivision.id));
+                        } catch(e) { alert(e.response?.data?.detail || 'Error'); }
+                      }} style={{ marginLeft: 'auto', padding: '4px 12px', background: '#005B5C', border: 'none', color: '#fff', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>✓ Confirm</button>
+                    )}
                     <button onClick={async () => {
                       if (!window.confirm('Remove athlete from division?')) return;
                       try {
@@ -350,9 +361,7 @@ export default function CompetitionDetail() {
                         const res = await api.get(`/participants/competition/${competitionId}`);
                         setAthletes(res.data.filter(p => p.events_division_id === selectedDivision.id));
                       } catch(e) { alert(e.response?.data?.detail || 'Error'); }
-                    }} style={{ marginLeft: 'auto', padding: '4px 10px', background: 'transparent', border: '1px solid #4a2a2a', color: '#c44c4c', borderRadius: '3px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
-                    <span style={{ color: '#555', fontSize: '12px' }}>{a.country}</span>
-                    <span style={{ color: '#444', fontSize: '12px', marginLeft: 'auto' }}>{a.bodyweight_kg ? a.bodyweight_kg + ' kg' : ''}</span>
+                    }} style={{ padding: '4px 10px', background: 'transparent', border: '1px solid #ffcdd2', color: '#c44c4c', borderRadius: '3px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
                   </div>
                 ))}
                 {athletes.length === 0 && <p style={{ color: '#444' }}>No athletes yet.</p>}
