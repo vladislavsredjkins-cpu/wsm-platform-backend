@@ -10,7 +10,7 @@ import { divisionLabel } from '../../constants/divisions';
 
 const inputStyle = { width: '100%', padding: '10px 14px', background: '#fff', border: '1px solid #e8e0d0', color: '#1a1a1a', borderRadius: '3px', fontSize: '13px', outline: 'none' };
 const labelStyle = { display: 'block', color: '#777', fontSize: '10px', letterSpacing: '2px', marginBottom: '6px' };
-const TABS = ['Divisions', 'Athletes', 'Disciplines', 'Judges', 'Start Order', 'Protocol', 'MC', 'Registrations'];
+const TABS = ['Divisions', 'Athletes', 'Disciplines', 'Judges', 'Draw', 'Start Order', 'Protocol', 'MC', 'Registrations'];
 
 export default function CompetitionDetail() {
   const { competitionId } = useParams();
@@ -42,8 +42,9 @@ export default function CompetitionDetail() {
   const [saving, setSaving] = useState(false);
   const [liveData, setLiveData] = useState(null);
   const [soDiv, setSoDiv] = useState(0);
+  const [soParticipants, setSoParticipants] = useState([]);
+  const [soLoading, setSoLoading] = useState(false);
   const [registrations, setRegistrations] = useState([]);
-  const [soDisc, setSoDisc] = useState(0);
 
   const loadDivisions = useCallback(() => {
     return api.get(`/divisions/${competitionId}`).then(r => setDivisions(r.data));
@@ -159,6 +160,15 @@ export default function CompetitionDetail() {
     finally { setSendingInvite(false); }
   };
 
+  const loadStartOrder = async (divId) => {
+    setSoLoading(true);
+    try {
+      const res = await api.get(`/competitions/${competitionId}/divisions/${divId}/draw`);
+      setSoParticipants(res.data);
+    } catch { setSoParticipants([]); }
+    finally { setSoLoading(false); }
+  };
+
   if (loading) return <Layout><p style={{ color: '#555' }}>Loading...</p></Layout>;
   if (!competition) return <Layout><p style={{ color: '#555' }}>Not found</p></Layout>;
 
@@ -175,7 +185,7 @@ export default function CompetitionDetail() {
           </div>
   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             
-            <a href={`https://api.events.worldstrongman.org/competitions/${competitionId}/draw`} target="_blank" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #005B5C', color: '#005B5C', borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>🎲 DRAW</a>
+            <button onClick={() => setTab('Draw')} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #005B5C', color: '#005B5C', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>🎲 DRAW</button>
             <a href={`https://api.events.worldstrongman.org/competitions/${competitionId}/live-screen`} target="_blank" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #bbb', color: '#888', borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>📺 LIVE</a>
             <a href={`https://api.events.worldstrongman.org/competitions/${competitionId}/warmup-screen`} target="_blank" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #bbb', color: '#888', borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>🏋️ WARMUP</a>
             <a href={`https://api.events.worldstrongman.org/competitions/${competitionId}/protocol`} target="_blank" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #005B5C', color: '#005B5C', borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>🖨️ PROTOCOL</a>
@@ -361,48 +371,51 @@ export default function CompetitionDetail() {
 
       {tab === 'Disciplines' && <DisciplinesTab divisions={divisions} competitionId={competitionId} />}
 
-  {tab === 'Start Order' && (
+      {tab === 'Start Order' && (
         <div>
-          {!liveData ? <p style={{color:'#444'}}>Loading...</p> : (
+          {divisions.length === 0 ? (
+            <p style={{ color: '#888' }}>No divisions yet. Add divisions first.</p>
+          ) : (
             <div>
-              <div style={{display:'flex', gap:'8px', marginBottom:'20px', flexWrap:'wrap'}}>
-                {liveData.divisions.map((d,i) => (
-                  <button key={d.division_id} onClick={() => { setSoDiv(i); setSoDisc(0); }} style={{padding:'8px 20px', background: soDiv===i ? '#005B5C' : '#fff', color: soDiv===i ? '#fff' : '#888', border: `1px solid ${soDiv===i ? '#005B5C' : '#e8e0d0'}`, borderRadius:'3px', fontSize:'11px', fontWeight:'700', cursor:'pointer'}}>{d.division_name}</button>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                {divisions.map((d, i) => (
+                  <button key={d.id} onClick={() => { setSoDiv(i); loadStartOrder(d.id); }}
+                    style={{ padding: '8px 20px', background: soDiv === i ? '#005B5C' : '#fff', color: soDiv === i ? '#fff' : '#888', border: `1px solid ${soDiv === i ? '#005B5C' : '#e8e0d0'}`, borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    {d.name || d.division_key}
+                  </button>
                 ))}
               </div>
-              {liveData.divisions[soDiv] && (
-                <div>
-                  <div style={{display:'flex', gap:'8px', marginBottom:'16px', flexWrap:'wrap'}}>
-                    {liveData.divisions[soDiv].disciplines.map((d,i) => (
-                      <button key={d.id} onClick={() => setSoDisc(i)} style={{padding:'6px 14px', background:'transparent', color: soDisc===i ? '#005B5C' : '#888', border: `1px solid ${soDisc===i ? '#005B5C' : '#e8e0d0'}`, borderRadius:'3px', fontSize:'10px', cursor:'pointer'}}>{d.name}</button>
-                    ))}
-                  </div>
-                  {liveData.divisions[soDiv].disciplines[soDisc] && (() => {
-                    const div = liveData.divisions[soDiv];
-                    const disc = div.disciplines[soDisc];
-                    const ordered = [...div.participants].sort((a,b) => (disc.start_order[a.participant_id]||999) - (disc.start_order[b.participant_id]||999));
-                    return (
-                      <table style={{width:'100%', borderCollapse:'collapse'}}>
-                        <thead><tr style={{borderBottom:'1px solid #e8e0d0'}}>{['#','LOT','BIB','ATHLETE','COUNTRY'].map(h => <th key={h} style={{padding:'8px 12px', textAlign:'left', fontSize:'9px', letterSpacing:'3px', color:'#888'}}>{h}</th>)}</tr></thead>
-                        <tbody>
-                          {ordered.map((p, idx) => (
-                            <tr key={p.participant_id} style={{borderBottom:'1px solid #f0ebe3'}}>
-                              <td style={{padding:'12px', color:'#005B5C', fontWeight:'900', fontSize:'20px'}}>{idx+1}</td>
-                              <td style={{padding:'12px', color:'#888'}}>{p.lot_number||'—'}</td>
-                              <td style={{padding:'12px', color:'#888'}}>#{p.bib_no||'—'}</td>
-                              <td style={{padding:'12px', color:'#1a1a1a', fontWeight:'600'}}>{p.first_name} {p.last_name}</td>
-                              <td style={{padding:'12px', color:'#888', fontSize:'12px'}}>{p.country||'—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    );
-                  })()}
-                  <div style={{marginTop:'24px', display:'flex', gap:'12px'}}>
-                    <a href={`https://api.events.worldstrongman.org/competitions/${competitionId}/live-screen`} target="_blank" style={{padding:'10px 20px', background:'transparent', border:'1px solid #555', color:'#888', borderRadius:'3px', fontSize:'11px', fontWeight:'700', textDecoration:'none'}}>📺 OPEN LIVE SCREEN</a>
-                    <a href={`https://api.events.worldstrongman.org/competitions/${competitionId}/warmup-screen`} target="_blank" style={{padding:'10px 20px', background:'transparent', border:'1px solid #555', color:'#888', borderRadius:'3px', fontSize:'11px', fontWeight:'700', textDecoration:'none'}}>🏋️ OPEN WARMUP SCREEN</a>
-                    <button onClick={() => axios.get(`${API}/competitions/${competitionId}/live-data`, authCfg()).then(r => setLiveData(r.data))} style={{padding:'10px 20px', background:'#005B5C', border:'none', color:'#fff', borderRadius:'3px', fontSize:'11px', fontWeight:'700', cursor:'pointer'}}>🔄 REFRESH</button>
-                  </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ color: '#005B5C', fontSize: '10px', letterSpacing: '3px' }}>START ORDER — {divisions[soDiv]?.name || divisions[soDiv]?.division_key}</div>
+                <button onClick={() => loadStartOrder(divisions[soDiv]?.id)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #e8e0d0', color: '#555', borderRadius: '3px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>🔄 REFRESH</button>
+              </div>
+
+              {soLoading ? <p style={{ color: '#888' }}>Loading...</p> : (
+                <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #e8e0d0', background: '#fafafa' }}>
+                        {['#', 'LOT', 'BIB', 'ATHLETE', 'COUNTRY'].map(h => (
+                          <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '9px', letterSpacing: '3px', color: '#888', fontWeight: '700' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...soParticipants].sort((a, b) => (a.lot_number || 999) - (b.lot_number || 999)).map((p, idx) => (
+                        <tr key={p.participant_id} style={{ borderBottom: '1px solid #f0ebe3' }}>
+                          <td style={{ padding: '12px 14px', color: '#005B5C', fontWeight: '900', fontSize: '18px' }}>{idx + 1}</td>
+                          <td style={{ padding: '12px 14px', color: '#555', fontWeight: '700' }}>{p.lot_number || '—'}</td>
+                          <td style={{ padding: '12px 14px', color: '#888' }}>#{p.bib_no || '—'}</td>
+                          <td style={{ padding: '12px 14px', color: '#1a1a1a', fontWeight: '600' }}>{p.first_name} {p.last_name}</td>
+                          <td style={{ padding: '12px 14px', color: '#888', fontSize: '12px' }}>{p.country || '—'}</td>
+                        </tr>
+                      ))}
+                      {soParticipants.length === 0 && (
+                        <tr><td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>No draw yet. Run the draw in the Draw tab first.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
