@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 
-const gold = '#c9a84c';
-const inputStyle = { width: '100%', padding: '10px 14px', background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#fff', borderRadius: '3px', fontSize: '13px', outline: 'none' };
-const labelStyle = { display: 'block', color: '#555', fontSize: '10px', letterSpacing: '2px', marginBottom: '6px' };
-const sectionStyle = { background: '#111', border: '1px solid #1e1e1e', borderRadius: '4px', padding: '24px', marginBottom: '20px' };
-const sectionTitle = { color: gold, fontSize: '10px', letterSpacing: '3px', marginBottom: '16px' };
+const gold = '#005B5C';
+const inputStyle = { width: '100%', padding: '10px 14px', background: '#fff', border: '1px solid #e8e0d0', color: '#1a1a1a', borderRadius: '3px', fontSize: '13px', outline: 'none' };
+const labelStyle = { display: 'block', color: '#888', fontSize: '10px', letterSpacing: '2px', marginBottom: '6px' };
+const sectionStyle = { background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '24px', marginBottom: '20px' };
+const sectionTitle = { color: '#005B5C', fontSize: '10px', letterSpacing: '3px', marginBottom: '16px' };
 
 export default function MCTab({ competitionId, competition }) {
   const [mcSection, setMcSection] = useState('info');
@@ -87,18 +87,18 @@ export default function MCTab({ competitionId, competition }) {
   return (
     <div style={{ padding: '24px 0' }}>
       {/* Sub-tabs */}
-      <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid #1e1e1e', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid #e8e0d0', marginBottom: '24px' }}>
         {subTabs.map(t => (
           <button type="button" key={t} onClick={() => setMcSection(t.toLowerCase())}
             style={{ background: 'none', border: 'none', color: mcSection === t.toLowerCase() ? gold : '#555', padding: '10px 20px', cursor: 'pointer', fontSize: '11px', fontWeight: mcSection === t.toLowerCase() ? '700' : '400', borderBottom: mcSection === t.toLowerCase() ? `2px solid ${gold}` : '2px solid transparent', letterSpacing: '2px' }}>
             {t}
           </button>
         ))}
-        <a href={`https://ranking.worldstrongman.org/competitions/${competitionId}/mc`} target="_blank"
+        <a href={`https://api.events.worldstrongman.org/competitions/${competitionId}/mc`} target="_blank"
           style={{ marginLeft: 'auto', padding: '8px 16px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none', alignSelf: 'center', letterSpacing: '1px' }}>
           👁 PREVIEW MC SCREEN →
         </a>
-        <button type="button" onClick={() => { navigator.clipboard.writeText(`https://ranking.worldstrongman.org/competitions/${competitionId}/mc`); alert('Link copied!'); }}
+        <button type="button" onClick={() => { navigator.clipboard.writeText(`https://api.events.worldstrongman.org/competitions/${competitionId}/mc`); alert('Link copied!'); }}
           style={{ marginLeft: '8px', padding: '8px 16px', background: 'transparent', border: `1px solid ${gold}`, color: gold, borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>📋 COPY LINK</button>
       </div>
 
@@ -120,7 +120,7 @@ export default function MCTab({ competitionId, competition }) {
               style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }} />
           </div>
           <button onClick={saveInfo} disabled={saving}
-            style={{ padding: '10px 28px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>
+            style={{ padding: '10px 28px', background: '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', letterSpacing: '1px' }}>
             {saving ? 'SAVING...' : 'SAVE →'}
           </button>
         </div>
@@ -133,7 +133,7 @@ export default function MCTab({ competitionId, competition }) {
             <div style={sectionTitle}>EVENT PROGRAM</div>
             {program.length === 0 && <p style={{ color: '#444', fontSize: '13px', marginBottom: '16px' }}>No program items yet.</p>}
             {program.map(p => (
-              <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 0', borderBottom: '1px solid #0d0d0d' }}>
+              <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 0', borderBottom: '1px solid #f0ebe3' }}>
                 <div style={{ minWidth: '70px', color: gold, fontSize: '13px', fontWeight: '700' }}>{p.time_slot}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '13px', fontWeight: '700' }}>{p.title}</div>
@@ -161,7 +161,7 @@ export default function MCTab({ competitionId, competition }) {
               <div><label style={labelStyle}>PERSON ROLE</label><input value={newProgram.person_role} onChange={e => setNewProgram({...newProgram, person_role: e.target.value})} placeholder="President WSM" style={inputStyle} /></div>
             </div>
             <div style={{ marginBottom: '16px' }}><label style={labelStyle}>DESCRIPTION / MC TEXT</label><textarea value={newProgram.description} onChange={e => setNewProgram({...newProgram, description: e.target.value})} placeholder="What MC should announce..." style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }} /></div>
-            <button onClick={addProgram} style={{ padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>+ ADD</button>
+            <button onClick={addProgram} style={{ padding: '10px 24px', background: '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>+ ADD</button>
           </div>
         </div>
       )}
@@ -173,7 +173,7 @@ export default function MCTab({ competitionId, competition }) {
             <div style={sectionTitle}>VIP GUESTS</div>
             {guests.length === 0 && <p style={{ color: '#444', fontSize: '13px', marginBottom: '16px' }}>No guests yet.</p>}
             {guests.map(g => (
-              <div key={g.id} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', padding: '12px 0', borderBottom: '1px solid #0d0d0d' }}>
+              <div key={g.id} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', padding: '12px 0', borderBottom: '1px solid #f0ebe3' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '14px', fontWeight: '700' }}>{g.name}</div>
                   {g.title && <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{g.title}{g.country ? ` · ${g.country}` : ''}</div>}
@@ -191,7 +191,7 @@ export default function MCTab({ competitionId, competition }) {
               <div><label style={labelStyle}>COUNTRY</label><input value={newGuest.country} onChange={e => setNewGuest({...newGuest, country: e.target.value})} placeholder="Latvia" style={inputStyle} /></div>
             </div>
             <div style={{ marginBottom: '16px' }}><label style={labelStyle}>BIO / MC TEXT</label><textarea value={newGuest.bio} onChange={e => setNewGuest({...newGuest, bio: e.target.value})} placeholder="What MC should say about this guest..." style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }} /></div>
-            <button onClick={addGuest} style={{ padding: '10px 24px', background: gold, color: '#000', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>+ ADD</button>
+            <button onClick={addGuest} style={{ padding: '10px 24px', background: '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>+ ADD</button>
           </div>
         </div>
       )}
@@ -205,9 +205,9 @@ export default function MCTab({ competitionId, competition }) {
           </div>
           {sponsors.length === 0 && <p style={{ color: '#444', fontSize: '13px' }}>Click LOAD to fetch sponsors</p>}
           {sponsors.map(s => (
-            <div key={s.id} style={{ padding: '16px 0', borderBottom: '1px solid #0d0d0d' }}>
+            <div key={s.id} style={{ padding: '16px 0', borderBottom: '1px solid #f0ebe3' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                {s.logo_url && <img src={'https://ranking.worldstrongman.org' + s.logo_url} style={{ height: '32px', objectFit: 'contain' }} />}
+                {s.logo_url && <img src={s.logo_url} style={{ height: '32px', objectFit: 'contain' }} />}
                 <span style={{ fontWeight: '700', fontSize: '14px' }}>{s.name}</span>
                 <span style={{ fontSize: '10px', color: '#444', padding: '2px 8px', border: '1px solid #2a2a2a', borderRadius: '3px' }}>{s.tier}</span>
               </div>
@@ -217,7 +217,7 @@ export default function MCTab({ competitionId, competition }) {
                 placeholder="Company description, product, why they support WSM..."
                 style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }} />
               <button type="button" onClick={() => saveSponsorMcText(s.id, sponsorTexts[s.id] || '')}
-                style={{ marginTop: '8px', padding: '8px 20px', background: savedSponsor === s.id ? '#1a3a1a' : gold, color: savedSponsor === s.id ? '#4caf50' : '#000', border: 'none', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>{savedSponsor === s.id ? '✓ SAVED' : 'SAVE →'}</button>
+                style={{ marginTop: '8px', padding: '8px 20px', background: savedSponsor === s.id ? '#4caf50' : '#005B5C', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>{savedSponsor === s.id ? '✓ SAVED' : 'SAVE →'}</button>
             </div>
           ))}
         </div>
