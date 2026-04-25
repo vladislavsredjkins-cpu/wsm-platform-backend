@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import api from '../../api';
 
-const gold = '#c9a84c';
+const gold = '#005B5C';
 
 export default function RefereeDisciplines() {
   const { divisionId } = useParams();
@@ -14,8 +14,8 @@ export default function RefereeDisciplines() {
 
   useEffect(() => {
     Promise.all([
-      api.get(`/competition-divisions/${divisionId}`),
-      api.get(`/competition-divisions/${divisionId}/disciplines`),
+      api.get(`/divisions/${divisionId}`),
+      api.get(`/disciplines/division/${divisionId}`),
     ]).then(([divRes, discRes]) => {
       setDivision(divRes.data);
       setDisciplines(discRes.data);

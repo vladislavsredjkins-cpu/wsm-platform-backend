@@ -41,6 +41,7 @@ export default function CompetitionDetail() {
   const [editForm, setEditForm] = useState({ name: '', city: '', country: '', organizer_email: '', date_start: '', date_end: '', entry_fee_enabled: false, entry_fee: '', registration_deadline: '', entry_fee_non_refundable: true });
   const [saving, setSaving] = useState(false);
   const [liveData, setLiveData] = useState(null);
+  const [protocolParticipants, setProtocolParticipants] = useState({});
   const [soDiv, setSoDiv] = useState(0);
   const [soParticipants, setSoParticipants] = useState([]);
   const [soLoading, setSoLoading] = useState(false);
@@ -62,6 +63,13 @@ export default function CompetitionDetail() {
       loadDivisions(),
     ]).finally(() => setLoading(false));
   }, [competitionId, loadDivisions]);
+
+  useEffect(() => {
+    if (tab === 'Protocol' && competitionId) {
+      axios.get(`${API}/competitions/${competitionId}/live-data`, authCfg())
+        .then(r => setLiveData(r.data));
+    }
+  }, [tab, competitionId]);
 
   const selectDivision = async (div) => {
     setSelectedDivision(div);
@@ -432,38 +440,74 @@ export default function CompetitionDetail() {
               <a href={`https://api.events.worldstrongman.org/competitions/${competitionId}/page`} target="_blank" style={{ padding: '8px 18px', background: 'transparent', border: '1px solid #333', color: '#888', borderRadius: '3px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>🌐 PUBLIC PAGE</a>
             </div>
           </div>
-          {liveData && liveData.divisions.map(div => (
-            <div key={div.division_id} style={{ marginBottom: '32px' }}>
-              <div style={{ color: '#1a1a1a', fontSize: '13px', fontWeight: '700', letterSpacing: '3px', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #005B5C' }}>{div.division_name}</div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #e8e0d0' }}>
-                      <th style={{ padding: '8px 10px', textAlign: 'left', color: '#888', fontSize: '9px' }}>PLACE</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'left', color: '#888', fontSize: '9px' }}>ATHLETE</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'left', color: '#888', fontSize: '9px' }}>COUNTRY</th>
-                      {div.disciplines.map(d => <th key={d.id} style={{ padding: '8px 10px', textAlign: 'center', color: '#888', fontSize: '9px' }}>{d.name}</th>)}
-                      <th style={{ padding: '8px 10px', textAlign: 'center', color: '#888', fontSize: '9px' }}>TOTAL</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {div.participants.map((p, idx) => {
-                      const total = div.disciplines.reduce((sum, d) => sum + (parseFloat(d.results[p.participant_id]) || 0), 0);
-                      return (
-                        <tr key={p.participant_id} style={{ borderBottom: '1px solid #f0ebe3' }}>
-                          <td style={{ padding: '10px', color: '#005B5C', fontWeight: '900', fontSize: '18px' }}>{idx+1}</td>
-                          <td style={{ padding: '10px', color: '#1a1a1a', fontWeight: '600' }}>{p.first_name} {p.last_name}</td>
-                          <td style={{ padding: '10px', color: '#888', fontSize: '12px' }}>{p.country||'-'}</td>
-                          {div.disciplines.map(d => <td key={d.id} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>{d.results[p.participant_id]||'-'}</td>)}
-                          <td style={{ padding: '10px', textAlign: 'center', color: '#005B5C', fontWeight: '700' }}>{total ? total.toFixed(1) : '-'}</td>
+          {!liveData && <div style={{color:'#888',padding:'20px'}}>Loading...</div>}
+          {liveData && (liveData.divisions || []).map(dd => {
+            const discs = dd.disciplines || [];
+            const parts = dd.participants || [];
+            const resultsMap = dd.results_map || {};
+            const standingsMap = dd.standings_map || {};
+            const overall = dd.overall_standings || {};
+            return (
+              <div key={dd.division_id} style={{marginBottom:'32px'}}>
+                <h3 style={{color:'#005B5C',marginBottom:'12px',textTransform:'uppercase',letterSpacing:'2px'}}>{dd.division_name}</h3>
+                <div style={{overflowX:'auto'}}>
+                  <table style={{width:'100%',borderCollapse:'collapse',minWidth:'500px'}}>
+                    <thead>
+                      <tr style={{background:'#E8D5B5'}}>
+                        <th style={{padding:'8px',textAlign:'center',fontSize:'11px',fontWeight:'700'}}>PLACE</th>
+                        <th style={{padding:'8px',textAlign:'center',fontSize:'11px',fontWeight:'700'}}>BIB</th>
+                        <th style={{padding:'8px',textAlign:'left',fontSize:'11px',fontWeight:'700'}}>ATHLETE</th>
+                        <th style={{padding:'8px',textAlign:'center',fontSize:'11px',fontWeight:'700'}}>COUNTRY</th>
+                        {discs.map(d => (
+                          <th key={d.id} colSpan={2} style={{padding:'8px',textAlign:'center',fontSize:'11px',fontWeight:'700',borderLeft:'1px solid #d4c9a8'}}>{d.discipline_name}</th>
+                        ))}
+                        <th style={{padding:'8px',textAlign:'center',fontSize:'11px',fontWeight:'700',borderLeft:'2px solid #b8a87a'}}>TOTAL</th>
+                      </tr>
+                      {discs.length > 0 && (
+                        <tr style={{background:'#f0ead8'}}>
+                          <th colSpan={4}></th>
+                          {discs.map(d => (
+                            <>
+                              <th style={{padding:'4px 8px',textAlign:'center',fontSize:'10px',color:'#888',borderLeft:'1px solid #d4c9a8'}}>Res</th>
+                              <th style={{padding:'4px 8px',textAlign:'center',fontSize:'10px',color:'#005B5C'}}>Pts</th>
+                            </>
+                          ))}
+                          <th></th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      )}
+                    </thead>
+                    <tbody>
+                      {parts.length === 0 && (
+                        <tr><td colSpan={4 + discs.length * 2 + 1} style={{padding:'20px',textAlign:'center',color:'#888'}}>No participants</td></tr>
+                      )}
+                      {parts.map((p, idx) => {
+                        const ov = overall[String(p.id)] || {};
+                        return (
+                          <tr key={p.id} style={{borderBottom:'1px solid #eee',background:idx%2===0?'#fff':'#faf8f5'}}>
+                            <td style={{padding:'8px',textAlign:'center',fontWeight:'700',color:'#005B5C'}}>{ov.overall_place || '—'}</td>
+                            <td style={{padding:'8px',textAlign:'center',fontWeight:'700'}}>{p.bib_no || '—'}</td>
+                            <td style={{padding:'8px',fontWeight:'600'}}>{p.first_name} {p.last_name}</td>
+                            <td style={{padding:'8px',textAlign:'center',color:'#888'}}>{p.country || '—'}</td>
+                            {discs.map(d => {
+                              const res = (resultsMap[d.id] || {})[String(p.id)];
+                              const st = (standingsMap[d.id] || {})[String(p.id)];
+                              return (
+                                <>
+                                  <td style={{padding:'8px',textAlign:'center',borderLeft:'1px solid #eee'}}>{res ? (res.reps || res.primary_value || '—') : '—'}</td>
+                                  <td style={{padding:'8px',textAlign:'center',color:'#005B5C',fontWeight:'600'}}>{st ? st.points_for_discipline : '—'}</td>
+                                </>
+                              );
+                            })}
+                            <td style={{padding:'8px',textAlign:'center',fontWeight:'700',fontSize:'15px',borderLeft:'2px solid #e8e0d0'}}>{ov.total_points || '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -595,6 +639,58 @@ export default function CompetitionDetail() {
             <input type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={e => e.target.files[0] && uploadBanner(e.target.files[0])} />
           </label>
           <div style={{ color: '#aaa', fontSize: '11px', marginTop: '6px' }}>Recommended: 1500×640px · JPG/PNG · max 2MB</div>
+        </div>
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '4px', padding: '20px', marginBottom: '20px' }}>
+        <div style={{ color: '#005B5C', fontSize: '10px', letterSpacing: '3px', marginBottom: '16px' }}>PROTOCOL & CERTIFICATE SETTINGS</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          <div>
+            <div style={{ color: '#888', fontSize: '11px', letterSpacing: '1px', marginBottom: '8px' }}>LOGO LEFT (organizer)</div>
+            {competition.logo_left_url
+              ? <img src={competition.logo_left_url} style={{ height: '60px', objectFit: 'contain', marginBottom: '8px', display: 'block' }} />
+              : <div style={{ height: '60px', background: '#f7f4ef', border: '1px dashed #e8e0d0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: '11px', marginBottom: '8px' }}>No logo</div>
+            }
+            <label style={{ padding: '6px 14px', background: '#005B5C', color: '#fff', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', display: 'inline-block' }}>
+              📷 UPLOAD
+              <input type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={async e => {
+                if (!e.target.files[0]) return;
+                const fd = new FormData(); fd.append('file', e.target.files[0]);
+                const res = await axios.post(`${API}/competitions/${competitionId}/logo-left`, fd, authCfg());
+                setCompetition(prev => ({ ...prev, logo_left_url: res.data.url }));
+              }} />
+            </label>
+          </div>
+          <div>
+            <div style={{ color: '#888', fontSize: '11px', letterSpacing: '1px', marginBottom: '8px' }}>LOGO RIGHT (co-organizer)</div>
+            {competition.logo_right_url
+              ? <img src={competition.logo_right_url} style={{ height: '60px', objectFit: 'contain', marginBottom: '8px', display: 'block' }} />
+              : <div style={{ height: '60px', background: '#f7f4ef', border: '1px dashed #e8e0d0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: '11px', marginBottom: '8px' }}>No logo</div>
+            }
+            <label style={{ padding: '6px 14px', background: '#005B5C', color: '#fff', borderRadius: '3px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', display: 'inline-block' }}>
+              📷 UPLOAD
+              <input type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={async e => {
+                if (!e.target.files[0]) return;
+                const fd = new FormData(); fd.append('file', e.target.files[0]);
+                const res = await axios.post(`${API}/competitions/${competitionId}/logo-right`, fd, authCfg());
+                setCompetition(prev => ({ ...prev, logo_right_url: res.data.url }));
+              }} />
+            </label>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          <div>
+            <label style={labelStyle}>COMPETITION DIRECTOR</label>
+            <input style={inputStyle} placeholder="Full name" value={competition.director_name || ''} onChange={e => setCompetition(prev => ({ ...prev, director_name: e.target.value }))} onBlur={async e => { await axios.patch(`${API}/competitions/${competitionId}`, { director_name: e.target.value }, authCfg()); }} />
+          </div>
+          <div>
+            <label style={labelStyle}>DIRECTOR TITLE</label>
+            <input style={inputStyle} placeholder="Competition Director" value={competition.director_title || ''} onChange={e => setCompetition(prev => ({ ...prev, director_title: e.target.value }))} onBlur={async e => { await axios.patch(`${API}/competitions/${competitionId}`, { director_title: e.target.value }, authCfg()); }} />
+          </div>
+          <div>
+            <label style={labelStyle}>CHIEF REFEREE</label>
+            <input style={inputStyle} placeholder="Full name" value={competition.chief_referee_name || ''} onChange={e => setCompetition(prev => ({ ...prev, chief_referee_name: e.target.value }))} onBlur={async e => { await axios.patch(`${API}/competitions/${competitionId}`, { chief_referee_name: e.target.value }, authCfg()); }} />
+          </div>
         </div>
       </div>
 

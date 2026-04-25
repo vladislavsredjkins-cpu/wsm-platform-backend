@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import api from '../../api';
 
-const gold = '#c9a84c';
+const gold = '#005B5C';
 const FLAG_OPTIONS = ['OK', 'DNS', 'DNF', 'DSQ'];
 
 export default function RefereeResults() {
@@ -20,8 +20,8 @@ export default function RefereeResults() {
 
   useEffect(() => {
     Promise.all([
-      api.get(`/competition-disciplines/${disciplineId}`),
-      api.get(`/results/discipline/${disciplineId}/sheet`),
+      api.get(`/disciplines/${disciplineId}`),
+      api.get(`/results/discipline/${disciplineId}`),
     ]).then(([discRes, sheetRes]) => {
       setDisc(discRes.data);
       setSheet(sheetRes.data);
@@ -40,9 +40,8 @@ export default function RefereeResults() {
       await api.post(`/results/discipline/${disciplineId}`, {
         participant_id: participant.participant_id,
         primary_value: participant.primary_value !== '' && participant.primary_value != null ? parseFloat(participant.primary_value) : null,
-        secondary_value: participant.secondary_value !== '' && participant.secondary_value != null ? parseFloat(participant.secondary_value) : null,
         reps: participant.reps !== '' && participant.reps != null ? parseInt(participant.reps) : null,
-        status_flag: participant.status_flag || 'OK',
+        status: (participant.status_flag || 'ok').toLowerCase(),
       });
       setSaved(s => ({ ...s, [participant.participant_id]: true }));
       setTimeout(() => setSaved(s => ({ ...s, [participant.participant_id]: false })), 2000);
@@ -56,12 +55,15 @@ export default function RefereeResults() {
   const calculate = async () => {
     setCalculating(true);
     try {
-      await api.post(`/disciplines/${disciplineId}/calculate-standings`);
-      const res = await api.get(`/results/discipline/${disciplineId}/standings`);
-      setStandings(res.data);
+      const res = await api.get(`/results/division/${disc?.events_division_id}/standings`);
+      setStandings(res.data.map(s => ({
+        participant_id: s.participant_id,
+        place: s.overall_place,
+        points_for_discipline: s.total_points,
+      })));
       setShowStandings(true);
     } catch (e) {
-      alert('Failed to calculate standings');
+      alert('Failed to load standings');
     } finally {
       setCalculating(false);
     }

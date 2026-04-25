@@ -5,7 +5,7 @@ from db.database import SessionLocal
 
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from routers import competitions, payments, judges, certificates, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams, matches, asl
+from routers import competitions, payments, judges, certificates, divisions, athletes, ranking, disciplines, participants, results, auth, judges, organizers, coaches, teams, matches, asl, contact
 from routers import events_router
 
 
@@ -427,7 +427,7 @@ async def google_verification():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://app.ranking.worldstrongman.org", "https://ranking.worldstrongman.org", "https://events.worldstrongman.org"],
+    allow_origins=["https://app.ranking.worldstrongman.org", "https://ranking.worldstrongman.org", "https://events.worldstrongman.org", "https://worldstrongman.org"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -448,6 +448,7 @@ app.include_router(participants.router)
 app.include_router(results.router)
 app.include_router(auth.router)
 app.include_router(judges.router)
+app.include_router(contact.router)
 app.include_router(certificates.router)
 app.include_router(judges.router)
 app.include_router(certificates.router)
@@ -905,6 +906,10 @@ async def privacy_policy(request: Request):
 @app.get("/cookie-policy")
 async def cookie_policy(request: Request):
     return templates.TemplateResponse("cookie_policy.html", {"request": request})
+
+@app.get("/contact")
+async def contact_page(request: Request):
+    return templates.TemplateResponse("contact.html", {"request": request})
 
 @app.get("/asl/divisions/{division_id}")
 async def asl_division_page(division_id: str, request: Request):

@@ -5,6 +5,8 @@ import Landing from './pages/Landing';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import RefereeCompetitions from './pages/referee/Competitions';
+import JudgeAccess from './pages/JudgeAccess';
+import JudgePage from './pages/JudgePage';
 import RefereeDisciplines from './pages/referee/Disciplines';
 import RefereeResults from './pages/referee/Results';
 import AthleteProfile from './pages/athlete/Profile';
@@ -18,6 +20,7 @@ import FullCompetitionDetail from './pages/organizer/FullCompetitionDetail';
 import OrganizerProfile from './pages/organizer/Profile';
 import AthleteRegister from './pages/AthleteRegister';
 import Tournaments from './pages/Tournaments';
+import CompetitionPublic from './pages/CompetitionPublic';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -38,6 +41,7 @@ export default function App() {
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
       <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/judge/:token" element={<JudgePage />} />
       <Route path="/referee" element={<ProtectedRoute><RefereeCompetitions /></ProtectedRoute>} />
       <Route path="/referee/:divisionId/disciplines" element={<ProtectedRoute><RefereeDisciplines /></ProtectedRoute>} />
       <Route path="/referee/:disciplineId/results" element={<ProtectedRoute><RefereeResults /></ProtectedRoute>} />
@@ -49,6 +53,7 @@ export default function App() {
       <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><FullCompetitionDetail /></ProtectedRoute>} />
       <Route path="/organizer/profile" element={<ProtectedRoute><OrganizerProfile /></ProtectedRoute>} />
       <Route path="/tournaments" element={<Tournaments />} />
+      <Route path="/competitions/:competitionId" element={<CompetitionPublic />} />
       <Route path="/tournament/:competitionId/register" element={<AthleteRegister />} />
       <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
     </Routes>

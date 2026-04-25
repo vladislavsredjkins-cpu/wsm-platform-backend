@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section style="max-width:680px;margin:60px auto;padding:0 20px;">
+
+  <div style="text-align:center;margin-bottom:40px;">
+    <div style="color:#c9a84c;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">World Strongman International Union</div>
+    <h1 style="font-size:36px;font-weight:800;margin-bottom:10px;">Contact Us</h1>
+    <p style="color:#888;font-size:15px;line-height:1.6;">Have a question? We'll get back to you within 24–48 hours.</p>
+  </div>
+
+  <div id="successMsg" style="display:none;background:rgba(0,232,122,0.1);border:1px solid rgba(0,232,122,0.3);border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+    <div style="font-size:32px;margin-bottom:8px;">✅</div>
+    <div style="font-size:18px;font-weight:700;color:#00e87a;margin-bottom:4px;">Message Sent!</div>
+    <div style="color:#888;font-size:14px;">We'll reply to your email within 24–48 hours.</div>
+  </div>
+
+  <div id="errorMsg" style="display:none;background:rgba(255,58,92,0.1);border:1px solid rgba(255,58,92,0.3);border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">
+    <div style="color:#ff3a5c;font-size:14px;">Something went wrong. Please email us at <strong>gensec@worldstrongman.org</strong></div>
+  </div>
+
+  <form id="contactForm" style="background:#161616;border:1px solid #2a2a2a;border-radius:16px;padding:36px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div>
+        <label style="display:block;font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:8px;">Full Name *</label>
+        <input id="name" type="text" required placeholder="John Smith"
+          style="width:100%;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;"
+          onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:8px;">Email *</label>
+        <input id="email" type="email" required placeholder="you@email.com"
+          style="width:100%;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;"
+          onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:8px;">Subject *</label>
+      <select id="subject"
+        style="width:100%;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#2a2a2a'">
+        <option value="">Select a topic...</option>
+        <option value="Athlete Registration">Athlete Registration</option>
+        <option value="Championship 2026 Dubai">Championship 2026 Dubai</option>
+        <option value="Federation Membership">Federation Membership</option>
+        <option value="Competition Organization">Competition Organization</option>
+        <option value="Sponsorship">Sponsorship</option>
+        <option value="Media & Press">Media & Press</option>
+        <option value="Technical Support">Technical Support</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <label style="display:block;font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:8px;">Message *</label>
+      <textarea id="message" required placeholder="Write your message here..." rows="6"
+        style="width:100%;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;resize:vertical;box-sizing:border-box;font-family:inherit;"
+        onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+    </div>
+
+    <button type="submit" id="submitBtn"
+      style="width:100%;background:#c9a84c;color:#000;border:none;border-radius:8px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">
+      Send Message →
+    </button>
+  </form>
+
+  <!-- WHATSAPP -->
+  <div style="margin-top:24px;background:#161616;border:1px solid #2a2a2a;border-radius:16px;padding:28px;text-align:center;">
+    <div style="color:#c9a84c;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;">💬 Chat with us on WhatsApp</div>
+    <a href="https://wa.me/971542301001" target="_blank"
+      style="display:inline-block;background:#25D366;color:#fff;font-size:15px;font-weight:700;padding:14px 32px;border-radius:10px;text-decoration:none;margin-bottom:20px;">
+      📱 Open WhatsApp Chat →
+    </a>
+    <div style="color:#888;font-size:12px;margin-bottom:12px;">Or scan QR code from your phone</div>
+    <img src="/static/whatsapp_qr.png" alt="WhatsApp QR"
+      style="width:180px;height:180px;border-radius:12px;border:2px solid #2a2a2a;"/>
+  </div>
+
+</section>
+
+<script>
+document.getElementById('contactForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const subject = document.getElementById('subject').value;
+  const message = document.getElementById('message').value.trim();
+  if (!name || !email || !subject || !message) return;
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, email, subject, message, source: 'ranking.worldstrongman.org'})
+    });
+    if (res.ok) {
+      document.getElementById('contactForm').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'block';
+    } else { throw new Error('Server error'); }
+  } catch(err) {
+    document.getElementById('errorMsg').style.display = 'block';
+    btn.textContent = 'Send Message →';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+});
+</script>
+{% endblock %}

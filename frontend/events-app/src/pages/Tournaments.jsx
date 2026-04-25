@@ -15,7 +15,7 @@ export default function Tournaments() {
   const [sport, setSport] = useState('All');
 
   useEffect(() => {
-    axios.get(`${API}/events-api/tournaments/all`)
+    axios.get(`${API}/competitions/public`)
       .then(r => setCompetitions(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -69,7 +69,7 @@ export default function Tournaments() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '20px' }}>
             {filtered.map(c => (
-              <div key={c.id} style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div key={c.id} onClick={() => navigate(`/competitions/${c.id}`)} style={{ background: '#fff', border: '1px solid #e8e0d0', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
                 {c.banner_url ? (
                   <img src={c.banner_url} alt={c.name} style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
                 ) : (
@@ -97,7 +97,7 @@ export default function Tournaments() {
                   {c.description && (
                     <p style={{ fontSize: '12px', color: '#999', margin: '0 0 12px', lineHeight: '1.5', flexGrow: 1 }}>{c.description}</p>
                   )}
-                  <button onClick={() => navigate(`/tournament/${c.id}/register`)}
+                  <button onClick={() => navigate(`/competitions/${c.id}`)}
                     style={{ width: '100%', padding: '11px', background: teal, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', marginTop: 'auto' }}>
                     Register →
                   </button>

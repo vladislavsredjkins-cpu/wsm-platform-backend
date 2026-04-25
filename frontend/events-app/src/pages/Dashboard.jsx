@@ -28,7 +28,7 @@ function OrganizerDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getCompetitions(user?.organizer_id)
+    getCompetitions(user?.role === 'WSM_ADMIN' ? null : user?.organizer_id)
       .then(res => setCompetitions(res.data))
       .finally(() => setLoading(false));
   }, []);

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEANNE VERSO | Official</title>
+    <meta name="description" content="Жанна Версо — профессиональная вокалистка международного класса. Гастроли по Европе, уроки вокала, студия звукозаписи в Риге.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;300;400;700;900&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --red:#e63946; --red2:#ff2d3b; --black:#000; --dark:#080808;
+            --gray:#111; --line:rgba(255,255,255,.07); --text:rgba(255,255,255,.65);
+        }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;}
+        body{background:var(--black);color:#fff;font-family:'Montserrat',sans-serif;overflow-x:hidden;cursor:none;padding-bottom:90px;}
+
+        /* CURSOR */
+        .cursor{position:fixed;width:10px;height:10px;background:var(--red);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .2s,height .2s;mix-blend-mode:difference;}
+        .cursor-ring{position:fixed;width:36px;height:36px;border:1px solid rgba(230,57,70,.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);}
+
+        /* LOADER */
+        #loader{position:fixed;inset:0;background:#000;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .9s,visibility .9s;}
+        #loader.hidden{opacity:0;visibility:hidden;}
+        .loader-name{font-size:clamp(1.4rem,4vw,2.8rem);font-weight:900;letter-spacing:.35em;text-transform:uppercase;}
+        .loader-name span{color:var(--red);}
+        .loader-bar-wrap{width:200px;height:1px;background:rgba(255,255,255,.1);}
+        .loader-bar{height:1px;background:var(--red);width:0;animation:loadBar 1.8s ease forwards;}
+        @keyframes loadBar{to{width:100%;}}
+
+        /* NAVBAR */
+        .navbar{position:fixed;top:0;width:100%;z-index:1000;display:flex;justify-content:space-between;align-items:center;padding:0 60px;height:76px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.95);backdrop-filter:blur(16px);opacity:0;animation:navIn .6s .2s ease forwards;}
+        @keyframes navIn{to{opacity:1;}}
+        .logo{font-weight:900;font-size:17px;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;color:#fff;}
+        .logo em{color:var(--red);font-style:normal;font-weight:300;}
+        .nav-links{display:flex;list-style:none;gap:32px;}
+        .nav-links a{color:rgba(255,255,255,.45);text-decoration:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;transition:color .3s;position:relative;}
+        .nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--red);transition:width .3s;}
+        .nav-links a:hover{color:#fff;}
+        .nav-links a:hover::after{width:100%;}
+        .nav-cta{background:var(--red)!important;color:#fff!important;padding:9px 20px!important;opacity:1!important;}
+        .nav-cta::after{display:none!important;}
+        .nav-cta:hover{background:var(--red2)!important;}
+
+        /* SOCIALS FIXED */
+        .socials-fixed{position:fixed;left:26px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:0;z-index:500;opacity:0;animation:fadeIn 1s 1.2s ease forwards;}
+        .socials-fixed::before,.socials-fixed::after{content:'';display:block;width:1px;height:56px;background:rgba(255,255,255,.1);}
+        .socials-fixed a{color:rgba(255,255,255,.25);font-size:13px;padding:11px 0;text-decoration:none;transition:color .3s,transform .3s;}
+        .socials-fixed a:hover{color:var(--red);transform:translateX(3px);}
+        @keyframes fadeIn{to{opacity:1;}}
+
+        /* HERO */
+        .hero{position:relative;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:0 10% 0 12%;overflow:hidden;}
+        .hero-bg{position:absolute;inset:0;z-index:0;background:url('https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;transform:scale(1.08);animation:heroPan 22s ease-in-out infinite alternate;filter:brightness(.28);}
+        @keyframes heroPan{from{transform:scale(1.08) translate(0,0)}to{transform:scale(1.08) translate(-2%,-1%)}}
+        .hero-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(110deg,rgba(0,0,0,.9) 38%,rgba(0,0,0,.05) 100%);}
+        .hero-content{position:relative;z-index:2;}
+        .hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:.35em;text-transform:uppercase;color:var(--red);margin-bottom:22px;opacity:0;animation:slideUp .6s .9s ease forwards;}
+        .hero-title{font-weight:900;text-transform:uppercase;line-height:.88;letter-spacing:-.03em;font-size:clamp(5rem,12vw,155px);}
+        .hero-title .line{display:block;overflow:hidden;}
+        .hero-title .line span{display:block;opacity:0;transform:translateY(110%);animation:titleReveal .9s cubic-bezier(.77,0,.175,1) forwards;}
+        .hero-title .line:nth-child(1) span{animation-delay:.65s;}
+        .hero-title .line:nth-child(2) span{animation-delay:.8s;}
+        .hero-title .red-word{color:var(--red);}
+        @keyframes titleReveal{to{opacity:1;transform:translateY(0);}}
+        .hero-sub{margin-top:28px;font-family:'Cormorant Garamond',serif;font-size:clamp(1.1rem,1.8vw,1.45rem);font-style:italic;font-weight:300;color:rgba(255,255,255,.5);letter-spacing:.06em;opacity:0;animation:slideUp .6s 1.2s ease forwards;min-height:2rem;}
+        .typewriter-cursor{display:inline-block;width:2px;height:1em;background:var(--red);margin-left:3px;vertical-align:middle;animation:blink .9s step-end infinite;}
+        @keyframes blink{50%{opacity:0;}}
+        .hero-cta{display:inline-flex;align-items:center;gap:14px;margin-top:44px;padding:17px 36px;border:1px solid var(--red);color:#fff;text-decoration:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;position:relative;overflow:hidden;opacity:0;animation:slideUp .6s 1.4s ease forwards;transition:color .4s;}
+        .hero-cta::before{content:'';position:absolute;inset:0;background:var(--red);transform:translateX(-101%);transition:transform .4s cubic-bezier(.77,0,.175,1);}
+        .hero-cta:hover::before{transform:translateX(0);}
+        .hero-cta span,.hero-cta i{position:relative;z-index:1;}
+        .hero-cta i{transition:transform .3s;}
+        .hero-cta:hover i{transform:translateX(5px);}
+        .hero-scroll{position:absolute;bottom:44px;right:60px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:2;opacity:0;animation:fadeIn 1s 1.8s ease forwards;}
+        .hero-scroll span{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.25);writing-mode:vertical-rl;}
+        .scroll-line{width:1px;height:56px;background:rgba(255,255,255,.15);position:relative;overflow:hidden;}
+        .scroll-line::after{content:'';position:absolute;top:-100%;left:0;width:100%;height:100%;background:var(--red);animation:scrollDrop 2.2s ease infinite;}
+        @keyframes scrollDrop{from{top:-100%}to{top:200%}}
+        @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+        /* SECTIONS */
+        section{position:relative;}
+        .section-inner{padding:120px 10%;}
+        .section-label{display:flex;align-items:center;gap:16px;font-size:10px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--red);margin-bottom:18px;}
+        .section-label::before{content:'';width:36px;height:1px;background:var(--red);}
+        .section-title{font-size:clamp(2.2rem,4.5vw,52px);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;line-height:1.1;}
+
+        /* ABOUT */
+        #about{background:var(--black);}
+        .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;margin-top:56px;}
+        .about-img-wrap{position:relative;height:580px;}
+        .about-img-main{width:100%;height:100%;border-radius:2px;background:url('https://jeanneverso.com/wp-content/uploads/2022/08/y2BrpGpjRxI-719x1024.jpg') center top/cover;filter:grayscale(.15);transition:filter .6s;}
+        .about-img-main:hover{filter:grayscale(0);}
+        .about-img-accent{position:absolute;bottom:-28px;right:-28px;width:180px;height:180px;border:2px solid var(--red);z-index:-1;}
+        .about-img-num{position:absolute;top:12px;left:-16px;font-size:110px;font-weight:900;color:rgba(230,57,70,.06);line-height:1;pointer-events:none;}
+        .about-text-content{padding-left:16px;}
+        .about-title-accent{font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,3vw,2.6rem);font-style:italic;font-weight:300;color:rgba(255,255,255,.45);margin-bottom:6px;display:block;}
+        .about-main-title{font-size:clamp(2rem,3.6vw,44px);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;margin-bottom:28px;}
+        .about-main-title span{color:var(--red);}
+        .about-body{font-size:16px;line-height:1.9;color:rgba(255,255,255,.55);font-weight:300;margin-bottom:22px;}
+        .about-langs{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0;}
+        .lang-tag{padding:6px 14px;border:1px solid var(--line);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38);transition:border-color .3s,color .3s;}
+        .lang-tag:hover{border-color:var(--red);color:#fff;}
+        .about-stats{display:flex;gap:36px;border-top:1px solid var(--line);padding-top:28px;margin-top:28px;}
+        .stat-num{font-size:38px;font-weight:900;letter-spacing:-.03em;line-height:1;}
+        .stat-num em{color:var(--red);font-style:normal;}
+        .stat-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:5px;}
+
+        /* MUSIC */
+        #music{background:var(--dark);border-top:1px solid var(--line);}
+        .tracks-list{margin-top:56px;display:flex;flex-direction:column;gap:2px;}
+        .track-row{display:flex;align-items:center;gap:20px;padding:20px 28px;background:rgba(255,255,255,.02);border:1px solid transparent;cursor:pointer;transition:background .3s,border-color .3s;position:relative;overflow:hidden;}
+        .track-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:var(--red);transition:width .3s;opacity:.15;}
+        .track-row:hover{background:rgba(255,255,255,.04);border-color:var(--line);}
+        .track-row:hover::before{width:4px;}
+        .track-row.playing{border-color:rgba(230,57,70,.3);background:rgba(230,57,70,.04);}
+        .track-row.playing::before{width:4px;opacity:1;}
+        .track-num{font-size:12px;font-weight:700;color:rgba(255,255,255,.2);width:24px;min-width:24px;}
+        .track-row.playing .track-num{color:var(--red);}
+        .track-play-btn{width:40px;height:40px;min-width:40px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:background .3s,border-color .3s;color:#fff;font-size:12px;}
+        .track-play-btn:hover,.track-row.playing .track-play-btn{background:var(--red);border-color:var(--red);}
+        .track-play-btn .fa-play{margin-left:2px;}
+        .track-info-col{flex:1;}
+        .track-name{font-size:15px;font-weight:700;letter-spacing:.03em;}
+        .track-sub{font-size:12px;color:rgba(255,255,255,.35);margin-top:3px;}
+        .track-dur{font-size:12px;color:rgba(255,255,255,.25);font-weight:700;letter-spacing:.06em;min-width:60px;text-align:right;}
+        .track-wave{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .3s;margin-right:12px;}
+        .track-row.playing .track-wave{opacity:1;}
+        .track-wave span{width:3px;background:var(--red);border-radius:2px;animation:wave 1s ease-in-out infinite;}
+        .track-wave span:nth-child(1){height:12px;animation-delay:0s;}
+        .track-wave span:nth-child(2){height:20px;animation-delay:.15s;}
+        .track-wave span:nth-child(3){height:14px;animation-delay:.3s;}
+        .track-wave span:nth-child(4){height:22px;animation-delay:.1s;}
+        .track-wave span:nth-child(5){height:10px;animation-delay:.25s;}
+        @keyframes wave{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
+
+        /* MARQUEE */
+        #cities{padding:50px 0;background:var(--black);border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;}
+        .marquee-track{display:flex;gap:0;white-space:nowrap;animation:marqueeScroll 30s linear infinite;}
+        .marquee-track:hover{animation-play-state:paused;}
+        @keyframes marqueeScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+        .marquee-item{display:inline-flex;align-items:center;gap:22px;padding:0 36px;font-size:clamp(1rem,2vw,1.4rem);font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.11);transition:color .3s;}
+        .marquee-item:hover{color:rgba(255,255,255,.5);}
+        .marquee-dot{width:5px;height:5px;background:var(--red);border-radius:50%;flex-shrink:0;opacity:.5;}
+
+        /* VIDEO */
+        #video{background:var(--black);border-top:1px solid var(--line);}
+        .video-wrap{margin-top:56px;position:relative;padding-bottom:56.25%;background:#000;border:1px solid var(--line);overflow:hidden;}
+        .video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:none;}
+
+        /* PHOTO */
+        #photo{background:var(--dark);border-top:1px solid var(--line);}
+        .photo-masonry{margin-top:56px;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:240px;gap:3px;}
+        .photo-item{overflow:hidden;cursor:pointer;position:relative;}
+        .photo-item.tall{grid-row:span 2;}
+        .photo-item.wide{grid-column:span 2;}
+        .photo-item>div{width:100%;height:100%;transition:transform .7s,filter .7s;filter:grayscale(.3);}
+        .photo-item:hover>div{transform:scale(1.05);filter:grayscale(0);}
+        .photo-item::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .4s;}
+        .photo-item:hover::after{background:rgba(230,57,70,.08);}
+        .ph1{background:url('https://jeanneverso.com/wp-content/uploads/2022/08/0012-ЖАННА-ВЕРСО-JEANNE-VERSO-1200-685x1024.jpg') center/cover;}
+        .ph2{background:url('https://jeanneverso.com/wp-content/uploads/2022/08/y2BrpGpjRxI-719x1024.jpg') center top/cover;}
+        .ph3{background:url('https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=600&q=80') center/cover;}
+        .ph4{background:url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80') center/cover;}
+        .ph5{background:url('https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=600&q=80') center/cover;}
+        .ph6{background:url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80') center/cover;}
+
+        /* REPERTOIRE */
+        #repertoire{background:var(--dark);border-top:1px solid var(--line);}
+        .rep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:56px;}
+        .rep-card{padding:32px 28px;background:rgba(255,255,255,.02);border:1px solid var(--line);transition:border-color .3s,background .3s;}
+        .rep-card:hover{border-color:rgba(230,57,70,.3);background:rgba(230,57,70,.03);}
+        .rep-icon{font-size:22px;margin-bottom:16px;color:var(--red);}
+        .rep-title{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;}
+        .rep-list{display:flex;flex-direction:column;gap:7px;}
+        .rep-list li{font-size:13px;color:rgba(255,255,255,.45);list-style:none;padding-left:14px;position:relative;line-height:1.5;}
+        .rep-list li::before{content:'—';position:absolute;left:0;color:var(--red);font-size:11px;}
+
+        /* STUDIO */
+        #studio{background:var(--black);border-top:1px solid var(--line);}
+        .studio-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:0;margin-top:56px;}
+        .studio-content{padding-right:80px;}
+        .studio-body{font-size:16px;line-height:1.9;color:rgba(255,255,255,.55);font-weight:300;margin-top:24px;margin-bottom:36px;}
+        .studio-features{display:flex;flex-direction:column;gap:16px;}
+        .studio-feat{display:flex;align-items:flex-start;gap:18px;padding:18px;border:1px solid var(--line);transition:border-color .3s,background .3s;}
+        .studio-feat:hover{border-color:rgba(230,57,70,.3);background:rgba(230,57,70,.03);}
+        .feat-icon{width:40px;height:40px;min-width:40px;background:var(--red);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+        .feat-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;}
+        .feat-desc{font-size:12px;color:rgba(255,255,255,.38);line-height:1.6;}
+        .studio-img{height:100%;min-height:480px;background:url('https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80') center/cover;filter:grayscale(.3);transition:filter .6s;position:relative;}
+        .studio-img:hover{filter:grayscale(0);}
+        .studio-img-overlay{position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.7) 0%,transparent 70%);}
+
+        /* CONTACTS */
+        #contacts{background:var(--black);border-top:1px solid var(--line);}
+        .contacts-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;margin-top:56px;}
+        .contact-intro{font-family:'Cormorant Garamond',serif;font-size:clamp(1.4rem,2.8vw,2.2rem);font-style:italic;font-weight:300;color:rgba(255,255,255,.55);line-height:1.4;margin-bottom:36px;}
+        .contact-list{display:flex;flex-direction:column;gap:0;}
+        .contact-item{display:flex;align-items:center;padding:18px 0;border-bottom:1px solid var(--line);gap:18px;transition:padding-left .3s;}
+        .contact-item:hover{padding-left:8px;}
+        .contact-icon{color:var(--red);width:18px;font-size:14px;}
+        .contact-label{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:4px;}
+        .contact-val{font-size:14px;}
+        .contact-val a{color:#fff;text-decoration:none;transition:color .3s;}
+        .contact-val a:hover{color:var(--red);}
+        .contact-form{display:flex;flex-direction:column;gap:14px;}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+        .form-field{display:flex;flex-direction:column;gap:7px;}
+        .form-field label{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.28);}
+        .form-field input,.form-field textarea{background:rgba(255,255,255,.03);border:1px solid var(--line);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:13px 15px;outline:none;resize:none;border-radius:0;transition:border-color .3s,background .3s;}
+        .form-field input:focus,.form-field textarea:focus{border-color:var(--red);background:rgba(230,57,70,.04);}
+        .form-field textarea{height:112px;}
+        .form-submit{display:inline-flex;align-items:center;gap:12px;padding:16px 36px;background:var(--red);color:#fff;border:none;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;cursor:none;transition:background .3s,gap .3s;align-self:flex-start;}
+        .form-submit:hover{background:var(--red2);gap:20px;}
+
+        /* FOOTER */
+        footer{background:#000;border-top:1px solid var(--line);padding:36px 10%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;}
+        .footer-logo{font-weight:900;font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:#fff;text-decoration:none;}
+        .footer-logo em{color:var(--red);font-style:normal;font-weight:300;}
+        .footer-copy{font-size:11px;color:rgba(255,255,255,.18);letter-spacing:.05em;}
+        .footer-socials{display:flex;gap:22px;}
+        .footer-socials a{color:rgba(255,255,255,.18);font-size:15px;transition:color .3s;text-decoration:none;}
+        .footer-socials a:hover{color:var(--red);}
+
+        /* STICKY PLAYER */
+        #sticky-player{position:fixed;bottom:0;left:0;right:0;z-index:2000;height:78px;background:rgba(6,6,6,.98);border-top:1px solid rgba(230,57,70,.2);backdrop-filter:blur(20px);display:flex;align-items:center;transform:translateY(100%);transition:transform .5s cubic-bezier(.77,0,.175,1);}
+        #sticky-player.visible{transform:translateY(0);}
+        .sp-progress-wrap{position:absolute;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,.08);cursor:pointer;}
+        .sp-progress-bar{height:100%;background:var(--red);width:0%;pointer-events:none;}
+        .sp-cover{width:78px;height:78px;flex-shrink:0;background:url('https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=200&q=80') center/cover;position:relative;overflow:hidden;}
+        .sp-cover-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);}
+        .sp-info{flex:1;padding:0 24px;min-width:0;}
+        .sp-track-name{font-size:13px;font-weight:700;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .sp-track-artist{font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;letter-spacing:.06em;text-transform:uppercase;}
+        .sp-controls{display:flex;align-items:center;gap:20px;padding:0 28px;}
+        .sp-btn{background:none;border:none;color:rgba(255,255,255,.45);font-size:16px;cursor:none;transition:color .3s;padding:6px;}
+        .sp-btn:hover{color:#fff;}
+        .sp-btn-main{width:46px;height:46px;border-radius:50%;background:var(--red);border:none;color:#fff;font-size:16px;cursor:none;display:flex;align-items:center;justify-content:center;transition:background .3s,transform .15s;flex-shrink:0;}
+        .sp-btn-main:hover{background:var(--red2);transform:scale(1.05);}
+        .sp-btn-main .fa-play{margin-left:3px;}
+        .sp-time{font-size:11px;color:rgba(255,255,255,.3);font-weight:700;letter-spacing:.08em;min-width:90px;text-align:center;}
+        .sp-vol-wrap{display:flex;align-items:center;gap:10px;padding:0 28px 0 0;}
+        .sp-vol-wrap i{font-size:13px;color:rgba(255,255,255,.3);}
+        .sp-vol{width:80px;height:3px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,.1);outline:none;cursor:pointer;border-radius:2px;}
+        .sp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--red);border-radius:50%;cursor:pointer;}
+
+        /* REVEAL */
+        .reveal{opacity:0;transform:translateY(36px);transition:opacity .8s ease,transform .8s ease;}
+        .reveal.visible{opacity:1;transform:translateY(0);}
+        .reveal-delay-1{transition-delay:.1s;}
+        .reveal-delay-2{transition-delay:.2s;}
+        .reveal-delay-3{transition-delay:.32s;}
+
+        /* MOBILE */
+        @media(max-width:900px){
+            .navbar{padding:0 20px;}
+            .nav-links{display:none;}
+            .about-grid,.studio-grid,.contacts-grid{grid-template-columns:1fr;gap:40px;}
+            .rep-grid{grid-template-columns:1fr;}
+            .photo-masonry{grid-template-columns:repeat(2,1fr);}
+            .section-inner{padding:80px 6%;}
+            .hero{padding:0 6%;}
+            .socials-fixed{display:none;}
+            .sp-vol-wrap,.sp-time{display:none;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<div id="loader">
+    <div class="loader-name">JEANNE <span>VERSO</span></div>
+    <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+</div>
+
+<nav class="navbar">
+    <a href="#hero" class="logo">JEANNE <em>VERSO</em></a>
+    <ul class="nav-links">
+        <li><a href="#about">О ЖАННЕ</a></li>
+        <li><a href="#music">МУЗЫКА</a></li>
+        <li><a href="#video">ВИДЕО</a></li>
+        <li><a href="#photo">ФОТО</a></li>
+        <li><a href="#studio">СТУДИЯ</a></li>
+        <li><a href="#contacts" class="nav-cta">КОНТАКТЫ</a></li>
+    </ul>
+</nav>
+
+<div class="socials-fixed">
+    <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+    <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
+    <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+    <a href="#" title="VK"><i class="fab fa-vk"></i></a>
+</div>
+
+<!-- HERO -->
+<header id="hero" class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <p class="hero-eyebrow">Рига · Париж · Берлин · Канны</p>
+        <h1 class="hero-title">
+            <span class="line"><span>ЖАННА</span></span>
+            <span class="line"><span class="red-word">ВЕРСО</span></span>
+        </h1>
+        <p class="hero-sub"><span id="typewriter"></span><span class="typewriter-cursor"></span></p>
+        <a href="#music" class="hero-cta">
+            <span>СЛУШАТЬ ГОЛОС</span>
+            <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    <div class="hero-scroll">
+        <div class="scroll-line"></div>
+        <span>SCROLL</span>
+    </div>
+</header>
+
+<!-- ABOUT -->
+<section id="about">
+    <div class="section-inner">
+        <p class="section-label reveal">О ЖАННЕ</p>
+        <div class="about-grid">
+            <div class="about-img-wrap reveal">
+                <div class="about-img-main"></div>
+                <div class="about-img-accent"></div>
+                <div class="about-img-num">01</div>
+            </div>
+            <div class="about-text-content">
+                <span class="about-title-accent reveal">The Voice</span>
+                <h2 class="about-main-title reveal reveal-delay-1">ОБ <span>АРТИСТКЕ</span></h2>
+                <p class="about-body reveal reveal-delay-2"><strong style="color:#fff;font-weight:700;">ЖАННА ВЕРСО</strong> — профессиональная, яркая и талантливая вокалистка международного класса. Чарующий и завораживающий тембр голоса, обаяние и харизма, прекрасное актёрское мастерство — то, что покоряет публику с первого звука.</p>
+                <p class="about-body reveal reveal-delay-2">Жанна Версо на сцене с самого детства. Музыкальный Колледж и Академия Музыки по классу вокала. Многолетние гастроли по Франции, Италии, Германии, Польше. Публика Парижа, Канн, Берлина и Варшавы рукоплескала и вызывала на бис.</p>
+                <div class="about-langs reveal reveal-delay-2">
+                    <span class="lang-tag">Italiano</span>
+                    <span class="lang-tag">Русский</span>
+                    <span class="lang-tag">Français</span>
+                    <span class="lang-tag">English</span>
+                    <span class="lang-tag">Deutsch</span>
+                    <span class="lang-tag">Українська</span>
+                    <span class="lang-tag">Latin</span>
+                    <span class="lang-tag">Беларуская</span>
+                </div>
+                <div class="about-stats reveal reveal-delay-3">
+                    <div><div class="stat-num">8<em>+</em></div><div class="stat-label">Языков</div></div>
+                    <div><div class="stat-num">4<em>+</em></div><div class="stat-label">Страны гастролей</div></div>
+                    <div><div class="stat-num">300<em>+</em></div><div class="stat-label">Учеников студии</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- MUSIC -->
+<section id="music">
+    <div class="section-inner">
+        <p class="section-label reveal">ЖИВОЙ ЗВУК</p>
+        <h2 class="section-title reveal">МУЗЫКА</h2>
+        <div class="tracks-list reveal">
+            <div class="track-row" data-src="https://jeanneverso.com/wp-content/uploads/2023/09/0001-Жанна-Версо-Un-bel-giorno-Jeanne-Verso.mp3" data-title="Un bel giorno">
+                <div class="track-num">01</div>
+                <div class="track-play-btn"><i class="fas fa-play"></i></div>
+                <div class="track-info-col"><div class="track-name">Un bel giorno</div><div class="track-sub">Классика · Итальянский</div></div>
+                <div class="track-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                <div class="track-dur">—:——</div>
+            </div>
+            <div class="track-row" data-src="https://jeanneverso.com/wp-content/uploads/2023/09/0002-Жанна-Версо-Con-te-partiro-Jeanne-Verso.mp3" data-title="Con te partirò">
+                <div class="track-num">02</div>
+                <div class="track-play-btn"><i class="fas fa-play"></i></div>
+                <div class="track-info-col"><div class="track-name">Con te partirò</div><div class="track-sub">Andrea Bocelli · Итальянский</div></div>
+                <div class="track-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                <div class="track-dur">—:——</div>
+            </div>
+            <div class="track-row" data-src="https://jeanneverso.com/wp-content/uploads/2023/09/0003-Жанна-Версо-Memory-Jeanne-Verso.mp3" data-title="Memory">
+                <div class="track-num">03</div>
+                <div class="track-play-btn"><i class="fas fa-play"></i></div>
+                <div class="track-info-col"><div class="track-name">Memory</div><div class="track-sub">Barbra Streisand · English</div></div>
+                <div class="track-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                <div class="track-dur">—:——</div>
+            </div>
+            <div class="track-row" data-src="https://jeanneverso.com/wp-content/uploads/2023/09/0004-Жанна-Версо-Восточная-Jeanne-Verso.mp3" data-title="Восточная">
+                <div class="track-num">04</div>
+                <div class="track-play-btn"><i class="fas fa-play"></i></div>
+                <div class="track-info-col"><div class="track-name">Восточная</div><div class="track-sub">Авторская · Русский</div></div>
+                <div class="track-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                <div class="track-dur">—:——</div>
+            </div>
+            <div class="track-row" data-src="https://jeanneverso.com/wp-content/uploads/2023/09/0005-Жанна-Версо-Скажи-что-любишь-Jeanne-Verso.mp3" data-title="Скажи, что любишь">
+                <div class="track-num">05</div>
+                <div class="track-play-btn"><i class="fas fa-play"></i></div>
+                <div class="track-info-col"><div class="track-name">Скажи, что любишь</div><div class="track-sub">Авторская · Русский</div></div>
+                <div class="track-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                <div class="track-dur">—:——</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CITIES MARQUEE -->
+<div id="cities">
+    <div class="marquee-track">
+        <span class="marquee-item">Рига<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Париж<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Берлин<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Варшава<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Канны<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Москва<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Рим<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Минск<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Киев<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Рига<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Париж<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Берлин<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Варшава<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Канны<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Москва<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Рим<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Минск<span class="marquee-dot"></span></span>
+        <span class="marquee-item">Киев<span class="marquee-dot"></span></span>
+    </div>
+</div>
+
+<!-- VIDEO -->
+<section id="video">
+    <div class="section-inner">
+        <p class="section-label reveal">ОФИЦИАЛЬНОЕ ВИДЕО</p>
+        <h2 class="section-title reveal">ВИДЕО</h2>
+        <div class="video-wrap reveal">
+            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&color=white"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <p style="margin-top:14px;font-family:'Cormorant Garamond',serif;font-style:italic;color:rgba(255,255,255,.25);font-size:14px;" class="reveal">↑ Замените ID видео в коде на реальный YouTube ID Жанны</p>
+    </div>
+</section>
+
+<!-- PHOTO -->
+<section id="photo">
+    <div class="section-inner">
+        <p class="section-label reveal">ФОТОГРАФИИ</p>
+        <h2 class="section-title reveal">ГАЛЕРЕЯ</h2>
+        <div class="photo-masonry reveal">
+            <div class="photo-item tall"><div class="ph1"></div></div>
+            <div class="photo-item"><div class="ph2"></div></div>
+            <div class="photo-item"><div class="ph3"></div></div>
+            <div class="photo-item wide"><div class="ph4"></div></div>
+            <div class="photo-item"><div class="ph5"></div></div>
+            <div class="photo-item"><div class="ph6"></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- REPERTOIRE -->
+<section id="repertoire">
+    <div class="section-inner">
+        <p class="section-label reveal">ПРОГРАММА</p>
+        <h2 class="section-title reveal">РЕПЕРТУАР</h2>
+        <div class="rep-grid">
+            <div class="rep-card reveal">
+                <div class="rep-icon"><i class="fas fa-music"></i></div>
+                <div class="rep-title">Классика & Опера</div>
+                <ul class="rep-list">
+                    <li>Мировые оперные шедевры</li>
+                    <li>Сара Брайтман</li>
+                    <li>Андреа Бочелли</li>
+                    <li>Неаполитанские песни</li>
+                    <li>Классика в электронной обработке</li>
+                </ul>
+            </div>
+            <div class="rep-card reveal reveal-delay-1">
+                <div class="rep-icon"><i class="fas fa-star"></i></div>
+                <div class="rep-title">Эстрада & Поп</div>
+                <ul class="rep-list">
+                    <li>Лара Фабиан</li>
+                    <li>Селин Дион</li>
+                    <li>Барбара Стрейзанд</li>
+                    <li>Романсы и авторские песни</li>
+                    <li>Цыганские романсы</li>
+                </ul>
+            </div>
+            <div class="rep-card reveal reveal-delay-2">
+                <div class="rep-icon"><i class="fas fa-globe"></i></div>
+                <div class="rep-title">Народная музыка</div>
+                <ul class="rep-list">
+                    <li>Русские народные песни</li>
+                    <li>Украинские мелодии</li>
+                    <li>Белорусские песни</li>
+                    <li>Итальянские баллады</li>
+                    <li>Французский шансон</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STUDIO -->
+<section id="studio">
+    <div class="section-inner">
+        <div class="studio-grid">
+            <div class="studio-content">
+                <p class="section-label reveal">ВОКАЛ · ЗАПИСЬ · РАЗВИТИЕ</p>
+                <h2 class="section-title reveal">СТУДИЯ<br><span style="color:var(--red)">«СТАНЬ ЗВЕЗДОЙ»</span></h2>
+                <p class="studio-body reveal">Вокальная студия приглашает всех, кто любит петь или хочет научиться. Индивидуальный подход, занятия для детей и взрослых, профессиональная запись. Только живой звук.</p>
+                <div class="studio-features">
+                    <div class="studio-feat reveal">
+                        <div class="feat-icon"><i class="fas fa-microphone"></i></div>
+                        <div><div class="feat-title">Уроки вокала</div><div class="feat-desc">Индивидуальные занятия для детей и взрослых — от начинающих до профессиональных певцов</div></div>
+                    </div>
+                    <div class="studio-feat reveal reveal-delay-1">
+                        <div class="feat-icon"><i class="fas fa-sliders-h"></i></div>
+                        <div><div class="feat-title">Студийная запись</div><div class="feat-desc">Профессиональная запись, сведение и мастеринг. Только живой звук — никакого фонограммного сопровождения</div></div>
+                    </div>
+                    <div class="studio-feat reveal reveal-delay-2">
+                        <div class="feat-icon"><i class="fas fa-award"></i></div>
+                        <div><div class="feat-title">Концертная программа</div><div class="feat-desc">Выступления на торжествах и концертах. Репертуар на 8 языках — от классики до эстрады</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="studio-img reveal">
+                <div class="studio-img-overlay"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CONTACTS -->
+<section id="contacts">
+    <div class="section-inner">
+        <p class="section-label reveal">СВЯЗАТЬСЯ</p>
+        <h2 class="section-title reveal">КОНТАКТЫ</h2>
+        <div class="contacts-grid">
+            <div>
+                <p class="contact-intro reveal">«Каждое выступление — это живое единение с публикой. Только живой звук.»</p>
+                <div class="contact-list">
+                    <div class="contact-item reveal">
+                        <i class="contact-icon fas fa-envelope"></i>
+                        <div><div class="contact-label">Email</div><div class="contact-val"><a href="mailto:info@jeanneverso.com">info@jeanneverso.com</a></div></div>
+                    </div>
+                    <div class="contact-item reveal reveal-delay-1">
+                        <i class="contact-icon fas fa-globe"></i>
+                        <div><div class="contact-label">Сайт</div><div class="contact-val"><a href="https://jeanneverso.com" target="_blank">jeanneverso.com</a></div></div>
+                    </div>
+                    <div class="contact-item reveal reveal-delay-2">
+                        <i class="contact-icon fas fa-map-marker-alt"></i>
+                        <div><div class="contact-label">Студия</div><div class="contact-val">Рига, Латвия</div></div>
+                    </div>
+                    <div class="contact-item reveal reveal-delay-3">
+                        <i class="contact-icon fab fa-instagram"></i>
+                        <div><div class="contact-label">Социальные сети</div><div class="contact-val"><a href="#">Instagram</a> &nbsp;·&nbsp; <a href="#">YouTube</a> &nbsp;·&nbsp; <a href="#">VK</a></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="contact-form reveal">
+                <div class="form-row">
+                    <div class="form-field"><label>Имя</label><input type="text" placeholder="Ваше имя"></div>
+                    <div class="form-field"><label>Email</label><input type="email" placeholder="your@email.com"></div>
+                </div>
+                <div class="form-field"><label>Тема</label><input type="text" placeholder="Урок вокала / Концерт / Студия"></div>
+                <div class="form-field"><label>Сообщение</label><textarea placeholder="Расскажите подробнее..."></textarea></div>
+                <button type="button" class="form-submit"><span>Отправить</span><i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <a href="#hero" class="footer-logo">JEANNE <em>VERSO</em></a>
+    <p class="footer-copy">© 2025 Jeanne Verso · Рига, Латвия · Все права защищены</p>
+    <div class="footer-socials">
+        <a href="#"><i class="fab fa-instagram"></i></a>
+        <a href="#"><i class="fab fa-youtube"></i></a>
+        <a href="#"><i class="fab fa-facebook-f"></i></a>
+        <a href="#"><i class="fab fa-vk"></i></a>
+    </div>
+</footer>
+
+<!-- STICKY PLAYER -->
+<div id="sticky-player">
+    <div class="sp-progress-wrap" id="spProgressWrap">
+        <div class="sp-progress-bar" id="spProgressBar"></div>
+    </div>
+    <div class="sp-cover"><div class="sp-cover-overlay"></div></div>
+    <div class="sp-info">
+        <div class="sp-track-name" id="spTrackName">Выберите трек</div>
+        <div class="sp-track-artist">JEANNE VERSO</div>
+    </div>
+    <div class="sp-controls">
+        <button class="sp-btn" id="spPrev"><i class="fas fa-backward-step"></i></button>
+        <button class="sp-btn-main" id="spPlayPause"><i class="fas fa-play"></i></button>
+        <button class="sp-btn" id="spNext"><i class="fas fa-forward-step"></i></button>
+    </div>
+    <div class="sp-time" id="spTime">0:00 / 0:00</div>
+    <div class="sp-vol-wrap">
+        <i class="fas fa-volume-low"></i>
+        <input type="range" class="sp-vol" id="spVol" min="0" max="1" step="0.01" value="0.8">
+        <i class="fas fa-volume-high"></i>
+    </div>
+</div>
+
+<audio id="audioEl" preload="none"></audio>
+
+<script>
+/* LOADER */
+window.addEventListener('load',()=>{ setTimeout(()=>document.getElementById('loader').classList.add('hidden'),2000); });
+
+/* CURSOR */
+const cur=document.getElementById('cursor'),curR=document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+(function animC(){rx+=(mx-rx)*.11;ry+=(my-ry)*.11;cur.style.left=mx+'px';cur.style.top=my+'px';curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(animC);})();
+document.querySelectorAll('a,button,.track-row').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{cur.style.width='18px';cur.style.height='18px';curR.style.width='52px';curR.style.height='52px';});
+    el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='36px';curR.style.height='36px';});
+});
+
+/* SCROLL REVEAL */
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+/* NAVBAR */
+window.addEventListener('scroll',()=>{
+    document.querySelector('.navbar').style.borderBottomColor=window.scrollY>60?'rgba(230,57,70,.2)':'rgba(255,255,255,.07)';
+});
+
+/* TYPEWRITER */
+const twEl=document.getElementById('typewriter');
+const twWords=['Вокалистка мирового уровня','Педагог · Студия «Стань Звездой»','Париж · Берлин · Канны · Варшава','Только живой звук'];
+let twIdx=0,twChar=0,twDel=false;
+function tw(){
+    const w=twWords[twIdx];
+    if(!twDel){twEl.textContent=w.slice(0,++twChar);if(twChar===w.length){twDel=true;setTimeout(tw,2400);return;}setTimeout(tw,55);}
+    else{twEl.textContent=w.slice(0,--twChar);if(twChar===0){twDel=false;twIdx=(twIdx+1)%twWords.length;setTimeout(tw,400);return;}setTimeout(tw,28);}
+}
+setTimeout(tw,1800);
+
+/* AUDIO PLAYER */
+const audio=document.getElementById('audioEl');
+const player=document.getElementById('sticky-player');
+const spName=document.getElementById('spTrackName');
+const spPlay=document.getElementById('spPlayPause');
+const spPrev=document.getElementById('spPrev');
+const spNext=document.getElementById('spNext');
+const spPBar=document.getElementById('spProgressBar');
+const spPWrap=document.getElementById('spProgressWrap');
+const spTime=document.getElementById('spTime');
+const spVol=document.getElementById('spVol');
+const rows=document.querySelectorAll('.track-row');
+let curIdx=-1;
+
+function fmt(s){if(isNaN(s)||!isFinite(s))return'0:00';const m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec;}
+
+function loadTrack(idx){
+    rows.forEach((r,i)=>{
+        r.classList.remove('playing');
+        r.querySelector('.track-play-btn i').className='fas fa-play';
+    });
+    rows[idx].classList.add('playing');
+    rows[idx].querySelector('.track-play-btn i').className='fas fa-pause';
+    curIdx=idx;
+    audio.src=rows[idx].dataset.src;
+    spName.textContent=rows[idx].dataset.title;
+    player.classList.add('visible');
+    spPlay.innerHTML='<i class="fas fa-pause"></i>';
+    audio.play().catch(()=>{});
+}
+
+rows.forEach((row,i)=>{
+    row.addEventListener('click',()=>{
+        if(curIdx===i){
+            if(audio.paused){audio.play();spPlay.innerHTML='<i class="fas fa-pause"></i>';row.querySelector('.track-play-btn i').className='fas fa-pause';row.classList.add('playing');}
+            else{audio.pause();spPlay.innerHTML='<i class="fas fa-play"></i>';row.querySelector('.track-play-btn i').className='fas fa-play';row.classList.remove('playing');}
+        } else {loadTrack(i);}
+    });
+});
+
+spPlay.addEventListener('click',()=>{
+    if(curIdx===-1){loadTrack(0);return;}
+    if(audio.paused){audio.play();spPlay.innerHTML='<i class="fas fa-pause"></i>';rows[curIdx].classList.add('playing');rows[curIdx].querySelector('.track-play-btn i').className='fas fa-pause';}
+    else{audio.pause();spPlay.innerHTML='<i class="fas fa-play"></i>';rows[curIdx].classList.remove('playing');rows[curIdx].querySelector('.track-play-btn i').className='fas fa-play';}
+});
+
+spPrev.addEventListener('click',()=>loadTrack(curIdx>0?curIdx-1:rows.length-1));
+spNext.addEventListener('click',()=>loadTrack(curIdx<rows.length-1?curIdx+1:0));
+audio.addEventListener('ended',()=>loadTrack(curIdx<rows.length-1?curIdx+1:0));
+
+audio.addEventListener('timeupdate',()=>{
+    if(!audio.duration)return;
+    spPBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    spTime.textContent=fmt(audio.currentTime)+' / '+fmt(audio.duration);
+    if(rows[curIdx])rows[curIdx].querySelector('.track-dur').textContent=fmt(audio.duration);
+});
+
+spPWrap.addEventListener('click',e=>{
+    if(!audio.duration)return;
+    const r=spPWrap.getBoundingClientRect();
+    audio.currentTime=((e.clientX-r.left)/r.width)*audio.duration;
+});
+
+spVol.addEventListener('input',()=>{audio.volume=parseFloat(spVol.value);});
+audio.volume=0.8;
+</script>
+</body>
+</html>
