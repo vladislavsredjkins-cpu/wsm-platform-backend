@@ -6,7 +6,7 @@ import Layout from '../../components/Layout';
 import api from '../../api';
 
 const COMPETITION_TYPES = [
-  { value: 'INTERNATIONAL_TOURNAMENT', label: 'Exhibition Tournament', q: 1, price: 'events_single', fee: 19 },
+  { value: 'INTERNATIONAL_TOURNAMENT', label: 'Exhibition Tournament', q: 1, price: 'event_single', fee: 19 },
 ];
 
 export default function Competitions() {
@@ -55,17 +55,17 @@ export default function Competitions() {
       };
       localStorage.setItem('pending_competition', JSON.stringify(formData));
 
-      const res = await api.post('/payments/checkout', {
+      const res = await api.post('/payments/create-checkout', {
         product_type: selectedType.price,
-        success_url: `https://app.ranking.worldstrongman.org/organizer/competitions?payment=success&type=competition`,
-        cancel_url: `https://app.ranking.worldstrongman.org/organizer/competitions?payment=cancelled`,
+        success_url: `https://events.worldstrongman.org/organizer/competitions?payment=success&type=competition`,
+        cancel_url: `https://events.worldstrongman.org/organizer/competitions?payment=cancelled`,
         metadata: { 
           product_type: 'competition',
           competition_type: form.competition_type,
           organizer_id: user?.organizer_id || '',
         }
       });
-      window.location.href = res.data.url;
+      window.location.href = res.data.checkout_url;
     } catch (e) {
       alert(e.response?.data?.detail || 'Failed to create checkout');
     } finally {

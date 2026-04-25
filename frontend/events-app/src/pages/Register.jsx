@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -12,31 +12,55 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handle = async () => {
+  const handle = async (plan) => {
     setError('');
     if (!form.email || !form.password || !form.name) { setError('Please fill all required fields'); return; }
     if (form.password !== form.confirm) { setError('Passwords do not match'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/auth/register`, {
+      // Сохраняем данные для создания аккаунта после оплаты
+      localStorage.setItem('pending_registration', JSON.stringify({
         email: form.email,
         password: form.password,
         name: form.name,
         country: form.country,
-        type: 'club',
+      }));
+      const res = await axios.post(`${API}/payments/create-checkout`, {
+        product_type: plan,
+        success_url: `https://events.worldstrongman.org/register?payment=success`,
+        cancel_url: `https://events.worldstrongman.org/register?payment=cancelled`,
+        metadata: { email: form.email, name: form.name, plan }
       });
-      const { access_token, role, organizer_id } = res.data;
-      localStorage.setItem('token', access_token);
-      const user = { email: form.email, role, organizer_id };
-      localStorage.setItem('user', JSON.stringify(user));
-      navigate('/dashboard');
+      window.location.href = res.data.checkout_url;
     } catch(e) {
-      setError(e.response?.data?.detail || 'Registration failed');
+      setError(e.response?.data?.detail || 'Failed to start checkout');
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSuccess = async () => {
+    const pending = localStorage.getItem('pending_registration');
+    if (!pending) return;
+    const data = JSON.parse(pending);
+    localStorage.removeItem('pending_registration');
+    try {
+      const res = await axios.post(`${API}/auth/register`, { ...data, type: 'club' });
+      const { access_token, role, organizer_id } = res.data;
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify({ email: data.email, role, organizer_id }));
+      navigate('/dashboard');
+    } catch(e) {
+      setError('Payment successful but registration failed. Contact support.');
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') handleSuccess();
+    if (params.get('payment') === 'cancelled') setError('Payment cancelled. Please try again.');
+  }, []);
 
   const inp = { width: '100%', padding: '12px 14px', border: '1px solid #e8e0d0', borderRadius: '8px', fontSize: '15px', outline: 'none', boxSizing: 'border-box', background: '#fafafa' };
   const lbl = { display: 'block', fontSize: '12px', fontWeight: '600', color: '#555', marginBottom: '6px', letterSpacing: '0.5px' };
@@ -75,10 +99,17 @@ export default function Register() {
 
           {error && <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', color: '#c62828', padding: '10px 14px', borderRadius: '8px', fontSize: '13px' }}>{error}</div>}
 
-          <button onClick={handle} disabled={loading}
-            style={{ width: '100%', padding: '14px', background: teal, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', marginTop: '8px' }}>
-            {loading ? 'Creating account...' : 'Create account →'}
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px' }}>
+            <button onClick={() => handle('event_single')} disabled={loading}
+              style={{ padding: '14px', background: teal, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+              {loading ? '...' : '€19 — 1 Event →'}
+            </button>
+            <button onClick={() => handle('event_season')} disabled={loading}
+              style={{ padding: '14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+              {loading ? '...' : '€39 — Season →'}
+            </button>
+          </div>
+          <p style={{ fontSize: '11px', color: '#aaa', textAlign: 'center', margin: '4px 0 0' }}>Secure payment via Stripe</p>
 
           <p style={{ fontSize: '11px', color: '#aaa', textAlign: 'center', margin: 0 }}>
             By registering you agree to our{' '}
