@@ -6,9 +6,13 @@ const sand = '#E8D5B5';
 
 export default function AIAssistant({ competition, divisions, disciplines, tab }) {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! I am your WSM Events assistant. I can help you set up divisions, disciplines, judges, and more. What do you need help with?' }
-  ]);
+  const storageKey = `wsm_ai_chat_${competitionId || 'general'}`;
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : [{ role: 'assistant', content: 'Hi! I am your WSM Events assistant. I can help you set up divisions, disciplines, judges, and more. What do you need help with?' }];
+    } catch { return [{ role: 'assistant', content: 'Hi! I am your WSM Events assistant. I can help you set up divisions, disciplines, judges, and more. What do you need help with?' }]; }
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -131,7 +135,11 @@ Your role:
       });
       const data = await res.json();
       const reply = data.content?.[0]?.text || 'Sorry, I could not process that.';
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      setMessages(prev => {
+        const updated = [...prev, { role: 'assistant', content: reply }];
+        try { localStorage.setItem(storageKey, JSON.stringify(updated)); } catch {}
+        return updated;
+      });
     } catch(e) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Please try again.' }]);
     } finally {
@@ -153,10 +161,14 @@ Your role:
           {/* Header */}
           <div style={{ background: accent, padding: '14px 18px', borderRadius: '12px 12px 0 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ fontSize: '20px' }}>🤖</div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ color: '#fff', fontWeight: '700', fontSize: '14px' }}>WSM Assistant</div>
               <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>AI Competition Helper</div>
             </div>
+            <button onClick={() => { const init = [{ role: 'assistant', content: 'Hi! I am your WSM Events assistant. How can I help?' }]; setMessages(init); try { localStorage.setItem(storageKey, JSON.stringify(init)); } catch {} }}
+              style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.7)', fontSize: '10px', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer' }}>
+              Clear
+            </button>
           </div>
 
           {/* Messages */}
