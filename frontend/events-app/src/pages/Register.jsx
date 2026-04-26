@@ -28,7 +28,7 @@ export default function Register() {
       }));
       const res = await axios.post(`${API}/payments/create-checkout`, {
         product_type: plan,
-        success_url: `https://events.worldstrongman.org/register?payment=success`,
+        success_url: `https://events.worldstrongman.org/register?payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `https://events.worldstrongman.org/register?payment=cancelled`,
         metadata: { email: form.email, name: form.name, plan }
       });
@@ -45,14 +45,16 @@ export default function Register() {
     if (!pending) return;
     const data = JSON.parse(pending);
     localStorage.removeItem('pending_registration');
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
     try {
-      const res = await axios.post(`${API}/auth/register`, { ...data, type: 'club' });
+      const res = await axios.post(`${API}/auth/register`, { ...data, type: 'club', stripe_session_id: sessionId });
       const { access_token, role, organizer_id } = res.data;
       localStorage.setItem('token', access_token);
       localStorage.setItem('user', JSON.stringify({ email: data.email, role, organizer_id }));
       navigate('/dashboard');
     } catch(e) {
-      setError('Payment successful but registration failed. Contact support.');
+      setError(e.response?.data?.detail || 'Registration failed. Contact support.');
     }
   };
 

@@ -7,6 +7,7 @@ import DisciplinesTab from '../../components/DisciplinesTab';
 import DrawTab from '../../components/DrawTab';
 import MCTab from '../../components/MCTab';
 import { divisionLabel } from '../../constants/divisions';
+import AIAssistant from '../../components/AIAssistant';
 
 const inputStyle = { width: '100%', padding: '10px 14px', background: '#fff', border: '1px solid #e8e0d0', color: '#1a1a1a', borderRadius: '3px', fontSize: '13px', outline: 'none' };
 const labelStyle = { display: 'block', color: '#777', fontSize: '10px', letterSpacing: '2px', marginBottom: '6px' };
@@ -799,6 +800,7 @@ export default function CompetitionDetail() {
           {saving ? 'SAVING...' : 'SAVE CHANGES →'}
         </button>
       </div>
+      <AIAssistant competition={competition} divisions={divisions} disciplines={[]} tab={tab} />
     </Layout>
   );
 }
