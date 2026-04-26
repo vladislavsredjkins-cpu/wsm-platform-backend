@@ -356,5 +356,108 @@ function filterAthletes() {
 }
 </script>
 
+<!-- WSM AI Assistant -->
+<div id="wsm-ai-btn" onclick="document.getElementById('wsm-ai-chat').style.display=document.getElementById('wsm-ai-chat').style.display==='none'?'flex':'none'" style="position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:#005B5C;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,91,92,0.4);z-index:1000;font-size:22px;">🤖</div>
+
+<div id="wsm-ai-chat" style="display:none;position:fixed;bottom:88px;right:24px;width:340px;height:480px;background:#111;border:1px solid #2a2a2a;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);flex-direction:column;z-index:999;">
+  <div style="background:#005B5C;padding:14px 18px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:20px;">🤖</span>
+    <div style="flex:1;">
+      <div style="color:#fff;font-weight:700;font-size:14px;">WSM Assistant</div>
+      <div style="color:rgba(255,255,255,0.7);font-size:11px;">Your Strongman Guide</div>
+    </div>
+    <button onclick="wsm_ai_clear()" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.7);font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer;">Clear</button>
+  </div>
+  <div id="wsm-ai-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
+    <div class="wsm-msg-ai">Hi! I am your WSM guide. I can help you understand the platform, choose your role, and navigate rankings. What do you need?</div>
+  </div>
+  <div style="padding:12px;border-top:1px solid #2a2a2a;display:flex;gap:8px;">
+    <input id="wsm-ai-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')wsm_ai_send()" style="flex:1;padding:10px 12px;background:#1a1a1a;border:1px solid #2a2a2a;color:#fff;border-radius:8px;font-size:13px;outline:none;" />
+    <button onclick="wsm_ai_send()" style="padding:10px 16px;background:#005B5C;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">→</button>
+  </div>
+</div>
+
+<style>
+.wsm-msg-ai{background:#1a1a1a;color:#ccc;padding:10px 14px;border-radius:12px 12px 12px 2px;font-size:13px;line-height:1.5;max-width:85%;}
+.wsm-msg-user{background:#005B5C;color:#fff;padding:10px 14px;border-radius:12px 12px 2px 12px;font-size:13px;line-height:1.5;max-width:85%;align-self:flex-end;}
+</style>
+
+<script>
+const WSM_STORAGE = 'wsm_ranking_ai_chat';
+const WSM_SYSTEM = `You are a helpful guide for ranking.worldstrongman.org — the official World Strongman International Union platform.
+
+Platform structure:
+- ranking.worldstrongman.org — public rankings, competition results, athlete profiles
+- Roles: ATHLETE (compete, track rankings), COACH (manage athletes), ORGANIZER (create competitions, manage events), JUDGE (referee competitions)
+- WSM Events platform: events.worldstrongman.org — organize strongman competitions (€19/event or €39/season pass)
+
+WSM Official Rules:
+- Weight categories Men: 70kg, 80kg, 95kg, 110kg, 110+kg
+- Weight categories Women: 55kg, 65kg, 75kg, 85kg, 85+kg  
+- Age groups: Youths (15-18), Juniors (19-23), Open (15+), Veterans M1 (40-49), M2 (50-59), M3 (60-69), M4 (70+)
+- Scoring: points by place (1st=N pts, last=1pt), ties split equally, reverse start order each discipline
+- Standard disciplines: Log Lift, Deadlift, Farmers Walk, Atlas Stones, Yoke Walk, Sandbag Carry, Tire Flip
+- Scoring modes: max_weight, max_reps, fastest_time, max_distance, static_hold, win_loss
+
+How to help users:
+- Athletes: explain how to register, find competitions, track rankings
+- Coaches: explain how to manage athlete profiles
+- Organizers: direct to events.worldstrongman.org for competition management
+- Judges: explain certification through lms.worldstrongman.org
+- Always be helpful, concise and respond in the same language the user writes in`;
+
+let wsm_messages = [];
+try { wsm_messages = JSON.parse(localStorage.getItem(WSM_STORAGE)) || []; } catch {}
+
+function wsm_render() {
+  const box = document.getElementById('wsm-ai-messages');
+  box.innerHTML = '<div class="wsm-msg-ai">Hi! I am your WSM guide. I can help you understand the platform, choose your role, and navigate rankings. What do you need?</div>';
+  wsm_messages.forEach(m => {
+    const d = document.createElement('div');
+    d.className = m.role === 'user' ? 'wsm-msg-user' : 'wsm-msg-ai';
+    d.textContent = m.content;
+    box.appendChild(d);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function wsm_ai_clear() {
+  wsm_messages = [];
+  localStorage.removeItem(WSM_STORAGE);
+  wsm_render();
+}
+
+async function wsm_ai_send() {
+  const input = document.getElementById('wsm-ai-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  wsm_messages.push({ role: 'user', content: text });
+  wsm_render();
+  try {
+    const res = await fetch('https://api.events.worldstrongman.org/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 500,
+        system: WSM_SYSTEM,
+        messages: wsm_messages
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Sorry, I could not process that.';
+    wsm_messages.push({ role: 'assistant', content: reply });
+    localStorage.setItem(WSM_STORAGE, JSON.stringify(wsm_messages));
+    wsm_render();
+  } catch(e) {
+    wsm_messages.push({ role: 'assistant', content: 'Connection error. Please try again.' });
+    wsm_render();
+  }
+}
+
+wsm_render();
+</script>
+
 </body>
 </html>
