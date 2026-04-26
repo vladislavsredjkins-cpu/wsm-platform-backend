@@ -6,7 +6,7 @@ const sand = '#E8D5B5';
 
 export default function AIAssistant({ competition, divisions, disciplines, tab }) {
   const [open, setOpen] = useState(false);
-  const storageKey = `wsm_ai_chat_${competitionId || 'general'}`;
+  const storageKey = `wsm_ai_chat_${competition?.id || 'general'}`;
   const [messages, setMessages] = useState(() => {
     try {
       const saved = localStorage.getItem(storageKey);
