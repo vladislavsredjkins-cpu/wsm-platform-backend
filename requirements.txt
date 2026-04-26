@@ -12,3 +12,4 @@ asyncpg
 psycopg
 aiofiles
 jinja2
+python-jose[cryptography]==3.3.0
