@@ -550,7 +550,7 @@ async function checkEmail() {
   } else {
     regAthleteId = null;
     document.getElementById('reg-athlete-found').style.display = 'none';
-    document.getElementById('reg-new-fields').style.display = 'block';
+    window.location.href = '/register/athlete';
   }
 }
 
@@ -644,7 +644,7 @@ async function checkEmail() {
   } else {
     regAthleteId = null;
     document.getElementById('reg-athlete-found').style.display = 'none';
-    document.getElementById('reg-new-fields').style.display = 'block';
+    window.location.href = '/register/athlete';
   }
 }
 

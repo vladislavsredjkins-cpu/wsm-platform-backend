@@ -62,7 +62,7 @@ export default function Competitions() {
       };
       localStorage.setItem('pending_competition', JSON.stringify(formData));
 
-      const res = await api.post('/payments/checkout', {
+      const res = await api.post('/payments/create-checkout', {
         product_type: selectedType.price,
         success_url: `https://app.ranking.worldstrongman.org/organizer/competitions?payment=success&type=competition`,
         cancel_url: `https://app.ranking.worldstrongman.org/organizer/competitions?payment=cancelled`,
@@ -72,7 +72,7 @@ export default function Competitions() {
           organizer_id: user?.organizer_id || '',
         }
       });
-      window.location.href = res.data.url;
+      window.location.href = res.data.checkout_url;
     } catch (e) {
       alert(e.response?.data?.detail || 'Failed to create checkout');
     } finally {
