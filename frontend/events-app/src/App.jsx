@@ -20,6 +20,7 @@ import FullCompetitionDetail from './pages/organizer/FullCompetitionDetail';
 import OrganizerProfile from './pages/organizer/Profile';
 import AthleteRegister from './pages/AthleteRegister';
 import Tournaments from './pages/Tournaments';
+import VerifyEmail from './pages/VerifyEmail';
 import CompetitionPublic from './pages/CompetitionPublic';
 
 function ProtectedRoute({ children }) {
@@ -53,6 +54,7 @@ export default function App() {
       <Route path="/organizer/competitions/:competitionId" element={<ProtectedRoute><FullCompetitionDetail /></ProtectedRoute>} />
       <Route path="/organizer/profile" element={<ProtectedRoute><OrganizerProfile /></ProtectedRoute>} />
       <Route path="/tournaments" element={<Tournaments />} />
+      <Route path="/verify/:token" element={<VerifyEmail />} />
       <Route path="/competitions/:competitionId" element={<CompetitionPublic />} />
       <Route path="/tournament/:competitionId/register" element={<AthleteRegister />} />
       <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
